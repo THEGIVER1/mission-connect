@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { MOCK_MISSIONS } from '../lib/mockData';
-import { ref, set, serverTimestamp } from 'firebase/database';
-import { rtdb } from '../lib/firebase';
 
 const COMPANIES = [
   '두산에너빌리티',
@@ -35,7 +33,6 @@ const TeamSelect: React.FC = () => {
   const [company, setCompany] = useState('');
   const [teamCode, setTeamCode] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-  const [entering, setEntering] = useState(false);
   const [error, setError] = useState('');
 
   const handleNextStep = () => {
@@ -46,59 +43,25 @@ const TeamSelect: React.FC = () => {
     setStep('team');
   };
 
-  const handleEnter = async () => {
-    if (!selectedTeam || entering) return;
+  const handleEnter = () => {
+    if (!selectedTeam) return;
     const team = TEAMS.find(t => t.id === selectedTeam)!;
-    setEntering(true);
 
-    try {
-      const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
+    selectTeam({
+      id: team.id,
+      name: team.name,
+      shortCode: team.shortCode,
+      color: team.color,
+      memberCount: 1,
+      score: 0,
+      rank: TEAMS.indexOf(team) + 1,
+      missionsCompleted: 0,
+      totalMissions: MOCK_MISSIONS.length,
+      lastActivity: new Date(),
+      status: 'active',
+    });
 
-      await set(ref(rtdb, `sessions/trekking2026/participants/${participantId}`), {
-        name: name.trim(),
-        company,
-        teamId: team.id,
-        teamName: team.name,
-        teamCode,
-        score: 0,
-        connections: 0,
-        missionsCompleted: 0,
-        joinedAt: serverTimestamp(),
-        status: 'active',
-      });
-
-      selectTeam({
-        id: team.id,
-        name: team.name,
-        shortCode: team.shortCode,
-        color: team.color,
-        memberCount: 1,
-        score: 0,
-        rank: TEAMS.indexOf(team) + 1,
-        missionsCompleted: 0,
-        totalMissions: MOCK_MISSIONS.length,
-        lastActivity: new Date(),
-        status: 'active',
-      });
-
-      navigate('/');
-    } catch (err) {
-      console.error('오류:', err);
-      selectTeam({
-        id: team.id,
-        name: team.name,
-        shortCode: team.shortCode,
-        color: team.color,
-        memberCount: 1,
-        score: 0,
-        rank: TEAMS.indexOf(team) + 1,
-        missionsCompleted: 0,
-        totalMissions: MOCK_MISSIONS.length,
-        lastActivity: new Date(),
-        status: 'active',
-      });
-      navigate('/');
-    }
+    navigate('/');
   };
 
   return (
@@ -263,15 +226,13 @@ const TeamSelect: React.FC = () => {
             </button>
             <button
               onClick={handleEnter}
-              disabled={!selectedTeam || entering}
+              disabled={!selectedTeam}
               className="flex-1 py-4 rounded-2xl font-bold text-[16px] flex items-center justify-center gap-2
                 transition-all active:scale-98"
-              style={selectedTeam && !entering
+              style={selectedTeam
                 ? { background: TEAMS.find(t => t.id === selectedTeam)?.color, color: 'white' }
                 : { background: '#1A2235', color: '#475569', border: '1px solid rgba(255,255,255,0.08)' }}>
-              {entering ? (
-                <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />입장 중...</>
-              ) : selectedTeam ? (
+              {selectedTeam ? (
                 <>{TEAMS.find(t => t.id === selectedTeam)?.emoji} 입장하기!</>
               ) : (
                 <>팀을 선택해주세요</>
