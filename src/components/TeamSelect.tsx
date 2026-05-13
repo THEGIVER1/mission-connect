@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { MOCK_MISSIONS } from '../lib/mockData';
 import { ref, set, serverTimestamp } from 'firebase/database';
-import { rtdb } from '../lib/firebase';
+import { rtdb, auth } from '../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 const COMPANIES = [
   '두산에너빌리티',
@@ -52,6 +53,8 @@ const TeamSelect: React.FC = () => {
     setEntering(true);
 
     try {
+      // 익명 로그인 (Firebase 규칙 통과)
+      if (!auth.currentUser) await signInAnonymously(auth);
       // 참가자 ID 생성 (이름+자회사 기반)
       const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
 
