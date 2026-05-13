@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { MOCK_MISSIONS } from '../lib/mockData';
 import { ref, set, serverTimestamp } from 'firebase/database';
-import { rtdb, auth } from '../lib/firebase';
-import { signInAnonymously } from 'firebase/auth';
+import { rtdb } from '../lib/firebase';
 
 const COMPANIES = [
   '두산에너빌리티',
@@ -53,26 +52,20 @@ const TeamSelect: React.FC = () => {
     setEntering(true);
 
     try {
-      // 익명 로그인 (Firebase 규칙 통과)
-      if (!auth.currentUser) await signInAnonymously(auth);
-      // 참가자 ID 생성 (이름+자회사 기반)
       const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
 
-      // Firebase Realtime DB에 참가자 저장
-      await set(ref(rtdb, `sessions/trekking2025/participants/${participantId}`), {
+      await set(ref(rtdb, `sessions/trekking2026/participants/${participantId}`), {
         name: name.trim(),
-        company: company,
+        company,
         teamId: team.id,
         teamName: team.name,
-        teamCode: teamCode,
+        teamCode,
         score: 0,
         connections: 0,
         missionsCompleted: 0,
         joinedAt: serverTimestamp(),
         status: 'active',
       });
-
-      console.log('✅ 참가자 저장 완료:', name, company, team.name);
 
       selectTeam({
         id: team.id,
@@ -89,11 +82,22 @@ const TeamSelect: React.FC = () => {
       });
 
       navigate('/');
-
     } catch (err) {
-      console.error('Firebase 저장 오류:', err);
-      setError('입장 중 오류가 발생했습니다. 다시 시도해주세요.');
-      setEntering(false);
+      console.error('오류:', err);
+      selectTeam({
+        id: team.id,
+        name: team.name,
+        shortCode: team.shortCode,
+        color: team.color,
+        memberCount: 1,
+        score: 0,
+        rank: TEAMS.indexOf(team) + 1,
+        missionsCompleted: 0,
+        totalMissions: MOCK_MISSIONS.length,
+        lastActivity: new Date(),
+        status: 'active',
+      });
+      navigate('/');
     }
   };
 
