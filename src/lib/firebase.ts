@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
@@ -33,13 +33,6 @@ export const rtdb = getDatabase(app);
 // Auth — 팀 코드 기반 익명 로그인
 export const auth = getAuth(app);
 
-// 오프라인 지원 (야외 WiFi 불안정 대비)
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Firestore persistence: multiple tabs open');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Firestore persistence: browser not supported');
-  }
-});
+// 오프라인 지원 비활성화 (야외 환경 안정성)
 
 export default app;
