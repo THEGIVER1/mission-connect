@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ref, set, update } from 'firebase/database';
-import { auth, rtdb } from '../../lib/firebase';
+import { rtdb } from '../../lib/firebase';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
 
@@ -113,7 +113,9 @@ const ARScreen: React.FC = () => {
     [foundMap]
   );
 
-  const participantUid = auth.currentUser?.uid ?? myTeam?.id ?? 'anonymous';
+  const participantId = myTeam?.id
+    ? `${myTeam.id}_${Date.now()}`
+    : `anonymous_${Date.now()}`;
   const selectedTarget = useMemo(
     () => AR_TARGETS.find((target) => target.id === selectedTargetId) ?? null,
     [selectedTargetId]
@@ -206,7 +208,6 @@ const ARScreen: React.FC = () => {
       try {
         const photoDataUrl = capturePhotoDataUrl();
         const nowIso = new Date().toISOString();
-
         const nextFoundMap = { ...foundMap, [target.id]: true };
         const nextFoundCount = AR_TARGETS.filter((item) => nextFoundMap[item.id]).length;
         const nextTotalPoints = AR_TARGETS.reduce(
@@ -214,38 +215,42 @@ const ARScreen: React.FC = () => {
           0
         );
 
-        await set(
-          ref(rtdb, `sessions/trekking2026/participants/${participantUid}/arFinds/${target.id}`),
-          {
-            id: target.id,
-            name: target.name,
-            emoji: target.emoji,
-            points: target.points,
-            found: true,
-            foundAt: nowIso,
-            photoDataUrl,
-          }
-        );
-
-        await update(
-          ref(rtdb, `sessions/trekking2026/participants/${participantUid}`),
-          {
-            arFoundCount: nextFoundCount,
-            arPoints: nextTotalPoints,
-            arUpdatedAt: nowIso,
-          }
-        );
+        // Firebase 저장 실패해도 완료 처리
+        try {
+          await set(
+            ref(rtdb, `sessions/trekking2026/participants/${participantId}/arFinds/${target.id}`),
+            {
+              id: target.id,
+              name: target.name,
+              emoji: target.emoji,
+              points: target.points,
+              found: true,
+              foundAt: nowIso,
+              photoDataUrl,
+            }
+          );
+          await update(
+            ref(rtdb, `sessions/trekking2026/participants/${participantId}`),
+            {
+              arFoundCount: nextFoundCount,
+              arPoints: nextTotalPoints,
+              arUpdatedAt: nowIso,
+            }
+          );
+        } catch (firebaseErr) {
+          console.warn('Firebase 저장 실패 (오프라인):', firebaseErr);
+        }
 
         setFoundMap(nextFoundMap);
         setSelectedTargetId(null);
         setMessage(`${target.emoji} ${target.name} 발견 완료! +${target.points}pt`);
       } catch (err: any) {
-        setMessage(err?.message ?? '발견 기록 저장 중 오류가 발생했습니다.');
+        setMessage(err?.message ?? '오류가 발생했습니다.');
       } finally {
         setBusyTargetId(null);
       }
     },
-    [busyTargetId, camReady, canCaptureSelected, capturePhotoDataUrl, foundMap, participantUid]
+    [busyTargetId, camReady, canCaptureSelected, capturePhotoDataUrl, foundMap, participantId]
   );
 
   return (
