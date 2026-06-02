@@ -206,7 +206,7 @@ const ARScreen: React.FC = () => {
       setMessage('');
 
       try {
-        const photoDataUrl = capturePhotoDataUrl();
+        capturePhotoDataUrl();
         const nowIso = new Date().toISOString();
         const nextFoundMap = { ...foundMap, [target.id]: true };
         const nextFoundCount = AR_TARGETS.filter((item) => nextFoundMap[item.id]).length;
@@ -226,7 +226,6 @@ const ARScreen: React.FC = () => {
               points: target.points,
               found: true,
               foundAt: nowIso,
-              photoDataUrl,
             }
           );
           await update(
