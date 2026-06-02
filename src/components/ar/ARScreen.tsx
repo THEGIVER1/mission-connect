@@ -22,7 +22,7 @@ const AR_TARGETS: ArTarget[] = [
   { id: 'aralia', name: '두릅나무', emoji: '🌿', points: 100, lat: 37.543243, lng: 127.15017 },
   { id: 'prayerhouse', name: '기도원', emoji: '⛪', points: 150, lat: 37.543406, lng: 127.149597 },
 ];
-const AR_RADIUS_METERS = 30;
+const AR_RADIUS_METERS = 999999;
 
 type GeoCoord = { lat: number; lng: number };
 
