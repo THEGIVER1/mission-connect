@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ref, set, update } from 'firebase/database';
+import { rtdb } from '../../lib/firebase';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
 
@@ -213,7 +215,29 @@ const ARScreen: React.FC = () => {
           0
         );
 
-        // Firebase 저장 생략 (오프라인 모드)
+        try {
+        await set(
+          ref(rtdb, `sessions/trekking2026/participants/${participantId}/arFinds/${target.id}`),
+          {
+            id: target.id,
+            name: target.name,
+            emoji: target.emoji,
+            points: target.points,
+            found: true,
+            foundAt: nowIso,
+          }
+        );
+        await update(
+          ref(rtdb, `sessions/trekking2026/participants/${participantId}`),
+          {
+            arFoundCount: nextFoundCount,
+            arPoints: nextTotalPoints,
+            arUpdatedAt: nowIso,
+          }
+        );
+      } catch (firebaseErr) {
+        console.warn('Firebase 저장 실패 (오프라인):', firebaseErr);
+      }
 
         setFoundMap(nextFoundMap);
         setSelectedTargetId(null);
