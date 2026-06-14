@@ -302,7 +302,7 @@ const ARScreen: React.FC = () => {
             ←
           </button>
           <div className="text-right">
-            <p className="text-[11px] text-cyan-300">연강원 AR 탐험</p>
+            <p className="text-[11px] text-cyan-300">연강원 보물찾기</p>
             <p className="text-[13px] text-white font-bold">
               발견 {foundCount} / {AR_TARGETS.length} · {totalPoints}pt
             </p>
