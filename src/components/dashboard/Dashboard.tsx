@@ -205,7 +205,7 @@ const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   const navigate = useNavigate();
   const NAV = [
     { key:'/',           icon:'🏠', label:'홈'   },
-    { key:'/map',        icon:'🗺️', label:'지도' },
+    { key:'/map',        icon:'🗺️', label:'미션지도' },
     { key:'/ar',         icon:'📷', label:'보물찾기'   },
     { key:'/leaderboard',icon:'🏆', label:'순위' },
     { key:'/profile',    icon:'👤', label:'내 정보' },
