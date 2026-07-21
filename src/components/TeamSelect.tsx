@@ -37,7 +37,7 @@ const TeamSelect: React.FC = () => {
 
   const handleNextStep = () => {
     if (!name.trim()) { setError('이름을 입력해주세요'); return; }
-    if (!company) { setError('자회사를 선택해주세요'); return; }
+    if (!company) { setError('소속를 선택해주세요'); return; }
     if (!teamCode.trim()) { setError('팀 코드를 입력해주세요'); return; }
     setError('');
     setStep('team');
@@ -123,34 +123,20 @@ const TeamSelect: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-[12px] text-slate-400 mb-1.5 block">자회사</label>
+            <label className="text-[12px] text-slate-400 mb-1.5 block">소속</label>
             <select
               value={company}
               onChange={e => setCompany(e.target.value)}
               className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-4 py-3.5
                 text-[15px] focus:outline-none focus:border-red-500 transition-colors appearance-none"
               style={{ color: company ? 'white' : '#475569' }}>
-              <option value="" disabled>자회사를 선택하세요</option>
+              <option value="" disabled>소속를 선택하세요</option>
               {COMPANIES.map(c => (
                 <option key={c} value={c} style={{ color: 'white', background: '#1A2235' }}>{c}</option>
               ))}
             </select>
           </div>
 
-          <div>
-            <label className="text-[12px] text-slate-400 mb-1.5 block">팀 코드</label>
-            <input
-              type="text"
-              value={teamCode}
-              onChange={e => setTeamCode(e.target.value.toUpperCase())}
-              placeholder="운영진에게 받은 코드 입력"
-              maxLength={10}
-              className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-4 py-3.5
-                text-white text-[15px] placeholder-slate-600 tracking-widest
-                focus:outline-none focus:border-red-500 transition-colors"
-            />
-            <p className="text-[11px] text-slate-600 mt-1.5">* 운영진에게 배부된 팀 코드를 입력하세요</p>
-          </div>
 
           {error && (
             <p className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
