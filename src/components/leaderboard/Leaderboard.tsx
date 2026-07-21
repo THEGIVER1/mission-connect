@@ -324,7 +324,7 @@ const MissionTab: React.FC = () => {
 // ─────────────────────────────────────────────────────────────────
 // 탭: 개인 기여 (Mock)
 // ─────────────────────────────────────────────────────────────────
-const INDIVIDUAL_MOCK = [
+const INDIVIDUAL_MOCK_DISABLED = [
   { rank:1, name:'김지훈',  team:'알파 3팀', pts:820, missions:4, emoji:'🔥' },
   { rank:2, name:'이수진',  team:'감마 2팀', pts:780, missions:4, emoji:'💡' },
   { rank:3, name:'박민준',  team:'베타 1팀', pts:750, missions:3, emoji:'🤝' },
@@ -335,10 +335,34 @@ const INDIVIDUAL_MOCK = [
   { rank:8, name:'윤지아',  team:'엡실론 2팀',pts:580,missions:2, emoji:'🤝' },
 ];
 
-const IndividualTab: React.FC = () => (
+const IndividualTab: React.FC = () => {
+  const [individuals, setIndividuals] = React.useState<{rank:number,name:string,team:string,pts:number,missions:number,emoji:string}[]>([]);
+  const EMOJIS = ['🔥','💡','🤝','⚖️','🏆','🌟','💪','🎯'];
+
+  React.useEffect(() => {
+    const participantsRef = ref(rtdb, 'sessions/trekking2026/participants');
+    const unsubscribe = onValue(participantsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+      const list = Object.values(data as Record<string, any>)
+        .map((p: any, i: number) => ({
+          name: p.name ?? '참가자',
+          team: p.teamName ?? '',
+          pts: Number(p.score ?? 0),
+          missions: Number(p.missionsCompleted ?? 0),
+          emoji: EMOJIS[i % EMOJIS.length],
+        }))
+        .sort((a, b) => b.pts - a.pts)
+        .map((p, i) => ({ ...p, rank: i + 1 }));
+      setIndividuals(list);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  return (
   <div className="px-4 pb-28 space-y-2 pt-2">
     <p className="text-[11px] text-slate-500 text-center mb-3">개인 미션 기여 점수 기준</p>
-    {INDIVIDUAL_MOCK.map((p) => (
+    {individuals.map((p) => (
       <div key={p.rank}
            className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl border
              ${p.name === '김지훈' ? 'bg-red-500/8 border-red-500/30' : 'bg-[#1A2235] border-white/6'}`}>
