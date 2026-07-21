@@ -9,11 +9,11 @@ const COMPANIES = [
 ];
 
 const TEAMS = [
-  { id: 'alpha', name: '알파팀', shortCode: 'A', color: '#E31837', emoji: '🔴' },
-  { id: 'beta',  name: '베타팀', shortCode: 'B', color: '#2980B9', emoji: '🔵' },
-  { id: 'gamma', name: '감마팀', shortCode: 'G', color: '#27AE60', emoji: '🟢' },
-  { id: 'delta', name: '델타팀', shortCode: 'D', color: '#F39C12', emoji: '🟡' },
-  { id: 'omega', name: '오메가팀', shortCode: 'O', color: '#8E44AD', emoji: '🟣' },
+  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🔴' },
+  { id: 'team2', name: '2조', shortCode: '2', color: '#2980B9', emoji: '🔵' },
+  { id: 'team3', name: '3조', shortCode: '3', color: '#27AE60', emoji: '🟢' },
+  { id: 'team4', name: '4조', shortCode: '4', color: '#F39C12', emoji: '🟡' },
+  { id: 'team5', name: '5조', shortCode: '5', color: '#8E44AD', emoji: '🟣' },
 ];
 
 type Step = 'info' | 'team';
