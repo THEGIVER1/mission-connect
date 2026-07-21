@@ -70,6 +70,12 @@ const TeamSelect: React.FC = () => {
       {/* 헤더 */}
       <div className="relative bg-[#13192A] px-5 pt-12 pb-8 text-center">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
+        <img 
+          src="/src/assets/Doosan_Logo.jpg" 
+          alt="DOOSAN" 
+          className="h-8 mb-3 mx-auto"
+          style={{ filter: 'brightness(0) invert(1)' }}
+        />
         <h1 className="font-bebas text-4xl tracking-widest text-white leading-none mb-1">
           MISSION<span className="text-red-500">.</span>CONNECT
         </h1>
