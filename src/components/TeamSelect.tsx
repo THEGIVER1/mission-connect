@@ -32,7 +32,7 @@ const TeamSelect: React.FC = () => {
   const handleNextStep = () => {
     if (!name.trim()) { setError('이름을 입력해주세요'); return; }
     if (!company) { setError('소속를 선택해주세요'); return; }
-    if (!teamCode.trim()) { setError('팀 코드를 입력해주세요'); return; }
+
     setError('');
     setStep('team');
   };
