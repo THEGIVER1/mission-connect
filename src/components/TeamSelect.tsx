@@ -4,14 +4,8 @@ import { useAppStore } from '../store/useAppStore';
 import { MOCK_MISSIONS } from '../lib/mockData';
 
 const COMPANIES = [
-  '두산에너빌리티',
-  '두산밥캣',
-  '두산퓨얼셀',
-  '두산로보틱스',
   '㈜두산',
-  '오리콤',
-  '두산연강원',
-  '기타',
+  '두산경영연구원',
 ];
 
 const TEAMS = [
