@@ -70,10 +70,8 @@ const TeamSelect: React.FC = () => {
       {/* 헤더 */}
       <div className="relative bg-[#13192A] px-5 pt-12 pb-8 text-center">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
-        <p style={{ color: '#005EB8', fontSize: '16px', fontWeight: '900', letterSpacing: '4px', fontStyle: 'italic', marginBottom: '4px' }}>DOOSAN</p>
-        <h1 className="font-bebas text-5xl tracking-widest text-white leading-none mb-4">
-          트레킹
-        </h1>
+        <p style={{ color: '#005EB8', fontSize: '48px', fontWeight: '900', letterSpacing: '4px', fontStyle: 'italic', marginBottom: '4px' }}>DOOSAN</p>
+        <p style={{ color: 'white', fontSize: '14px', letterSpacing: '6px' }}>TREKKING</p>
         <div className="flex items-center justify-center gap-2">
           <span className="text-[11px] bg-[#1A2235] border border-white/8 rounded-full px-3 py-1 text-slate-400">
             🏔️ 두산 트레킹
