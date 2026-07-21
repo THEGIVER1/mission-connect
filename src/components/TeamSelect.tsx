@@ -74,7 +74,7 @@ const TeamSelect: React.FC = () => {
           src="/assets/Doosan_Logo.jpg" 
           alt="DOOSAN" 
           className="h-8 mb-3 mx-auto"
-          style={{ filter: 'brightness(0) invert(1)' }}
+          style={{ filter: 'brightness(0) invert(1)', mixBlendMode: 'screen' }}
         />
         <h1 className="font-bebas text-4xl tracking-widest text-white leading-none mb-1">
           MISSION<span className="text-red-500">.</span>CONNECT
