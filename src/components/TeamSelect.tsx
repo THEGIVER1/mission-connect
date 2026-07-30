@@ -53,7 +53,7 @@ const TeamSelect: React.FC = () => {
       totalMissions: MOCK_MISSIONS.length,
       lastActivity: new Date(),
       status: 'active',
-    });
+    }, name.trim(), company);
 
     navigate('/');
   };

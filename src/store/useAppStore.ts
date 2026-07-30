@@ -26,6 +26,8 @@ const freshMissions = () => MOCK_MISSIONS.map((m, i) => ({
 export const useAppStore = create<AppStore>((set) => ({
   session:    MOCK_SESSION,
   myTeam:     null,
+  participantName: null as string | null,
+  participantCompany: null as string | null,
   myLocation: null,
   teams:      MOCK_TEAMS,
   missions:   freshMissions(),
@@ -35,9 +37,11 @@ export const useAppStore = create<AppStore>((set) => ({
   isAdmin:    false,
 
   // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
-  selectTeam: (team) =>
+  selectTeam: (team, name?: string, company?: string) =>
     set((s) => ({
       myTeam:     team,
+      participantName: name ?? s.participantName,
+      participantCompany: company ?? s.participantCompany,
       myLocation: null,
       missions:   freshMissions(),
       coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
