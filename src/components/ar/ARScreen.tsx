@@ -165,7 +165,8 @@ const ARScreen: React.FC = () => {
       setMessage('위치 정보를 가져오지 못했습니다. 위치 권한을 확인해 주세요.');
       return;
     }
-    if (distanceToSelected > AR_RADIUS_METERS) {
+    const radius = AR_RADIUS_OVERRIDE[selectedTarget?.id ?? ''] ?? AR_RADIUS_METERS;
+    if (distanceToSelected > radius) {
       setMessage(`해당 위치로 이동하세요 (약 ${distanceToSelected}m)`);
       return;
     }
