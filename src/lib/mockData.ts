@@ -8,16 +8,16 @@ export const MOCK_SESSION: Session = {
   startedAt: new Date(Date.now() - 90 * 60 * 1000),
   endsAt:    new Date(Date.now() + 134 * 60 * 1000),
   isLive: true,
-  teams: ['alpha','beta','gamma','delta','omega'],
+  teams: ['team1','team2','team3','team4','team5'],
 };
 
 // ─── 5개 팀 ────────────────────────────────────────────────────
 export const MOCK_TEAMS: Team[] = [
-  { id:'alpha', name:'알파팀', shortCode:'A', color:'#E31837', memberCount:10, score:0, rank:1, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'beta',  name:'베타팀', shortCode:'B', color:'#2980B9', memberCount:10, score:0, rank:2, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'gamma', name:'감마팀', shortCode:'G', color:'#27AE60', memberCount:10, score:0, rank:3, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'delta', name:'델타팀', shortCode:'D', color:'#F39C12', memberCount:10, score:0, rank:4, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'omega', name:'오메가팀', shortCode:'O', color:'#8E44AD', memberCount:10, score:0, rank:5, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
+  { id:'team1', name:'1조', shortCode:'1', color:'#E31837', memberCount:10, score:0, rank:1, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
+  { id:'team2', name:'2조', shortCode:'2', color:'#2980B9', memberCount:10, score:0, rank:2, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
+  { id:'team3', name:'3조', shortCode:'3', color:'#27AE60', memberCount:10, score:0, rank:3, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
+  { id:'team4', name:'4조', shortCode:'4', color:'#F39C12', memberCount:10, score:0, rank:4, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
+  { id:'team5', name:'5조', shortCode:'5', color:'#8E44AD', memberCount:10, score:0, rank:5, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
 ];
 
 // ─── 미션 포스트 ───────────────────────────────────────────────
@@ -92,20 +92,20 @@ export const MOCK_MISSIONS: Mission[] = [
 // ─── 긴급 신고 ─────────────────────────────────────────────────
 export const MOCK_ALERTS: Alert[] = [
   {
-    id: 'al1', level: 'sos', teamId: 'alpha', teamName: '알파팀', participantName: '김지훈',
+    id: 'al1', level: 'sos', teamId: 'team1', teamName: '1조', participantName: '김지훈',
     message: '참가자가 산책로에서 발목을 삐었습니다. P2 포스트 근처에 있습니다.',
     location: { lat: 37.5408, lng: 127.1382 }, locationLabel: '산책로 (P2 인근)',
     deviceInfo: 'GPS 정확도 양호',
     createdAt: new Date(Date.now() - 1 * 60 * 1000), status: 'pending',
   },
   {
-    id: 'al2', level: 'warning', teamId: 'beta', teamName: '베타팀',
+    id: 'al2', level: 'warning', teamId: 'team2', teamName: '2조',
     message: 'P3 포스트 GPS 인증이 안 됩니다.',
     locationLabel: '저수지 입구 (P3)', missionId: 'm3',
     createdAt: new Date(Date.now() - 4 * 60 * 1000), status: 'pending',
   },
   {
-    id: 'al3', level: 'info', teamId: 'gamma', teamName: '감마팀',
+    id: 'al3', level: 'info', teamId: 'team3', teamName: '3조',
     message: '매칭 미션에서 상대방 응답이 없습니다.',
     deviceInfo: 'iOS 17 · Safari', missionId: 'm3',
     createdAt: new Date(Date.now() - 11 * 60 * 1000), status: 'pending',
