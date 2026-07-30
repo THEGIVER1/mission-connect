@@ -23,6 +23,7 @@ const AR_TARGETS: ArTarget[] = [
   { id: 'prayerhouse', name: '기도원', emoji: '⛪', points: 150, lat: 37.543406, lng: 127.149597 },
 ];
 const AR_RADIUS_METERS = 30;
+const AR_RADIUS_OVERRIDE: Record<string, number> = { dusanhibiscus: 999999 };
 
 type GeoCoord = { lat: number; lng: number };
 
@@ -128,7 +129,7 @@ const ARScreen: React.FC = () => {
     !!camReady &&
     !!selectedTarget &&
     distanceToSelected !== null &&
-    distanceToSelected <= AR_RADIUS_METERS &&
+    distanceToSelected <= (AR_RADIUS_OVERRIDE[selectedTarget?.id ?? ''] ?? AR_RADIUS_METERS) &&
     !busyTargetId;
 
   useEffect(() => {
