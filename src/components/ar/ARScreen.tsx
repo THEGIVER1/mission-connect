@@ -240,6 +240,9 @@ const ARScreen: React.FC = () => {
             arFoundCount: nextFoundCount,
             arPoints: nextTotalPoints,
             arUpdatedAt: nowIso,
+            score: nextTotalPoints,
+            teamId: myTeam?.id ?? '',
+            teamName: myTeam?.name ?? '',
           }
         );
       } catch (firebaseErr) {
