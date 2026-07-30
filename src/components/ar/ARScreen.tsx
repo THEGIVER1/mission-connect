@@ -114,9 +114,11 @@ const ARScreen: React.FC = () => {
     [foundMap]
   );
 
-  const participantId = myTeam?.id
-    ? `${myTeam.id}_${Date.now()}`
-    : `anonymous_${Date.now()}`;
+  const participantName = useAppStore((s) => s.participantName);
+  const participantCompany = useAppStore((s) => s.participantCompany);
+  const participantId = participantName && participantCompany
+    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
+    : myTeam?.id ?? 'anonymous';
   const selectedTarget = useMemo(
     () => AR_TARGETS.find((target) => target.id === selectedTargetId) ?? null,
     [selectedTargetId]
@@ -217,9 +219,10 @@ const ARScreen: React.FC = () => {
           0
         );
 
-        try {
-        await set(
-          ref(rtdb, `sessions/trekking2026/participants/${participantId}/arFinds/${target.id}`),
+        try { // Firebase 저장 시도 (실패해도 완료 처리)
+        await Promise.race([
+          set(
+            ref(rtdb, `sessions/trekking2026/participants/${participantId}/arFinds/${target.id}`),
           {
             id: target.id,
             name: target.name,
@@ -228,7 +231,9 @@ const ARScreen: React.FC = () => {
             found: true,
             foundAt: nowIso,
           }
-        );
+          ),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+        ]);
         await update(
           ref(rtdb, `sessions/trekking2026/participants/${participantId}`),
           {
