@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { ref, set, serverTimestamp } from 'firebase/database';
+import { ref, set } from 'firebase/database';
 import { rtdb } from '../lib/firebase';
 import { MOCK_MISSIONS } from '../lib/mockData';
 
@@ -52,7 +52,7 @@ const TeamSelect: React.FC = () => {
         teamName: team.name,
         score: 0,
         missionsCompleted: 0,
-        joinedAt: serverTimestamp(),
+        joinedAt: new Date().toISOString(),
         status: 'active',
       });
     } catch (e) {
