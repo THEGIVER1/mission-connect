@@ -1,39 +1,17 @@
-// Firebase SDK 없이 REST API로 직접 통신
-export const DB_URL = 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+import { initializeApp } from 'firebase/app';
+import { getDatabase } from 'firebase/database';
 
-export const rtdb = {
-  ref: (path: string) => `${DB_URL}/${path}.json`,
+const firebaseConfig = {
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL:       import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  storageBucket:     'doosan-teambuilding.firebasestorage.app',
 };
 
-export const ref = (db: any, path: string) => path;
-
-export const set = async (path: string, data: any) => {
-  const res = await fetch(`${DB_URL}/${path}.json`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
-  return res.json();
-};
-
-export const update = async (path: string, data: any) => {
-  const res = await fetch(`${DB_URL}/${path}.json`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
-  return res.json();
-};
-
-export const onValue = (path: string, callback: (snapshot: any) => void) => {
-  const url = `${DB_URL}/${path}.json`;
-  const fetchData = async () => {
-    const res = await fetch(url);
-    const data = await res.json();
-    callback({ val: () => data });
-  };
-  fetchData();
-  const interval = setInterval(fetchData, 3000);
-  return () => clearInterval(interval);
-};
-
+const app = initializeApp(firebaseConfig);
+export const rtdb = getDatabase(app);
 export const auth = null;
-export default {};
+export default app;
