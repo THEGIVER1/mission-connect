@@ -232,7 +232,7 @@ const ARScreen: React.FC = () => {
             foundAt: nowIso,
           }
           ),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
         ]);
         await update(
           ref(rtdb, `sessions/trekking2026/participants/${participantId}`),

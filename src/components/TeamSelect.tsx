@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
+import { ref, set } from 'firebase/database';
+import { rtdb } from '../lib/firebase';
 
 import { MOCK_MISSIONS } from '../lib/mockData';
 
@@ -38,9 +40,24 @@ const TeamSelect: React.FC = () => {
     setStep('team');
   };
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
     if (!selectedTeam) return;
     const team = TEAMS.find(t => t.id === selectedTeam)!;
+    const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
+    try {
+      await set(ref(rtdb, `sessions/trekking2026/participants/${participantId}`), {
+        name: name.trim(),
+        company,
+        teamId: team.id,
+        teamName: team.name,
+        score: 0,
+        missionsCompleted: 0,
+        joinedAt: new Date().toISOString(),
+        status: 'active',
+      });
+    } catch (e) {
+      console.warn('입장 저장 실패:', e);
+    }
 
     selectTeam({
       id: team.id,
