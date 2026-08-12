@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { ref, set, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
+import { ref, set, update } from 'firebase/database';
+import { rtdb } from '../../lib/firebase';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
 
