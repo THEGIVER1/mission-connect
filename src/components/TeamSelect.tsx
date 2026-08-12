@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { ref, set } from 'firebase/database';
-import { rtdb } from '../lib/firebase';
 
 import { MOCK_MISSIONS } from '../lib/mockData';
 
