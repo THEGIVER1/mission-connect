@@ -8,7 +8,6 @@ const firebaseConfig = {
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
-  // storageBucket: 'doosan-teambuilding.firebasestorage.app', // 나중에 Storage 사용 시 주석 해제
 };
 
 const app = initializeApp(firebaseConfig);
