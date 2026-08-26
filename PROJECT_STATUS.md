@@ -21,7 +21,7 @@
 ## 2. 기술 스택 및 아키텍처
 - **프론트엔드**: React 18 + TypeScript + Vite + Tailwind CSS
 - **상태 관리**: Zustand (`src/store/useAppStore.ts`)
-- **데이터베이스**: Firebase Realtime Database (REST API 연동 방식 채택)
+- **데이터베이스**: Firebase Realtime Database (REST API 연동 방식 적용)
 - **배포 플랫폼**: Vercel
 - **개발 환경**: Windows Local (Antigravity AI / Cursor) & GitHub Codespaces
 
@@ -60,27 +60,29 @@ VITE_KAKAO_MAP_KEY=
   - DOOSAN 로고 + 트레킹 타이틀 UI
   - 소속 선택: ㈜두산, 두산경영연구원
   - 팀 선택: 1조 ~ 5조
+  - Firebase REST API 저장 (PATCH) 및 재입장 시 기존 점수 보존
 - [x] **AR 보물찾기 (`ARScreen.tsx`)**
   - 6개 포인트 (두산 무궁화, 배나무, 감나무, 블루베리, 두릅나무, 기도원)
   - GPS 30m 반경 내 캡처 활성화 & 캡처 완료 처리
+  - Firebase Realtime Database REST API 연동 및 기존 발견 기록 자동 로딩
+  - 점수 획득 시 Zustand 스토어 및 Firebase RTDB 즉시 동기화
 - [x] **실시간 리더보드 (`Leaderboard.tsx`)**
-  - 팀 순위 탭 (1조~5조 실시간)
+  - 팀 순위 탭 (1조~5조 실시간 자동 합산 집계 및 전체 5팀 랭킹 표시)
   - 미션별 탭
-  - 개인 기여 탭 (Firebase 실시간 연동)
+  - 개인 기여 탭 (REST API 초기 조회 + RTDB 리스너 연동, 로그인 사용자 '나' 배지 표시)
 - [x] **네비게이션 & 대시보드 (`Dashboard.tsx`)**
   - 하단 고정 메뉴: 홈 / 미션지도 / 보물찾기 / 순위 / 내정보
 - [x] **운영자 어드민 기본 화면 (`AdminScreen.tsx`)**
 
 ---
 
-## 5. 현재 이슈 및 해결 방향 🔴
-### 1) Firebase Storage DNS 오류
-- **증상**: `firebasestorage.app` `ERR_NAME_NOT_RESOLVED`
-- **원인**: Firebase SDK 초기화 시 Storage 도메인에 자동 연결 시도
-- **영향**: AR 캡처 점수 및 입장 저장이 Firebase에 온전히 반영되지 않음
-- **해결 방안**:
-  - `src/lib/firebase.ts`에서 storageBucket 완전 제거
-  - 입장 저장 및 AR 캡처 데이터 전송 시 Firebase SDK 대신 **fetch 기반 REST API (`https://[DB_URL]/sessions/trekking2026/...json`)** 로 전환
+## 5. 해결된 이슈 & 조치 사항 🟢
+### 1) AR 캡처 시 리더보드 점수 미반영 오류 해결
+- **원인**: `ARScreen.tsx`에서 Firebase SDK 함수(`set`, `ref`, `update`)가 import 되지 않아 발생한 `ReferenceError` 및 점수 스토어 미동기화
+- **조치 완료**:
+  - `ARScreen.tsx`에 `fetch REST API`를 적용하여 `PUT/PATCH`로 Firebase RTDB에 안전하게 점수 및 AR 발견 기록 저장
+  - 점수 획득 시 `useAppStore`의 `updateTeamScore` 호출하여 로컬 상태 즉각 반영
+  - `Leaderboard.tsx`에서 모든 5개 팀 기본 초기화 및 REST API 백업 조회를 추가하여 100% 실시간 순위 반영
 
 ---
 
@@ -96,8 +98,10 @@ sessions/
         │           ├── teamName: "1조"
         │           ├── score: 250
         │           ├── missionsCompleted: 2
+        │           ├── arFoundCount: 2
+        │           ├── arPoints: 250
         │           └── arFinds/
-        │                 └── {targetId}: { timestamp, score, targetName }
+        │                 └── {targetId}: { id, name, emoji, points, found, foundAt }
         ├── teams/
         │     └── {teamId}/
         │           ├── totalScore: 1250
@@ -153,10 +157,10 @@ sessions/
 
 ## 9. 작업 로드맵 (체크리스트)
 
-### 🚨 긴급 과제 (Phase 1)
-- [ ] `src/components/TeamSelect.tsx` - 입장 시 fetch REST API 저장 완벽 적용 및 에러 핸들링
-- [ ] `src/components/ar/ARScreen.tsx` - AR 캡처 시 fetch REST API 저장 및 중복 획득 방지
-- [ ] 리더보드 실시간 점수 반영 및 동기화 검증
+### 🚨 긴급 과제 (Phase 1 - 완료 ✅)
+- [x] `src/components/TeamSelect.tsx` - 입장 시 fetch REST API 저장 완벽 적용 및 에러 핸들링
+- [x] `src/components/ar/ARScreen.tsx` - AR 캡처 시 fetch REST API 저장 및 중복 획득 방지
+- [x] 리더보드 실시간 점수 반영 및 동기화 검증
 
 ### 🚀 기능 개발 (Phase 2)
 - [ ] P3 매칭 기능 (고민 입력 → 타 팀/타 자회사 담당자 자동 매칭 알고리즘)
