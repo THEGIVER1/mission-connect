@@ -2,8 +2,9 @@
 
 > **[중요] 개발 연속성 및 인수인계 규칙 (Development Context Handover Rules)**
 > 1. **문서 동기화**: 새로운 기능 추가, 버그 수정, 구조 변경 시 반드시 이 문서(`PROJECT_STATUS.md`)의 상태(완료/이슈/남은 작업)를 최신화합니다.
-> 2. **Git 형상 관리**: 코드 커밋 시 `PROJECT_STATUS.md`를 소스코드와 함께 커밋(`git add . && git commit && git push`)하여, 로컬/Codespaces/어떤 AI 에이전트 환경에서도 즉시 맥락을 이어받을 수 있도록 유지합니다.
-> 3. **환경 독립성**: Windows 로컬 터미널, GitHub Codespaces, Mac/Linux 어디서든 `npm install && npm run dev`로 동일하게 개발할 수 있도록 설정합니다.
+> 2. **자동 커밋 & 푸시 (Autonomous Commits & Push)**: 유의미한 작업 단위(컴포넌트 수정, 버그 해결, 기능 완료 등)마다 AI 에이전트가 코드와 `PROJECT_STATUS.md`를 묶어 즉시 자동으로 Git Commit & Push(`git add . && git commit -m "..." && git push`)를 실행합니다.
+> 3. **컨텍스트 보존**: 어디서든 `git pull`만 받으면 로컬/Codespaces/어떤 AI 에이전트 환경에서도 즉시 100% 동일하게 작업을 이어받을 수 있도록 유지합니다.
+> 4. **환경 독립성**: Windows 로컬 터미널, GitHub Codespaces, Mac/Linux 어디서든 `npm install && npm run dev`로 동일하게 개발할 수 있도록 설정합니다.
 
 ---
 
