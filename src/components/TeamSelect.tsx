@@ -42,29 +42,60 @@ const TeamSelect: React.FC = () => {
     if (!selectedTeam) return;
     const team = TEAMS.find(t => t.id === selectedTeam)!;
     const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
+    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+
     try {
-      await fetch(`https://doosan-teambuilding-default-rtdb.firebaseio.com/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-        method: 'PUT',
+      // 기존 참가자 데이터 확인 (재입장 시 점수 보존)
+      const checkRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
+      const existing = checkRes.ok ? await checkRes.json() : null;
+      const initialScore = Number(existing?.score ?? 0);
+      const initialCompleted = Number(existing?.missionsCompleted ?? 0);
+
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), company, teamId: team.id, teamName: team.name, score: 0, missionsCompleted: 0, joinedAt: new Date().toISOString(), status: 'active' }),
+        body: JSON.stringify({
+          name: name.trim(),
+          company,
+          teamId: team.id,
+          teamName: team.name,
+          score: initialScore,
+          missionsCompleted: initialCompleted,
+          joinedAt: existing?.joinedAt ?? new Date().toISOString(),
+          status: 'active'
+        }),
       });
+
+      selectTeam({
+        id: team.id,
+        name: team.name,
+        shortCode: team.shortCode,
+        color: team.color,
+        memberCount: 1,
+        score: initialScore,
+        rank: TEAMS.indexOf(team) + 1,
+        missionsCompleted: initialCompleted,
+        totalMissions: MOCK_MISSIONS.length,
+        lastActivity: new Date(),
+        status: 'active',
+      }, name.trim(), company);
     } catch (e) {
       console.warn('입장 저장 실패:', e);
+      selectTeam({
+        id: team.id,
+        name: team.name,
+        shortCode: team.shortCode,
+        color: team.color,
+        memberCount: 1,
+        score: 0,
+        rank: TEAMS.indexOf(team) + 1,
+        missionsCompleted: 0,
+        totalMissions: MOCK_MISSIONS.length,
+        lastActivity: new Date(),
+        status: 'active',
+      }, name.trim(), company);
     }
 
-    selectTeam({
-      id: team.id,
-      name: team.name,
-      shortCode: team.shortCode,
-      color: team.color,
-      memberCount: 1,
-      score: 0,
-      rank: TEAMS.indexOf(team) + 1,
-      missionsCompleted: 0,
-      totalMissions: MOCK_MISSIONS.length,
-      lastActivity: new Date(),
-      status: 'active',
-    }, name.trim(), company);
     navigate('/');
   };
 

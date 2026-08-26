@@ -336,25 +336,37 @@ const INDIVIDUAL_MOCK_DISABLED = [
 ];
 
 const IndividualTab: React.FC = () => {
+  const participantName = useAppStore((s) => s.participantName);
   const [individuals, setIndividuals] = React.useState<{rank:number,name:string,team:string,pts:number,missions:number,emoji:string}[]>([]);
   const EMOJIS = ['🔥','💡','🤝','⚖️','🏆','🌟','💪','🎯'];
 
   React.useEffect(() => {
-    const participantsRef = ref(rtdb, 'sessions/trekking2026/participants');
-    const unsubscribe = onValue(participantsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
+    const processData = (data: any) => {
+      if (!data || typeof data !== 'object') return;
       const list = Object.values(data as Record<string, any>)
         .map((p: any, i: number) => ({
           name: p.name ?? '참가자',
           team: p.teamName ?? '',
           pts: Number(p.score ?? 0),
-          missions: Number(p.missionsCompleted ?? 0),
+          missions: Number(p.missionsCompleted ?? 0) + Number(p.arFoundCount ?? 0),
           emoji: EMOJIS[i % EMOJIS.length],
         }))
         .sort((a, b) => b.pts - a.pts)
         .map((p, i) => ({ ...p, rank: i + 1 }));
       setIndividuals(list);
+    };
+
+    // 1. Initial REST API Fetch
+    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+    fetch(`${dbUrl}/sessions/trekking2026/participants.json`)
+      .then((r) => r.json())
+      .then(processData)
+      .catch((err) => console.warn('리더보드 개인 데이터 조회 실패:', err));
+
+    // 2. Realtime listener
+    const participantsRef = ref(rtdb, 'sessions/trekking2026/participants');
+    const unsubscribe = onValue(participantsRef, (snapshot) => {
+      processData(snapshot.val());
     });
     return () => unsubscribe();
   }, []);
@@ -362,10 +374,12 @@ const IndividualTab: React.FC = () => {
   return (
   <div className="px-4 pb-28 space-y-2 pt-2">
     <p className="text-[11px] text-slate-500 text-center mb-3">개인 미션 기여 점수 기준</p>
-    {individuals.map((p) => (
+    {individuals.map((p) => {
+      const isMe = !!participantName && p.name.trim() === participantName.trim();
+      return (
       <div key={p.rank}
            className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl border
-             ${p.name === '김지훈' ? 'bg-red-500/8 border-red-500/30' : 'bg-[#1A2235] border-white/6'}`}>
+             ${isMe ? 'bg-red-500/8 border-red-500/30' : 'bg-[#1A2235] border-white/6'}`}>
         <span className={`font-bebas text-xl w-7 text-center
           ${p.rank === 1 ? 'text-amber-400' : p.rank === 2 ? 'text-slate-300' : p.rank === 3 ? 'text-amber-700' : 'text-slate-500'}`}>
           {p.rank}
@@ -376,10 +390,10 @@ const IndividualTab: React.FC = () => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className={`text-[14px] font-bold ${p.name === '김지훈' ? 'text-red-400' : 'text-white'}`}>
+            <span className={`text-[14px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
               {p.name}
             </span>
-            {p.name === '김지훈' && (
+            {isMe && (
               <span className="text-[9px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">나</span>
             )}
           </div>
@@ -391,7 +405,8 @@ const IndividualTab: React.FC = () => {
           </span>
         </div>
       </div>
-    ))}
+      );
+    })}
   </div>
   );
 };
@@ -408,62 +423,56 @@ const Leaderboard: React.FC = () => {
   const [realtimeTeams, setRealtimeTeams] = useState<Team[]>(teamsFromStore);
 
   React.useEffect(() => {
-    const participantsRef = ref(rtdb, 'sessions/trekking2026/participants');
-
-    const unsubscribe = onValue(participantsRef, (snapshot) => {
-      const participants = snapshot.val() as Record<string, ParticipantRealtime> | null;
-      if (!participants) {
-        const fallback = [...teamsFromStore]
-          .sort((a, b) => b.score - a.score)
-          .map((team, i) => ({ ...team, rank: i + 1 }));
-        setRealtimeTeams(fallback);
-        return;
-      }
-
-      const teamBaseMap = new Map(teamsFromStore.map((team) => [team.id, team]));
+    const processParticipants = (participants: Record<string, ParticipantRealtime> | null) => {
       const aggregated = new Map<string, Team>();
-
-      Object.values(participants).forEach((participant) => {
-        if (!participant?.teamId) return;
-        const teamId = participant.teamId;
-        const baseTeam = teamBaseMap.get(teamId);
-        const current = aggregated.get(teamId);
-        const participantScore = Number(participant.score ?? 0);
-        const participantMissions = Number(participant.missionsCompleted ?? 0);
-        const status = participant.status ?? current?.status ?? baseTeam?.status ?? 'active';
-
-        if (!current) {
-          aggregated.set(teamId, {
-            id: teamId,
-            name: participant.teamName ?? baseTeam?.name ?? teamId.toUpperCase(),
-            shortCode: baseTeam?.shortCode ?? teamId.slice(0, 1).toUpperCase(),
-            color: baseTeam?.color ?? '#4A5568',
-            memberCount: 1,
-            score: participantScore,
-            rank: 0,
-            missionsCompleted: participantMissions,
-            totalMissions: baseTeam?.totalMissions ?? 0,
-            lastActivity: new Date(),
-            status,
-          });
-          return;
-        }
-
-        aggregated.set(teamId, {
-          ...current,
-          memberCount: current.memberCount + 1,
-          score: current.score + participantScore,
-          missionsCompleted: current.missionsCompleted + participantMissions,
-          status,
-          lastActivity: new Date(),
+      teamsFromStore.forEach((team) => {
+        aggregated.set(team.id, {
+          ...team,
+          score: 0,
+          memberCount: 0,
+          missionsCompleted: 0,
         });
       });
+
+      if (participants && typeof participants === 'object') {
+        Object.values(participants).forEach((participant) => {
+          if (!participant?.teamId) return;
+          const teamId = participant.teamId;
+          const current = aggregated.get(teamId);
+          const participantScore = Number(participant.score ?? 0);
+          const participantMissions = Number(participant.missionsCompleted ?? 0);
+
+          if (current) {
+            aggregated.set(teamId, {
+              ...current,
+              name: participant.teamName ?? current.name,
+              memberCount: current.memberCount + 1,
+              score: current.score + participantScore,
+              missionsCompleted: current.missionsCompleted + participantMissions,
+              lastActivity: new Date(),
+            });
+          }
+        });
+      }
 
       const rankedTeams = Array.from(aggregated.values())
         .sort((a, b) => b.score - a.score)
         .map((team, i) => ({ ...team, rank: i + 1 }));
 
       setRealtimeTeams(rankedTeams);
+    };
+
+    // 1. Initial REST API Fetch
+    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+    fetch(`${dbUrl}/sessions/trekking2026/participants.json`)
+      .then((r) => r.json())
+      .then(processParticipants)
+      .catch((err) => console.warn('리더보드 팀 데이터 조회 실패:', err));
+
+    // 2. Realtime listener
+    const participantsRef = ref(rtdb, 'sessions/trekking2026/participants');
+    const unsubscribe = onValue(participantsRef, (snapshot) => {
+      processParticipants(snapshot.val());
     });
 
     return () => unsubscribe();

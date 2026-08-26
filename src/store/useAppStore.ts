@@ -113,12 +113,17 @@ export const useAppStore = create<AppStore>((set) => ({
     })),
 
   updateTeamScore: (teamId, score) =>
-    set((s) => ({
-      teams: s.teams
+    set((s) => {
+      const updatedTeams = s.teams
         .map((t) => (t.id === teamId ? { ...t, score } : t))
         .sort((a, b) => b.score - a.score)
-        .map((t, i) => ({ ...t, rank: i + 1 })),
-    })),
+        .map((t, i) => ({ ...t, rank: i + 1 }));
+      const myTeamRank = updatedTeams.find((t) => t.id === s.myTeam?.id)?.rank ?? s.myTeam?.rank ?? 1;
+      return {
+        myTeam: s.myTeam && s.myTeam.id === teamId ? { ...s.myTeam, score, rank: myTeamRank } : s.myTeam ? { ...s.myTeam, rank: myTeamRank } : null,
+        teams: updatedTeams,
+      };
+    }),
 
   updateTeamStatus: (teamId, status) =>
     set((s) => ({

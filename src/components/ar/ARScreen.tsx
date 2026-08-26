@@ -114,9 +114,32 @@ const ARScreen: React.FC = () => {
 
   const participantName = useAppStore((s) => s.participantName);
   const participantCompany = useAppStore((s) => s.participantCompany);
+  const updateTeamScore = useAppStore((s) => s.updateTeamScore);
   const participantId = participantName && participantCompany
     ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
     : myTeam?.id ?? 'anonymous';
+
+  // 기존 발견한 AR 타겟 Firebase RTDB에서 불러오기
+  useEffect(() => {
+    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+    async function fetchExistingFinds() {
+      try {
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/arFinds.json`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          const map: Record<string, boolean> = {};
+          Object.keys(data).forEach((key) => {
+            if (data[key]?.found) map[key] = true;
+          });
+          setFoundMap(map);
+        }
+      } catch (e) {
+        console.warn('기존 AR 발견 데이터 조회 실패:', e);
+      }
+    }
+    fetchExistingFinds();
+  }, [participantId]);
   const selectedTarget = useMemo(
     () => AR_TARGETS.find((target) => target.id === selectedTargetId) ?? null,
     [selectedTargetId]
@@ -217,35 +240,46 @@ const ARScreen: React.FC = () => {
           0
         );
 
-        try { // Firebase 저장 시도 (실패해도 완료 처리)
-        await Promise.race([
-          set(
-            ref(rtdb, `sessions/trekking2026/participants/${participantId}/arFinds/${target.id}`),
-          {
-            id: target.id,
-            name: target.name,
-            emoji: target.emoji,
-            points: target.points,
-            found: true,
-            foundAt: nowIso,
-          }
-          ),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
-        ]);
-        await update(
-          ref(rtdb, `sessions/trekking2026/participants/${participantId}`),
-          {
-            arFoundCount: nextFoundCount,
-            arPoints: nextTotalPoints,
-            arUpdatedAt: nowIso,
-            score: nextTotalPoints,
-            teamId: myTeam?.id ?? '',
-            teamName: myTeam?.name ?? '',
-          }
-        );
-      } catch (firebaseErr) {
-        console.warn('Firebase 저장 실패 (오프라인):', firebaseErr);
-      }
+        // Firebase RTDB REST API 저장
+        const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+        try {
+          // 1. AR 발견 기록 저장
+          await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/arFinds/${target.id}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: target.id,
+              name: target.name,
+              emoji: target.emoji,
+              points: target.points,
+              found: true,
+              foundAt: nowIso,
+            }),
+          });
+
+          // 2. 참가자 총점 및 팀 점수 갱신
+          await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              arFoundCount: nextFoundCount,
+              arPoints: nextTotalPoints,
+              arUpdatedAt: nowIso,
+              score: nextTotalPoints,
+              teamId: myTeam?.id ?? '',
+              teamName: myTeam?.name ?? '',
+              name: participantName || participantId,
+              company: participantCompany || '',
+            }),
+          });
+        } catch (firebaseErr) {
+          console.warn('Firebase REST API 저장 실패 (오프라인):', firebaseErr);
+        }
+
+        // 3. 로컬 Zustand 스토어 점수 동기화
+        if (myTeam?.id) {
+          updateTeamScore(myTeam.id, nextTotalPoints);
+        }
 
         setFoundMap(nextFoundMap);
         setSelectedTargetId(null);
@@ -256,7 +290,7 @@ const ARScreen: React.FC = () => {
         setBusyTargetId(null);
       }
     },
-    [busyTargetId, camReady, canCaptureSelected, capturePhotoDataUrl, foundMap, participantId]
+    [busyTargetId, camReady, canCaptureSelected, capturePhotoDataUrl, foundMap, myTeam, participantCompany, participantId, participantName, updateTeamScore]
   );
 
   return (
