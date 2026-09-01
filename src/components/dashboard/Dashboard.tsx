@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { LiveBadge, SectionTitle, Card, PointsBadge, MissionStatusBadge, ScoreBar } from '../shared';
+import { ACTIVE_VENUE } from '../../config/workshopConfig';
 import type { Mission } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
@@ -33,10 +34,10 @@ const Header: React.FC = () => {
       {/* 이벤트 컨텍스트 칩 */}
       <div className="flex gap-2 mb-3">
         <span className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-[#1A2235] border border-white/8 rounded-full px-3 py-1">
-          ⚾ <strong className="text-white">두산경영연구원</strong>
+          🌲 <strong className="text-white">{ACTIVE_VENUE.venueName}</strong>
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-[#1A2235] border border-white/8 rounded-full px-3 py-1">
-          🧪 <strong className="text-white">HR 트레킹 워크샵</strong>
+          👥 <strong className="text-white">{ACTIVE_VENUE.eventName}</strong>
         </span>
       </div>
 

@@ -3,19 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 
 import { MOCK_MISSIONS } from '../lib/mockData';
+import { WORKSHOP_COMPANIES, WORKSHOP_TEAMS, ACTIVE_VENUE } from '../config/workshopConfig';
 
-const COMPANIES = [
-  '㈜두산',
-  '두산경영연구원',
-];
-
-const TEAMS = [
-  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🔴' },
-  { id: 'team2', name: '2조', shortCode: '2', color: '#2980B9', emoji: '🔵' },
-  { id: 'team3', name: '3조', shortCode: '3', color: '#27AE60', emoji: '🟢' },
-  { id: 'team4', name: '4조', shortCode: '4', color: '#F39C12', emoji: '🟡' },
-  { id: 'team5', name: '5조', shortCode: '5', color: '#8E44AD', emoji: '🟣' },
-];
+const COMPANIES = WORKSHOP_COMPANIES;
+const TEAMS = WORKSHOP_TEAMS;
 
 type Step = 'info' | 'team';
 
@@ -109,7 +100,7 @@ const TeamSelect: React.FC = () => {
         <p style={{ color: 'white', fontSize: '14px', letterSpacing: '6px', marginBottom: '8px' }}>TREKKING</p>
         <div className="flex items-center justify-center gap-2">
           <span className="text-[11px] bg-[#1A2235] border border-white/8 rounded-full px-3 py-1 text-slate-400">
-            🏔️ 두산 트레킹
+            🌲 {ACTIVE_VENUE.venueName} 트레킹
           </span>
           <span className="text-[11px] bg-[#1A2235] border border-white/8 rounded-full px-3 py-1 text-slate-400">
             👥 HR 담당자

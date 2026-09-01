@@ -3,25 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
 import { MissionStatusBadge, PointsBadge } from '../shared';
+import { ACTIVE_VENUE } from '../../config/workshopConfig';
 import type { Mission } from '../../types';
 
-// ─── 두산경영연구원 트레킹 포스트 위치 (GPS 좌표) ───────────────
-export const TREKKING_POSTS: Record<string, { lat: number; lng: number; label: string }> = {
-  m1: { lat: 37.5415, lng: 127.1368, label: '연구원 광장' },
-  m2: { lat: 37.5408, lng: 127.1382, label: '산책로 입구' },
-  m3: { lat: 37.5398, lng: 127.1390, label: '저수지 입구' },
-  m4: { lat: 37.5388, lng: 127.1398, label: '저수지 둘레길' },
-  m5: { lat: 37.5380, lng: 127.1385, label: '저수지 전망대' },
-};
+// ─── 트레킹 포스트 위치 (GPS 좌표) ───────────────────────────────
+export const TREKKING_POSTS: Record<string, { lat: number; lng: number; label: string }> =
+  ACTIVE_VENUE.posts.reduce((acc, p) => {
+    acc[p.id] = { lat: p.coords.lat, lng: p.coords.lng, label: p.locationLabel };
+    return acc;
+  }, {} as Record<string, { lat: number; lng: number; label: string }>);
 
 // ─── SVG 지도 내 포스트 위치 (픽셀) ────────────────────────────
-const POST_POS: Record<string, { cx: number; cy: number }> = {
-  m1: { cx: 155, cy: 60  },
-  m2: { cx: 240, cy: 120 },
-  m3: { cx: 260, cy: 200 },
-  m4: { cx: 280, cy: 275 },
-  m5: { cx: 200, cy: 310 },
-};
+const POST_POS: Record<string, { cx: number; cy: number }> =
+  ACTIVE_VENUE.posts.reduce((acc, p) => {
+    acc[p.id] = p.svgPos;
+    return acc;
+  }, {} as Record<string, { cx: number; cy: number }>);
 const MY_POS = { cx: 170, cy: 160 };
 
 const markerColor = (status: Mission['status']) => {
@@ -70,15 +67,15 @@ const TrekkingMap: React.FC<{
     <rect x="108" y="62" width="16" height="16" rx="2" fill="#3A5A8C" opacity=".8" />
     <rect x="130" y="62" width="16" height="16" rx="2" fill="#3A5A8C" opacity=".8" />
     <rect x="152" y="62" width="16" height="16" rx="2" fill="#3A5A8C" opacity=".8" />
-    <text x="140" y="30" textAnchor="middle" fontSize="8" fill="#7AB5E8" fontFamily="sans-serif" fontWeight="bold">두산경영연구원</text>
+    <text x="140" y="30" textAnchor="middle" fontSize="8" fill="#7AB5E8" fontFamily="sans-serif" fontWeight="bold">{ACTIVE_VENUE.venueName}</text>
 
-    {/* 저수지 */}
+    {/* 저수지 / 호수 */}
     <ellipse cx="215" cy="295" rx="80" ry="38" fill="#1A3A5C" stroke="#2980B9" strokeWidth="1.5" opacity=".9" />
     <ellipse cx="215" cy="295" rx="65" ry="28" fill="#1E4A70" opacity=".7" />
     {/* 물결 효과 */}
     <path d="M155 292 Q175 288 195 292 Q215 296 235 292 Q255 288 275 292" fill="none" stroke="#4A90C4" strokeWidth="1" opacity=".5" />
     <path d="M160 300 Q180 296 200 300 Q220 304 240 300 Q260 296 278 300" fill="none" stroke="#4A90C4" strokeWidth="1" opacity=".4" />
-    <text x="215" y="298" textAnchor="middle" fontSize="9" fill="#7AB5E8" fontFamily="sans-serif" fontWeight="bold">두산저수지</text>
+    <text x="215" y="298" textAnchor="middle" fontSize="9" fill="#7AB5E8" fontFamily="sans-serif" fontWeight="bold">{ACTIVE_VENUE.lakeOrLandmarkName}</text>
 
     {/* 나무들 */}
     {[[60,80],[80,140],[60,220],[90,280],[330,100],[350,180],[320,260],[340,300]].map(([x,y], i) => (
@@ -209,22 +206,56 @@ const PostCard: React.FC<{
 
 // ─── 도착 인증 버튼 ─────────────────────────────────────────────
 const ArrivalButton: React.FC<{ mission: Mission }> = ({ mission }) => {
-  const { completeMission, myLocation } = useAppStore();
+  const { completeMission, myLocation, myTeam, participantName, participantCompany, updateTeamScore } = useAppStore();
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
+
+  const participantId = participantName && participantCompany
+    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
+    : myTeam?.id ?? 'anonymous';
 
   const postCoords = TREKKING_POSTS[mission.id];
   const distance = myLocation && postCoords ? haversine(myLocation, postCoords) : Infinity;
   const inRange  = distance <= mission.radiusMeters;
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (!inRange || confirming || done) return;
     setConfirming(true);
-    setTimeout(() => {
-      completeMission(mission.id, mission.points);
-      setConfirming(false);
-      setDone(true);
-    }, 1000);
+
+    // 로컬 스토어 완료 처리
+    completeMission(mission.id, mission.points);
+
+    // Firebase RTDB REST API 저장
+    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+    const nowIso = new Date().toISOString();
+    try {
+      const checkRes = await fetch(`${dbUrl}/sessions/${ACTIVE_VENUE.sessionKey}/participants/${encodeURIComponent(participantId)}.json`);
+      const existing = checkRes.ok ? await checkRes.json() : null;
+      const prevScore = Number(existing?.score ?? 0);
+      const prevCompleted = Number(existing?.missionsCompleted ?? 0);
+      const nextScore = prevScore + mission.points;
+
+      await fetch(`${dbUrl}/sessions/${ACTIVE_VENUE.sessionKey}/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          score: nextScore,
+          missionsCompleted: prevCompleted + 1,
+          lastMissionAt: nowIso,
+          teamId: myTeam?.id ?? '',
+          teamName: myTeam?.name ?? '',
+        }),
+      });
+
+      if (myTeam?.id) {
+        updateTeamScore(myTeam.id, nextScore);
+      }
+    } catch (e) {
+      console.warn('GPS 미션 완료 저장 실패:', e);
+    }
+
+    setConfirming(false);
+    setDone(true);
   };
 
   if (done) return (
@@ -302,7 +333,7 @@ const MapScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               트레킹 <span className="text-red-500">MAP</span>
             </span>
-            <p className="text-[9px] text-slate-500 tracking-widest">두산경영연구원 · 두산저수지</p>
+            <p className="text-[9px] text-slate-500 tracking-widest">{ACTIVE_VENUE.mapLabel}</p>
           </div>
           <span className={`text-[11px] font-bold ${gpsColor}`}>{gpsLabel}</span>
         </div>

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
+import { ACTIVE_VENUE } from '../../config/workshopConfig';
 
 type ArTarget = {
   id: string;
@@ -12,16 +13,16 @@ type ArTarget = {
   lng: number;
 };
 
-const AR_TARGETS: ArTarget[] = [
-  { id: 'dusanhibiscus', name: '두산 무궁화', emoji: '🌸', points: 150, lat: 37.542577, lng: 127.149285 },
-  { id: 'pear', name: '배나무', emoji: '🍐', points: 100, lat: 37.542698, lng: 127.150787 },
-  { id: 'persimmon', name: '감나무', emoji: '🍊', points: 100, lat: 37.541608, lng: 127.152408 },
-  { id: 'blueberry', name: '블루베리', emoji: '🫐', points: 100, lat: 37.541951, lng: 127.15133 },
-  { id: 'aralia', name: '두릅나무', emoji: '🌿', points: 100, lat: 37.543243, lng: 127.15017 },
-  { id: 'prayerhouse', name: '기도원', emoji: '⛪', points: 150, lat: 37.543406, lng: 127.149597 },
-];
-const AR_RADIUS_METERS = 30;
-const AR_RADIUS_OVERRIDE: Record<string, number> = { dusanhibiscus: 999999 };
+const AR_TARGETS: ArTarget[] = ACTIVE_VENUE.explorationTargets.map((t) => ({
+  id: t.id,
+  name: t.name,
+  emoji: t.emoji,
+  points: t.points,
+  lat: t.coords.lat,
+  lng: t.coords.lng,
+}));
+const AR_RADIUS_METERS = 50;
+const AR_RADIUS_OVERRIDE: Record<string, number> = { [AR_TARGETS[0]?.id ?? '']: 999999 };
 
 type GeoCoord = { lat: number; lng: number };
 
@@ -344,7 +345,7 @@ const ARScreen: React.FC = () => {
             ←
           </button>
           <div className="text-right">
-            <p className="text-[11px] text-cyan-300">연강원 보물찾기</p>
+            <p className="text-[11px] text-cyan-300">{ACTIVE_VENUE.venueName} 보물찾기</p>
             <p className="text-[13px] text-white font-bold">
               발견 {foundCount} / {AR_TARGETS.length} · {totalPoints}pt
             </p>

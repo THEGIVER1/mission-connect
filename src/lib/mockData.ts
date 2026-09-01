@@ -1,93 +1,46 @@
 import type { Team, Mission, Alert, Notice, CoreValue, Session } from '../types';
+import { ACTIVE_VENUE, WORKSHOP_TEAMS } from '../config/workshopConfig';
 
 // ─── 세션 ──────────────────────────────────────────────────────
 export const MOCK_SESSION: Session = {
-  id: 'trekking2026',
-  name: '두산 HR 트레킹 워크샵 2026',
-  venue: '두산경영연구원 · 두산저수지',
+  id: ACTIVE_VENUE.sessionKey,
+  name: ACTIVE_VENUE.eventName,
+  venue: `${ACTIVE_VENUE.venueName} · ${ACTIVE_VENUE.venueSubtitle}`,
   startedAt: new Date(Date.now() - 90 * 60 * 1000),
   endsAt:    new Date(Date.now() + 134 * 60 * 1000),
   isLive: true,
-  teams: ['team1','team2','team3','team4','team5'],
+  teams: WORKSHOP_TEAMS.map((t) => t.id),
 };
 
 // ─── 5개 팀 ────────────────────────────────────────────────────
-export const MOCK_TEAMS: Team[] = [
-  { id:'team1', name:'1조', shortCode:'1', color:'#E31837', memberCount:10, score:0, rank:1, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'team2', name:'2조', shortCode:'2', color:'#2980B9', memberCount:10, score:0, rank:2, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'team3', name:'3조', shortCode:'3', color:'#27AE60', memberCount:10, score:0, rank:3, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'team4', name:'4조', shortCode:'4', color:'#F39C12', memberCount:10, score:0, rank:4, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-  { id:'team5', name:'5조', shortCode:'5', color:'#8E44AD', memberCount:10, score:0, rank:5, missionsCompleted:0, totalMissions:5, lastActivity:new Date(), status:'active' },
-];
+export const MOCK_TEAMS: Team[] = WORKSHOP_TEAMS.map((t, i) => ({
+  id: t.id,
+  name: t.name,
+  shortCode: t.shortCode,
+  color: t.color,
+  memberCount: 10,
+  score: 0,
+  rank: i + 1,
+  missionsCompleted: 0,
+  totalMissions: ACTIVE_VENUE.posts.length,
+  lastActivity: new Date(),
+  status: 'active' as const,
+}));
 
 // ─── 미션 포스트 ───────────────────────────────────────────────
-export const MOCK_MISSIONS: Mission[] = [
-  {
-    id: 'm1',
-    postId: 'P1',
-    name: '우리 팀 첫 만남',
-    description: '팀원 모두 모여 소개 카드를 작성하세요.\n• 이름 / 소속 / 맡은 업무\n• 요즘 가장 재미있는 것 한 가지\n\n작성 후 단체 사진을 찍으면 미션 완료!',
-    type: 'gps',
-    points: 200,
-    status: 'active',
-    location: { lat: 37.5415, lng: 127.1368 },
-    locationLabel: '연구원 광장',
-    radiusMeters: 80,
-  },
-  {
-    id: 'm2',
-    postId: 'P2',
-    name: '연강원 AR 탐험',
-    description: 'AR 카메라로 연강원 곳곳에 숨어있는 것들을 찾아보세요!\n\n🌸 두산 무궁화\n🍐 배나무\n🍊 감나무\n🫐 블루베리\n🌿 두릅나무\n⛪ 기도원\n\n많이 찾을수록 높은 점수!',
-    type: 'ar',
-    points: 500,
-    status: 'locked',
-    location: { lat: 37.5408, lng: 127.1382 },
-    locationLabel: '산책로',
-    radiusMeters: 80,
-    arItemKey: 'nature',
-    unlocksAfter: 'm1',
-  },
-  {
-    id: 'm3',
-    postId: 'P3',
-    name: '같은 고민, 다른 회사',
-    description: '아래 두 가지 질문에 솔직하게 답해보세요.\n\nQ1. HR 담당자로서 요즘 가장 보람 있는 순간과 가장 힘든 순간은?\n\nQ2. 우리 회사 구성원들이 지금 가장 필요로 하는 것이 뭐라고 생각하세요?\n\n입력 후 비슷한 고민의 타 팀 담당자와 매칭됩니다. 매칭된 상대를 찾아가 5분 대화 후 함께 사진을 찍으면 완료!',
-    type: 'gps',
-    points: 300,
-    status: 'locked',
-    location: { lat: 37.5398, lng: 127.1390 },
-    locationLabel: '저수지 입구',
-    radiusMeters: 80,
-    unlocksAfter: 'm2',
-  },
-  {
-    id: 'm4',
-    postId: 'P4',
-    name: '두산 HR로 산다는 것',
-    description: '다른 팀 1개와 만나세요.\n\n각 팀에서 1명씩 이 질문에 답해주세요.\n\n"두산에서 HR로 일하면서 구성원이 변화하는 걸 느꼈던 순간이 있나요?"\n\n서로의 이야기를 듣고 나면 두 팀 모두 미션 완료!',
-    type: 'challenge',
-    points: 400,
-    status: 'locked',
-    location: { lat: 37.5388, lng: 127.1398 },
-    locationLabel: '저수지 둘레길',
-    radiusMeters: 80,
-    unlocksAfter: 'm3',
-  },
-  {
-    id: 'm5',
-    postId: 'P5',
-    name: '오늘의 연결 선언',
-    description: '오늘 가장 인상 깊었던 대화 상대에게 메시지를 보내세요.\n\n"오늘 ___님과 나눈 ___가 기억에 남습니다"\n\n상대방이 수락하면 두 사람 모두 최고 점수 획득!\n오늘의 인연이 연결 리포트에 영구 기록됩니다.',
-    type: 'quiz',
-    points: 800,
-    status: 'locked',
-    location: { lat: 37.5380, lng: 127.1385 },
-    locationLabel: '저수지 전망대',
-    radiusMeters: 80,
-    unlocksAfter: 'm4',
-  },
-];
+export const MOCK_MISSIONS: Mission[] = ACTIVE_VENUE.posts.map((p, i) => ({
+  id: p.id,
+  postId: p.postId,
+  name: p.name,
+  description: p.description,
+  type: p.type === 'match' ? 'gps' : p.type,
+  points: p.points,
+  status: (i === 0 ? 'active' : 'locked') as Mission['status'],
+  location: p.coords,
+  locationLabel: p.locationLabel,
+  radiusMeters: p.radiusMeters,
+  unlocksAfter: i > 0 ? ACTIVE_VENUE.posts[i - 1].id : undefined,
+}));
 
 // ─── 긴급 신고 ─────────────────────────────────────────────────
 export const MOCK_ALERTS: Alert[] = [
