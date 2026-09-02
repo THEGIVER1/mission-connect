@@ -7,14 +7,21 @@ import { ACTIVE_VENUE, WORKSHOP_TEAMS } from '../../config/workshopConfig';
 // ─── 상단 헤더 ────────────────────────────────────────────────
 const Header: React.FC = () => {
   const { myTeam, session, participantName, participantCompany } = useAppStore();
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const timeLeft = useMemo(() => {
-    if (!session) return '--:--';
-    const diff = Math.max(0, session.endsAt.getTime() - Date.now());
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-  }, [session]);
+    if (!session) return '00:00:00';
+    const diff = Math.max(0, session.endsAt.getTime() - now);
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }, [session, now]);
 
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
