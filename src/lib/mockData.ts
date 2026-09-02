@@ -1,51 +1,33 @@
 import type { Team, Mission, Alert, Notice, CoreValue, Session } from '../types';
-import { ACTIVE_VENUE, WORKSHOP_TEAMS, DEFAULT_COURSE, CourseKey } from '../config/workshopConfig';
+import { ACTIVE_VENUE, WORKSHOP_TEAMS } from '../config/workshopConfig';
 
 // ─── 세션 ──────────────────────────────────────────────────────
 export const MOCK_SESSION: Session = {
   id: ACTIVE_VENUE.sessionKey,
   name: ACTIVE_VENUE.eventName,
-  venue: `${ACTIVE_VENUE.venueName} · ${ACTIVE_VENUE.courses[DEFAULT_COURSE].name}`,
+  venue: `${ACTIVE_VENUE.venueName} · ${ACTIVE_VENUE.mapLabel}`,
   startedAt: new Date(Date.now() - 90 * 60 * 1000),
-  endsAt:    new Date(Date.now() + 134 * 60 * 1000),
+  endsAt:    new Date(Date.now() + 180 * 60 * 1000),
   isLive: true,
   teams: WORKSHOP_TEAMS.map((t) => t.id),
 };
 
-// ─── 5개 팀 ────────────────────────────────────────────────────
+// ─── 6개 팀 ────────────────────────────────────────────────────
 export const MOCK_TEAMS: Team[] = WORKSHOP_TEAMS.map((t, i) => ({
   id: t.id,
   name: t.name,
   shortCode: t.shortCode,
   color: t.color,
-  memberCount: 10,
+  memberCount: 8,
   score: 0,
   rank: i + 1,
   missionsCompleted: 0,
-  totalMissions: ACTIVE_VENUE.courses[DEFAULT_COURSE].posts.length,
+  totalMissions: 2, // 2대 핵심 액티비티
   lastActivity: new Date(),
   status: 'active' as const,
 }));
 
-// ─── 미션 포스트 생성 헬퍼 ─────────────────────────────────────
-export const getMissionsForCourse = (courseKey: CourseKey = DEFAULT_COURSE): Mission[] => {
-  const course = ACTIVE_VENUE.courses[courseKey] || ACTIVE_VENUE.courses.lake;
-  return course.posts.map((p, i) => ({
-    id: p.id,
-    postId: p.postId,
-    name: p.name,
-    description: p.description,
-    type: p.type === 'match' ? 'gps' : p.type,
-    points: p.points,
-    status: (i === 0 ? 'active' : 'locked') as Mission['status'],
-    location: p.coords,
-    locationLabel: p.locationLabel,
-    radiusMeters: p.radiusMeters,
-    unlocksAfter: i > 0 ? course.posts[i - 1].id : undefined,
-  }));
-};
-
-export const MOCK_MISSIONS: Mission[] = getMissionsForCourse(DEFAULT_COURSE);
+export const MOCK_MISSIONS: Mission[] = [];
 
 // ─── 긴급 신고 ─────────────────────────────────────────────────
 export const MOCK_ALERTS: Alert[] = [

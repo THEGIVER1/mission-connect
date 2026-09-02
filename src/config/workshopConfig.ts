@@ -1,275 +1,25 @@
 /**
  * =====================================================================
- * Workshop & Venue Configuration (워크샵 & 장소 중앙 설정)
+ * Workshop & Venue Configuration (2026 CHRO Trekking)
  * =====================================================================
- * 코키리열차 매표소를 공통 출발지로 하여,
- * 1) 호수둘레길 코스 (2.8km · 평지 산책형)
- * 2) 산림욕장 트레킹길 코스 (약 5km · 숲길 힐링형)
- * 중 선택하여 참가하며, 코스가 달라도 공통 미션 테마(P1~P5)를 수행합니다.
+ * 2026 CHRO 부문 트레킹 워크샵 (약 50명 대상)
+ * - 공통 출발: 코끼리열차 매표소
+ * - 코스: 1~3조(산림욕장 트레킹길) / 4~6조(호수둘레길 코스)
+ * - 2대 핵심 Activity: People Quest & Discovery Quiz
  */
 
-export type CourseKey = 'lake' | 'forest';
+import {
+  PeopleQuestQuestion,
+  DiscoveryQuizItem,
+  PreRegisteredPerson,
+} from '../types';
+
+export type CourseKey = 'forest' | 'lake';
 
 export interface GpsLocation {
   lat: number;
   lng: number;
 }
-
-export interface TrekkingPostConfig {
-  id: string;             // 'm1', 'm2' ...
-  postId: string;         // 'P1', 'P2' ...
-  name: string;           // 미션명
-  themeTitle: string;     // 공통 미션 테마
-  locationLabel: string;  // 코스별 세부 장소 명칭
-  coords: GpsLocation;    // 실제 위도/경도
-  radiusMeters: number;   // 인증 허용 반경 (기본 50m)
-  points: number;         // 획득 점수
-  type: 'gps' | 'ar' | 'match' | 'challenge' | 'quiz';
-  description: string;    // 미션 상세 설명
-  svgPos: { cx: number; cy: number }; // SVG 맵 내 시각화 좌표
-}
-
-export interface CourseDetail {
-  id: CourseKey;
-  name: string;
-  tag: string;
-  distance: string;
-  duration: string;
-  intensity: '쉬움 (평지)' | '보통 (숲길)';
-  emoji: string;
-  summary: string;
-  posts: TrekkingPostConfig[];
-}
-
-export interface ExplorationTargetConfig {
-  id: string;
-  name: string;
-  emoji: string;
-  points: number;
-  coords: GpsLocation;
-  radiusMeters: number;
-}
-
-export interface VenueConfig {
-  id: string;
-  venueName: string;
-  venueSubtitle: string;
-  eventName: string;
-  sessionKey: string;
-  departurePoint: {
-    name: string;
-    coords: GpsLocation;
-  };
-  centerCoords: GpsLocation;
-  mapLabel: string;
-  lakeOrLandmarkName: string;
-  courses: Record<CourseKey, CourseDetail>;
-  explorationTargets: ExplorationTargetConfig[];
-}
-
-/**
- * ─────────────────────────────────────────────────────────────────
- * [장소] 서울대공원 (2가지 선택형 코스 탑재)
- * 공통 출발지: 코끼리열차 매표소 앞 종합광장
- * ─────────────────────────────────────────────────────────────────
- */
-export const SEOUL_GRAND_PARK_CONFIG: VenueConfig = {
-  id: 'seoul_grand_park',
-  venueName: '서울대공원',
-  venueSubtitle: '코끼리열차 매표소 출발 트레킹',
-  eventName: '두산 HR 트레킹 워크샵 2026',
-  sessionKey: 'trekking2026',
-  departurePoint: {
-    name: '코끼리열차 매표소 (종합안내소 앞 광장)',
-    coords: { lat: 37.4347, lng: 127.0132 },
-  },
-  centerCoords: { lat: 37.4315, lng: 127.0165 },
-  mapLabel: '서울대공원 트레킹 코스',
-  lakeOrLandmarkName: '대공원 청계호수',
-  courses: {
-    // 🌊 코스 1: 호수둘레길 (평지 힐링 & 편안한 대화)
-    lake: {
-      id: 'lake',
-      name: '호수둘레길 코스',
-      tag: '가벼운 산책 & 힐링',
-      distance: '2.8km',
-      duration: '약 50분',
-      intensity: '쉬움 (평지)',
-      emoji: '🌊',
-      summary: '잔잔한 호수 바람을 맞으며 걷는 평지 산책로, 편안하게 이야기 나누기 좋은 코스입니다.',
-      posts: [
-        {
-          id: 'm1',
-          postId: 'P1',
-          name: '우리 팀 첫 만남 & 출발',
-          themeTitle: '팀 빌딩',
-          locationLabel: '코끼리열차 매표소 앞 광장',
-          coords: { lat: 37.4347, lng: 127.0132 },
-          radiusMeters: 50,
-          points: 200,
-          type: 'gps',
-          description: '출발지에서 팀원 모두 모여 출발 전 소개 카드를 작성하고 활기찬 팀 단체 사진을 남겨주세요!',
-          svgPos: { cx: 140, cy: 50 },
-        },
-        {
-          id: 'm2',
-          postId: 'P2',
-          name: '호수둘레길 자연 탐험',
-          themeTitle: '자연 & AR 탐색',
-          locationLabel: '호수둘레길 입구 버드나무 쉼터',
-          coords: { lat: 37.4335, lng: 127.0175 },
-          radiusMeters: 50,
-          points: 500,
-          type: 'ar',
-          description: '호숫가를 따라 걸으며 숨겨진 자연의 보물 6가지를 카메라로 찾아보세요!\n\n🌸 무궁화 🍐 산사나무 🍊 모과나무 🫐 산딸기 🌿 느티나무 🏛️ 쉼터 정자',
-          svgPos: { cx: 230, cy: 110 },
-        },
-        {
-          id: 'm3',
-          postId: 'P3',
-          name: '같은 고민, 다른 회사',
-          themeTitle: '사람 연결 (네트워킹)',
-          locationLabel: '호수 브릿지 전망 데크',
-          coords: { lat: 37.4310, lng: 127.0185 },
-          radiusMeters: 50,
-          points: 300,
-          type: 'match',
-          description: '코스가 달라도 마음은 통합니다! 타 코스 또는 타 자회사 동료와 고민 매칭 후 온라인/오프라인 대화를 나누세요.',
-          svgPos: { cx: 260, cy: 195 },
-        },
-        {
-          id: 'm4',
-          postId: 'P4',
-          name: '두산 HR로 산다는 것',
-          themeTitle: 'HR 스토리 공유',
-          locationLabel: '테마가든 장미원 산책길',
-          coords: { lat: 37.4285, lng: 127.0170 },
-          radiusMeters: 50,
-          points: 400,
-          type: 'challenge',
-          description: '둘레길에서 마주친 다른 팀과 함께 HR 담당자로서 가장 기억에 남는 경험담을 나누고 미션을 완료하세요.',
-          svgPos: { cx: 275, cy: 270 },
-        },
-        {
-          id: 'm5',
-          postId: 'P5',
-          name: '오늘의 연결 선언',
-          themeTitle: '최종 연결 선언',
-          locationLabel: '미리내다리 호수 종점 잔디마당',
-          coords: { lat: 37.4305, lng: 127.0135 },
-          radiusMeters: 50,
-          points: 800,
-          type: 'quiz',
-          description: '완주를 축하합니다! 오늘 가장 인상 깊었던 대화 상대에게 감사의 연결 메시지를 보내 최고 점수를 획득하세요.',
-          svgPos: { cx: 195, cy: 310 },
-        },
-      ],
-    },
-
-    // 🌲 코스 2: 산림욕장 트레킹길 (숲속 피톤치드 & 액티브 트레킹)
-    forest: {
-      id: 'forest',
-      name: '산림욕장 트레킹길',
-      tag: '숲길 트레킹 & 피톤치드',
-      distance: '약 4.5km',
-      duration: '약 1시간 20분',
-      intensity: '보통 (숲길)',
-      emoji: '🌲',
-      summary: '울창한 숲속 흙길을 걸으며 맑은 공기를 마시는 본격 트레킹 코스, 에너지 넘치는 팀에게 추천합니다.',
-      posts: [
-        {
-          id: 'm1',
-          postId: 'P1',
-          name: '우리 팀 첫 만남 & 출발',
-          themeTitle: '팀 빌딩',
-          locationLabel: '코끼리열차 매표소 앞 광장',
-          coords: { lat: 37.4347, lng: 127.0132 },
-          radiusMeters: 50,
-          points: 200,
-          type: 'gps',
-          description: '출발지에서 팀원 모두 모여 안전 수칙을 확인하고 활기찬 트레킹 출발 단체 사진을 남겨주세요!',
-          svgPos: { cx: 140, cy: 50 },
-        },
-        {
-          id: 'm2',
-          postId: 'P2',
-          name: '산림욕장 숲속 자연 탐험',
-          themeTitle: '자연 & AR 탐색',
-          locationLabel: '산림욕장 입구 숲길 안내소',
-          coords: { lat: 37.4320, lng: 127.0220 },
-          radiusMeters: 60,
-          points: 500,
-          type: 'ar',
-          description: '청계산 숲길을 걸으며 숲속에 숨겨진 자연의 보물 6가지를 찾아보세요!\n\n🌸 무궁화 🍐 산사나무 🍊 모과나무 🫐 산딸기 🌿 느티나무 🏛️ 쉼터 정자',
-          svgPos: { cx: 280, cy: 90 },
-        },
-        {
-          id: 'm3',
-          postId: 'P3',
-          name: '같은 고민, 다른 회사',
-          themeTitle: '사람 연결 (네트워킹)',
-          locationLabel: '생각하는 숲 / 다람쥐광장',
-          coords: { lat: 37.4270, lng: 127.0250 },
-          radiusMeters: 60,
-          points: 300,
-          type: 'match',
-          description: '숲속 맑은 공기 속에서 깊은 나눔을! 호수 코스 또는 타 자회사 동료와 고민 매칭 후 소통을 인증하세요.',
-          svgPos: { cx: 310, cy: 190 },
-        },
-        {
-          id: 'm4',
-          postId: 'P4',
-          name: '두산 HR로 산다는 것',
-          themeTitle: 'HR 스토리 공유',
-          locationLabel: '독서하는 숲 피톤치드 쉼터',
-          coords: { lat: 37.4230, lng: 127.0210 },
-          radiusMeters: 60,
-          points: 400,
-          type: 'challenge',
-          description: '숲속 쉼터에서 팀원들과 함께 HR 담당자로서 가슴 뛰었던 순간을 나누고 팀 미션을 완료하세요.',
-          svgPos: { cx: 280, cy: 280 },
-        },
-        {
-          id: 'm5',
-          postId: 'P5',
-          name: '오늘의 연결 선언',
-          themeTitle: '최종 연결 선언',
-          locationLabel: '산림욕장 출구 / 미술관 광장',
-          coords: { lat: 37.4290, lng: 127.0160 },
-          radiusMeters: 60,
-          points: 800,
-          type: 'quiz',
-          description: '산림욕장 완주를 축하합니다! 오늘 가장 인상 깊었던 대화 상대에게 감사의 메시지를 전하며 피날레를 장식하세요.',
-          svgPos: { cx: 195, cy: 310 },
-        },
-      ],
-    },
-  },
-  explorationTargets: [
-    { id: 'dusanhibiscus', name: '두산 무궁화', emoji: '🌸', points: 150, coords: { lat: 37.4340, lng: 127.0140 }, radiusMeters: 60 },
-    { id: 'pear',          name: '산사나무',    emoji: '🍐', points: 100, coords: { lat: 37.4332, lng: 127.0168 }, radiusMeters: 60 },
-    { id: 'persimmon',     name: '모과나무',    emoji: '🍊', points: 100, coords: { lat: 37.4315, lng: 127.0182 }, radiusMeters: 60 },
-    { id: 'blueberry',     name: '산딸기',      emoji: '🫐', points: 100, coords: { lat: 37.4300, lng: 127.0178 }, radiusMeters: 60 },
-    { id: 'aralia',        name: '느티나무',    emoji: '🌿', points: 100, coords: { lat: 37.4288, lng: 127.0162 }, radiusMeters: 60 },
-    { id: 'prayerhouse',   name: '쉼터 정자',    emoji: '🏛️', points: 150, coords: { lat: 37.4282, lng: 127.0148 }, radiusMeters: 60 },
-  ],
-};
-
-/**
- * ─────────────────────────────────────────────────────────────────
- * 현재 활성화된 장소 설정
- * ─────────────────────────────────────────────────────────────────
- */
-export const ACTIVE_VENUE: VenueConfig = SEOUL_GRAND_PARK_CONFIG;
-
-// 기본 코스
-export const DEFAULT_COURSE: CourseKey = 'lake';
-
-// 참가 회사 목록
-export const WORKSHOP_COMPANIES = [
-  '㈜두산',
-  '두산경영연구원',
-];
 
 export interface WorkshopTeamConfig {
   id: string;
@@ -282,7 +32,17 @@ export interface WorkshopTeamConfig {
   courseDistance: string;
 }
 
-// 팀 목록 (1~3조: 산림욕장 트레킹길 / 4~6조: 호수둘레길)
+// ─────────────────────────────────────────────────────────────────
+// 1. 소속 회사 목록
+// ─────────────────────────────────────────────────────────────────
+export const WORKSHOP_COMPANIES = [
+  '㈜두산',
+  '두산경영연구원',
+] as const;
+
+// ─────────────────────────────────────────────────────────────────
+// 2. 6개 조 구성 (1~3조: 산림욕장 / 4~6조: 호수둘레길)
+// ─────────────────────────────────────────────────────────────────
 export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
   { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
   { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
@@ -292,8 +52,172 @@ export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
   { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
 ];
 
-// 코스 목록 편의 배열
-export const WORKSHOP_COURSES = [
-  ACTIVE_VENUE.courses.lake,
-  ACTIVE_VENUE.courses.forest,
+// ─────────────────────────────────────────────────────────────────
+// 3. Activity 1: People Quest 질문 목록 (모듈형 관리)
+// ─────────────────────────────────────────────────────────────────
+export const PEOPLE_QUEST_QUESTIONS: PeopleQuestQuestion[] = [
+  {
+    id: 'pq1',
+    title: '가장 의외의 취미를 가지고 있을 것 같은 사람',
+    instruction: '평소 모습에서는 예상하기 어려운 취미나 활동을 꾸준히 즐기는 사람을 찾아보세요.',
+  },
+  {
+    id: 'pq2',
+    title: '특별한 경험을 가지고 있을 것 같은 사람',
+    instruction: '여행, 도전, 생활, 봉사 등 다른 구성원들이 흥미롭게 들을 만한 경험을 가진 사람을 찾아보세요.',
+  },
 ];
+
+// People Quest 완료 시 조원 1인당 부여 점수
+export const PEOPLE_QUEST_POINTS_PER_MEMBER = 200;
+
+// ─────────────────────────────────────────────────────────────────
+// 4. Activity 2: Discovery Quiz 현장 객관식 문항 목록
+// ─────────────────────────────────────────────────────────────────
+export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
+  {
+    id: 'dq1',
+    title: '코끼리열차 매표소의 비밀',
+    questionText: '서울대공원의 명물인 코끼리열차가 최초로 운행을 시작한 연도는 언제일까요? (매표소 안내판 참고)',
+    options: ['1984년', '1988년', '1992년', '1996년'],
+    correctIndex: 0,
+    explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
+    coords: { lat: 37.4347, lng: 127.0132 },
+    radiusMeters: 60,
+    points: 100,
+    locationLabel: '코끼리열차 종합 매표소 앞',
+    courseKey: 'all',
+  },
+  {
+    id: 'dq2',
+    title: '대공원 호수의 물줄기',
+    questionText: '서울대공원 호수둘레길을 감싸고 있는 이 거대한 호수의 공식 명칭은 무엇일까요?',
+    options: ['과천호', '청계저수지', '대공원호', '관악호'],
+    correctIndex: 1,
+    explanation: '서울대공원 중심에 위치한 호수의 공식 하천 명칭은 청계산 자락의 물이 모이는 "청계저수지"입니다.',
+    coords: { lat: 37.4310, lng: 127.0185 },
+    radiusMeters: 60,
+    points: 100,
+    locationLabel: '호수 브릿지 전망 데크',
+    courseKey: 'lake',
+  },
+  {
+    id: 'dq3',
+    title: '테마가든 메타세쿼이아길',
+    questionText: '테마가든 둘레길에 심어진 메타세쿼이아 나무의 원산지로 가장 알맞은 것은?',
+    options: ['중국', '캐나다', '호주', '남아공'],
+    correctIndex: 0,
+    explanation: '살아있는 화석이라 불리는 메타세쿼이아의 원산지는 중국 양쯔강 상류 지역입니다.',
+    coords: { lat: 37.4285, lng: 127.0170 },
+    radiusMeters: 60,
+    points: 100,
+    locationLabel: '테마가든 장미원 산책로',
+    courseKey: 'lake',
+  },
+  {
+    id: 'dq4',
+    title: '국립현대미술관 과천 조각공원',
+    questionText: '국립현대미술관 과천관 야외조각공원의 대표 상징 조형물로, 노래하는 거대한 거인상의 명칭은?',
+    options: ['생각하는 사람', '노래하는 사람 (Singing Man)', '바람의 탑', '달빛 소나타'],
+    correctIndex: 1,
+    explanation: '미국 조각가 조나단 보로프스키의 작품으로 실제 턱을 움직이며 노래를 부르는 "노래하는 사람"입니다.',
+    coords: { lat: 37.4315, lng: 127.0225 },
+    radiusMeters: 70,
+    points: 100,
+    locationLabel: '국립현대미술관 야외조각공원',
+    courseKey: 'all',
+  },
+  {
+    id: 'dq5',
+    title: '청계산 산림욕장의 피톤치드',
+    questionText: '산림욕장에서 우리 몸의 면역력을 높여주고 스트레스를 해소해 주는 숲의 천연 물질은?',
+    options: ['피톤치드(Phytoncide)', '플라보노이드', '카테킨', '글루코사민'],
+    correctIndex: 0,
+    explanation: '피톤치드는 나무가 해충과 균으로부터 스스로를 보호하기 위해 내뿜는 천연 항균 물질입니다.',
+    coords: { lat: 37.4270, lng: 127.0250 },
+    radiusMeters: 70,
+    points: 100,
+    locationLabel: '산림욕장 생각하는 숲 쉼터',
+    courseKey: 'forest',
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────
+// 5. 사전 등록된 50명 참가자 명단 풀 (A방식 사전 등록)
+// ─────────────────────────────────────────────────────────────────
+export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
+  // 1조 (산림욕장)
+  { id: 'p01', name: '김민준', company: '㈜두산', teamId: 'team1', teamName: '1조' },
+  { id: 'p02', name: '이서연', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
+  { id: 'p03', name: '박도윤', company: '㈜두산', teamId: 'team1', teamName: '1조' },
+  { id: 'p04', name: '최지우', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
+  { id: 'p05', name: '정도현', company: '㈜두산', teamId: 'team1', teamName: '1조' },
+  { id: 'p06', name: '강예은', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
+  { id: 'p07', name: '조현우', company: '㈜두산', teamId: 'team1', teamName: '1조' },
+  { id: 'p08', name: '윤하은', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
+
+  // 2조 (산림욕장)
+  { id: 'p09', name: '장시우', company: '㈜두산', teamId: 'team2', teamName: '2조' },
+  { id: 'p10', name: '임수아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
+  { id: 'p11', name: '한지호', company: '㈜두산', teamId: 'team2', teamName: '2조' },
+  { id: 'p12', name: '오서아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
+  { id: 'p13', name: '서유준', company: '㈜두산', teamId: 'team2', teamName: '2조' },
+  { id: 'p14', name: '신지아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
+  { id: 'p15', name: '권예준', company: '㈜두산', teamId: 'team2', teamName: '2조' },
+  { id: 'p16', name: '황나은', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
+
+  // 3조 (산림욕장)
+  { id: 'p17', name: '안준우', company: '㈜두산', teamId: 'team3', teamName: '3조' },
+  { id: 'p18', name: '송민서', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
+  { id: 'p19', name: '전도경', company: '㈜두산', teamId: 'team3', teamName: '3조' },
+  { id: 'p20', name: '홍채원', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
+  { id: 'p21', name: '유건우', company: '㈜두산', teamId: 'team3', teamName: '3조' },
+  { id: 'p22', name: '고다은', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
+  { id: 'p23', name: '문태양', company: '㈜두산', teamId: 'team3', teamName: '3조' },
+  { id: 'p24', name: '양소율', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
+
+  // 4조 (호수둘레길)
+  { id: 'p25', name: '손우진', company: '㈜두산', teamId: 'team4', teamName: '4조' },
+  { id: 'p26', name: '배지안', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
+  { id: 'p27', name: '조선우', company: '㈜두산', teamId: 'team4', teamName: '4조' },
+  { id: 'p28', name: '백하윤', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
+  { id: 'p29', name: '허도윤', company: '㈜두산', teamId: 'team4', teamName: '4조' },
+  { id: 'p30', name: '노시아', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
+  { id: 'p31', name: '심은우', company: '㈜두산', teamId: 'team4', teamName: '4조' },
+  { id: 'p32', name: '하서윤', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
+
+  // 5조 (호수둘레길)
+  { id: 'p33', name: '곽시후', company: '㈜두산', teamId: 'team5', teamName: '5조' },
+  { id: 'p34', name: '성아린', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
+  { id: 'p35', name: '차민재', company: '㈜두산', teamId: 'team5', teamName: '5조' },
+  { id: 'p36', name: '주아인', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
+  { id: 'p37', name: '우현준', company: '㈜두산', teamId: 'team5', teamName: '5조' },
+  { id: 'p38', name: '구지유', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
+  { id: 'p39', name: '진이준', company: '㈜두산', teamId: 'team5', teamName: '5조' },
+  { id: 'p40', name: '나수빈', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
+
+  // 6조 (호수둘레길)
+  { id: 'p41', name: '민정우', company: '㈜두산', teamId: 'team6', teamName: '6조' },
+  { id: 'p42', name: '엄채아', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
+  { id: 'p43', name: '채승우', company: '㈜두산', teamId: 'team6', teamName: '6조' },
+  { id: 'p44', name: '원하은', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
+  { id: 'p45', name: '천유찬', company: '㈜두산', teamId: 'team6', teamName: '6조' },
+  { id: 'p46', name: '방서진', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
+  { id: 'p47', name: '공동현', company: '㈜두산', teamId: 'team6', teamName: '6조' },
+  { id: 'p48', name: '현소은', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
+  { id: 'p49', name: '탁재윤', company: '㈜두산', teamId: 'team6', teamName: '6조' },
+  { id: 'p50', name: '옥지민', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
+];
+
+export const ACTIVE_VENUE = {
+  venueName: '서울대공원',
+  eventName: '2026 CHRO Trekking',
+  sessionKey: 'trekking2026',
+  departurePoint: {
+    name: '코끼리열차 매표소 앞 광장',
+    coords: { lat: 37.4347, lng: 127.0132 },
+  },
+  mapLabel: '서울대공원 · 국립현대미술관',
+};
+
+export const DEFAULT_COURSE: CourseKey = 'lake';

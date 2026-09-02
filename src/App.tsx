@@ -8,6 +8,8 @@ const MapScreen   = lazy(() => import('./components/map/MapScreen'));
 const ARScreen    = lazy(() => import('./components/ar/ARScreen'));
 const Leaderboard = lazy(() => import('./components/leaderboard/Leaderboard'));
 const AdminScreen = lazy(() => import('./components/admin/AdminScreen'));
+const PeopleQuestScreen = lazy(() => import('./components/peopleQuest/PeopleQuestScreen'));
+const DiscoveryQuizScreen = lazy(() => import('./components/discoveryQuiz/DiscoveryQuizScreen'));
 
 const LoadingSpinner: React.FC = () => (
   <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex items-center justify-center">
@@ -34,6 +36,8 @@ const App: React.FC = () => (
 
         {/* 팀 선택 후 접근 가능한 화면들 */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/people-quest" element={<ProtectedRoute><PeopleQuestScreen /></ProtectedRoute>} />
+        <Route path="/discovery-quiz" element={<ProtectedRoute><DiscoveryQuizScreen /></ProtectedRoute>} />
         <Route path="/map" element={<ProtectedRoute><MapScreen /></ProtectedRoute>} />
         <Route path="/ar"  element={<ProtectedRoute><ARScreen /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />

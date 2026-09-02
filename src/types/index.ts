@@ -16,9 +16,58 @@ export interface Team {
 export interface Participant {
   id: string;
   name: string;
+  company?: string;
   teamId: string;
+  teamName?: string;
+  course?: 'forest' | 'lake';
   role: 'member' | 'leader';
   deviceToken?: string;
+  score?: number;
+  truth1?: string;
+  truth2?: string;
+  lie?: string;
+  joinedAt?: string;
+}
+
+export interface PreRegisteredPerson {
+  id: string;
+  name: string;
+  company: '㈜두산' | '두산경영연구원';
+  teamId: string;
+  teamName: string;
+}
+
+export interface PeopleQuestQuestion {
+  id: string;
+  title: string;
+  instruction: string;
+}
+
+export interface PeopleQuestRecommendation {
+  questionId: string;
+  recommendedPersonId: string;
+  recommendedPersonName: string;
+  recommendedPersonCompany: string;
+  reason: string;
+}
+
+export interface DiscoveryQuizOption {
+  id: number;
+  text: string;
+}
+
+export interface DiscoveryQuizItem {
+  id: string;
+  title: string;
+  questionText: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  coords: { lat: number; lng: number };
+  radiusMeters: number;
+  points: number;
+  locationLabel: string;
+  courseKey: 'forest' | 'lake' | 'all';
 }
 
 // ─── 미션 & 포스트 ─────────────────────────────────────────────

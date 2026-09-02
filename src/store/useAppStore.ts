@@ -2,29 +2,38 @@ import { create } from 'zustand';
 import type { AppState, Team, Mission, Alert, Notice, GpsCoord } from '../types';
 import {
   MOCK_SESSION, MOCK_TEAMS,
-  MOCK_ALERTS, MOCK_NOTICES, MOCK_CORE_VALUES, getMissionsForCourse,
+  MOCK_MISSIONS, MOCK_ALERTS, MOCK_NOTICES, MOCK_CORE_VALUES,
 } from '../lib/mockData';
-import { DEFAULT_COURSE, CourseKey } from '../config/workshopConfig';
+import { DEFAULT_COURSE, CourseKey, PEOPLE_QUEST_POINTS_PER_MEMBER } from '../config/workshopConfig';
 
-interface AppStore extends AppState {
-  selectedCourse:     CourseKey;
-  setCourse:          (course: CourseKey) => void;
-  setMyLocation:      (coord: GpsCoord) => void;
-  selectTeam:         (team: Team, name?: string, company?: string, course?: CourseKey) => void;
-  completeMission:    (missionId: string, pointsEarned: number) => void;
-  unlockMission:      (missionId: string) => void;
-  addNotice:          (notice: Notice) => void;
-  resolveAlert:       (alertId: string) => void;
-  markCoreValueFound: (key: string) => void;
-  updateTeamScore:    (teamId: string, score: number) => void;
-  updateTeamStatus:   (teamId: string, status: Team['status']) => void;
+export interface PeopleQuestRecItem {
+  recommendedPersonId: string;
+  recommendedPersonName: string;
+  recommendedPersonCompany: string;
+  reason: string;
 }
 
-// 미션 초기 상태: P1만 활성, 나머지 잠금
-const freshMissions = (course: CourseKey = DEFAULT_COURSE) => getMissionsForCourse(course).map((m, i) => ({
-  ...m,
-  status: (i === 0 ? 'active' : 'locked') as Mission['status'],
-}));
+interface AppStore extends AppState {
+  selectedCourse:             CourseKey;
+  setCourse:                  (course: CourseKey) => void;
+  setMyLocation:              (coord: GpsCoord) => void;
+  selectTeam:                 (team: Team, name?: string, company?: string, course?: CourseKey) => void;
+  completeMission:            (missionId: string, pointsEarned: number) => void;
+  unlockMission:              (missionId: string) => void;
+  addNotice:                  (notice: Notice) => void;
+  resolveAlert:               (alertId: string) => void;
+  markCoreValueFound:         (key: string) => void;
+  updateTeamScore:            (teamId: string, score: number) => void;
+  updateTeamStatus:           (teamId: string, status: Team['status']) => void;
+
+  // ── CHRO 2대 액티비티 상태 ──
+  peopleQuestDraft:           Record<string, PeopleQuestRecItem>;
+  isPeopleQuestSubmitted:     boolean;
+  setPeopleQuestDraft:        (questionId: string, rec: PeopleQuestRecItem) => void;
+  setPeopleQuestSubmitted:    (submitted: boolean) => void;
+  answeredQuizIds:            string[];
+  addAnsweredQuiz:            (quizId: string) => void;
+}
 
 export const useAppStore = create<AppStore>((set) => ({
   session:    MOCK_SESSION,
@@ -34,17 +43,28 @@ export const useAppStore = create<AppStore>((set) => ({
   participantCompany: null as string | null,
   myLocation: null,
   teams:      MOCK_TEAMS,
-  missions:   freshMissions(DEFAULT_COURSE),
+  missions:   MOCK_MISSIONS,
   alerts:     MOCK_ALERTS,
   notices:    MOCK_NOTICES,
   coreValues: MOCK_CORE_VALUES,
   isAdmin:    false,
 
-  setCourse: (course) =>
-    set(() => ({
-      selectedCourse: course,
-      missions: freshMissions(course),
+  // CHRO 액티비티
+  peopleQuestDraft: {},
+  isPeopleQuestSubmitted: false,
+  setPeopleQuestDraft: (questionId, rec) =>
+    set((s) => ({
+      peopleQuestDraft: { ...s.peopleQuestDraft, [questionId]: rec },
     })),
+  setPeopleQuestSubmitted: (submitted) => set({ isPeopleQuestSubmitted: submitted }),
+
+  answeredQuizIds: [],
+  addAnsweredQuiz: (quizId) =>
+    set((s) => ({
+      answeredQuizIds: s.answeredQuizIds.includes(quizId) ? s.answeredQuizIds : [...s.answeredQuizIds, quizId],
+    })),
+
+  setCourse: (course) => set({ selectedCourse: course }),
 
   // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
   selectTeam: (team, name?: string, company?: string, course?: CourseKey) =>
@@ -56,9 +76,8 @@ export const useAppStore = create<AppStore>((set) => ({
         participantName: name ?? s.participantName,
         participantCompany: company ?? s.participantCompany,
         myLocation: null,
-        missions:   freshMissions(activeCourse),
+        missions:   [],
         coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
-        // teams 목록에서 해당 팀 점수를 0으로 초기화
         teams: s.teams.map((t) =>
           t.id === team.id
             ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
