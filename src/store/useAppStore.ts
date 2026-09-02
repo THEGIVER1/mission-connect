@@ -2,12 +2,15 @@ import { create } from 'zustand';
 import type { AppState, Team, Mission, Alert, Notice, GpsCoord } from '../types';
 import {
   MOCK_SESSION, MOCK_TEAMS,
-  MOCK_MISSIONS, MOCK_ALERTS, MOCK_NOTICES, MOCK_CORE_VALUES,
+  MOCK_ALERTS, MOCK_NOTICES, MOCK_CORE_VALUES, getMissionsForCourse,
 } from '../lib/mockData';
+import { DEFAULT_COURSE, CourseKey } from '../config/workshopConfig';
 
 interface AppStore extends AppState {
+  selectedCourse:     CourseKey;
+  setCourse:          (course: CourseKey) => void;
   setMyLocation:      (coord: GpsCoord) => void;
-  selectTeam:         (team: Team) => void;
+  selectTeam:         (team: Team, name?: string, company?: string, course?: CourseKey) => void;
   completeMission:    (missionId: string, pointsEarned: number) => void;
   unlockMission:      (missionId: string) => void;
   addNotice:          (notice: Notice) => void;
@@ -18,7 +21,7 @@ interface AppStore extends AppState {
 }
 
 // 미션 초기 상태: P1만 활성, 나머지 잠금
-const freshMissions = () => MOCK_MISSIONS.map((m, i) => ({
+const freshMissions = (course: CourseKey = DEFAULT_COURSE) => getMissionsForCourse(course).map((m, i) => ({
   ...m,
   status: (i === 0 ? 'active' : 'locked') as Mission['status'],
 }));
@@ -26,32 +29,43 @@ const freshMissions = () => MOCK_MISSIONS.map((m, i) => ({
 export const useAppStore = create<AppStore>((set) => ({
   session:    MOCK_SESSION,
   myTeam:     null,
+  selectedCourse: DEFAULT_COURSE,
   participantName: null as string | null,
   participantCompany: null as string | null,
   myLocation: null,
   teams:      MOCK_TEAMS,
-  missions:   freshMissions(),
+  missions:   freshMissions(DEFAULT_COURSE),
   alerts:     MOCK_ALERTS,
   notices:    MOCK_NOTICES,
   coreValues: MOCK_CORE_VALUES,
   isAdmin:    false,
 
-  // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
-  selectTeam: (team, name?: string, company?: string) =>
-    set((s) => ({
-      myTeam:     team,
-      participantName: name ?? s.participantName,
-      participantCompany: company ?? s.participantCompany,
-      myLocation: null,
-      missions:   freshMissions(),
-      coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
-      // teams 목록에서 해당 팀 점수를 0으로 초기화
-      teams: s.teams.map((t) =>
-        t.id === team.id
-          ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
-          : t
-      ),
+  setCourse: (course) =>
+    set(() => ({
+      selectedCourse: course,
+      missions: freshMissions(course),
     })),
+
+  // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
+  selectTeam: (team, name?: string, company?: string, course?: CourseKey) =>
+    set((s) => {
+      const activeCourse = course ?? s.selectedCourse;
+      return {
+        myTeam:     team,
+        selectedCourse: activeCourse,
+        participantName: name ?? s.participantName,
+        participantCompany: company ?? s.participantCompany,
+        myLocation: null,
+        missions:   freshMissions(activeCourse),
+        coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
+        // teams 목록에서 해당 팀 점수를 0으로 초기화
+        teams: s.teams.map((t) =>
+          t.id === team.id
+            ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
+            : t
+        ),
+      };
+    }),
 
   setMyLocation: (coord) => set({ myLocation: coord }),
 

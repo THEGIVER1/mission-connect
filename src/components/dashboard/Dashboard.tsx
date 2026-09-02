@@ -7,7 +7,9 @@ import type { Mission } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
 const Header: React.FC = () => {
-  const { myTeam, session } = useAppStore();
+  const { myTeam, session, selectedCourse, setCourse } = useAppStore();
+  const activeCourse = ACTIVE_VENUE.courses[selectedCourse] || ACTIVE_VENUE.courses.lake;
+
   const timeLeft = useMemo(() => {
     if (!session) return '--:--';
     const diff = Math.max(0, session.endsAt.getTime() - Date.now());
@@ -31,14 +33,17 @@ const Header: React.FC = () => {
         <LiveBadge />
       </div>
 
-      {/* 이벤트 컨텍스트 칩 */}
-      <div className="flex gap-2 mb-3">
-        <span className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-[#1A2235] border border-white/8 rounded-full px-3 py-1">
+      {/* 이벤트 컨텍스트 & 코스 칩 */}
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+        <span className="flex items-center gap-1 text-[11px] text-slate-400 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-1">
           🌲 <strong className="text-white">{ACTIVE_VENUE.venueName}</strong>
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-[#1A2235] border border-white/8 rounded-full px-3 py-1">
-          👥 <strong className="text-white">{ACTIVE_VENUE.eventName}</strong>
-        </span>
+        <button
+          onClick={() => setCourse(selectedCourse === 'lake' ? 'forest' : 'lake')}
+          className="flex items-center gap-1 text-[11px] bg-red-500/15 border border-red-500/30 rounded-full px-2.5 py-1 text-red-300 active:scale-95 transition-all"
+          title="클릭하여 코스 변경">
+          {activeCourse.emoji} <strong className="text-white">{activeCourse.name}</strong> ({activeCourse.distance}) ⇄
+        </button>
       </div>
 
       {/* 팀 & 진행률 */}

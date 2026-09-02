@@ -1,11 +1,11 @@
 import type { Team, Mission, Alert, Notice, CoreValue, Session } from '../types';
-import { ACTIVE_VENUE, WORKSHOP_TEAMS } from '../config/workshopConfig';
+import { ACTIVE_VENUE, WORKSHOP_TEAMS, DEFAULT_COURSE, CourseKey } from '../config/workshopConfig';
 
 // ─── 세션 ──────────────────────────────────────────────────────
 export const MOCK_SESSION: Session = {
   id: ACTIVE_VENUE.sessionKey,
   name: ACTIVE_VENUE.eventName,
-  venue: `${ACTIVE_VENUE.venueName} · ${ACTIVE_VENUE.venueSubtitle}`,
+  venue: `${ACTIVE_VENUE.venueName} · ${ACTIVE_VENUE.courses[DEFAULT_COURSE].name}`,
   startedAt: new Date(Date.now() - 90 * 60 * 1000),
   endsAt:    new Date(Date.now() + 134 * 60 * 1000),
   isLive: true,
@@ -22,25 +22,30 @@ export const MOCK_TEAMS: Team[] = WORKSHOP_TEAMS.map((t, i) => ({
   score: 0,
   rank: i + 1,
   missionsCompleted: 0,
-  totalMissions: ACTIVE_VENUE.posts.length,
+  totalMissions: ACTIVE_VENUE.courses[DEFAULT_COURSE].posts.length,
   lastActivity: new Date(),
   status: 'active' as const,
 }));
 
-// ─── 미션 포스트 ───────────────────────────────────────────────
-export const MOCK_MISSIONS: Mission[] = ACTIVE_VENUE.posts.map((p, i) => ({
-  id: p.id,
-  postId: p.postId,
-  name: p.name,
-  description: p.description,
-  type: p.type === 'match' ? 'gps' : p.type,
-  points: p.points,
-  status: (i === 0 ? 'active' : 'locked') as Mission['status'],
-  location: p.coords,
-  locationLabel: p.locationLabel,
-  radiusMeters: p.radiusMeters,
-  unlocksAfter: i > 0 ? ACTIVE_VENUE.posts[i - 1].id : undefined,
-}));
+// ─── 미션 포스트 생성 헬퍼 ─────────────────────────────────────
+export const getMissionsForCourse = (courseKey: CourseKey = DEFAULT_COURSE): Mission[] => {
+  const course = ACTIVE_VENUE.courses[courseKey] || ACTIVE_VENUE.courses.lake;
+  return course.posts.map((p, i) => ({
+    id: p.id,
+    postId: p.postId,
+    name: p.name,
+    description: p.description,
+    type: p.type === 'match' ? 'gps' : p.type,
+    points: p.points,
+    status: (i === 0 ? 'active' : 'locked') as Mission['status'],
+    location: p.coords,
+    locationLabel: p.locationLabel,
+    radiusMeters: p.radiusMeters,
+    unlocksAfter: i > 0 ? course.posts[i - 1].id : undefined,
+  }));
+};
+
+export const MOCK_MISSIONS: Mission[] = getMissionsForCourse(DEFAULT_COURSE);
 
 // ─── 긴급 신고 ─────────────────────────────────────────────────
 export const MOCK_ALERTS: Alert[] = [
