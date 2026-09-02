@@ -5,6 +5,7 @@ import { BottomNav } from '../dashboard/Dashboard';
 import { LiveBadge, TeamAvatar, ScoreBar } from '../shared';
 import { onValue, ref } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
+import { WORKSHOP_TEAMS } from '../../config/workshopConfig';
 import type { Team } from '../../types';
 
 // ─────────────────────────────────────────────────────────────────
@@ -197,6 +198,19 @@ const TeamRow: React.FC<{ team: Team; maxScore: number; myTeamId: string; prevRa
           <span className={`text-[14px] font-bold truncate ${isMe ? 'text-red-400' : 'text-white'}`}>
             {team.name}
           </span>
+          {(() => {
+            const teamConfig = WORKSHOP_TEAMS.find(t => t.id === team.id);
+            if (!teamConfig) return null;
+            return (
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                    style={{
+                      background: teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.15)' : 'rgba(56,189,248,0.15)',
+                      color: teamConfig.assignedCourse === 'forest' ? '#34D399' : '#38BDF8',
+                    }}>
+                {teamConfig.assignedCourse === 'forest' ? '🌲 산림' : '🌊 호수'}
+              </span>
+            );
+          })()}
           {isMe && (
             <span className="text-[9px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded flex-shrink-0">
               우리

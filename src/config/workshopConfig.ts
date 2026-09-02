@@ -271,13 +271,25 @@ export const WORKSHOP_COMPANIES = [
   '두산경영연구원',
 ];
 
-// 팀 목록
-export const WORKSHOP_TEAMS = [
-  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🔴' },
-  { id: 'team2', name: '2조', shortCode: '2', color: '#2980B9', emoji: '🔵' },
-  { id: 'team3', name: '3조', shortCode: '3', color: '#27AE60', emoji: '🟢' },
-  { id: 'team4', name: '4조', shortCode: '4', color: '#F39C12', emoji: '🟡' },
-  { id: 'team5', name: '5조', shortCode: '5', color: '#8E44AD', emoji: '🟣' },
+export interface WorkshopTeamConfig {
+  id: string;
+  name: string;
+  shortCode: string;
+  color: string;
+  emoji: string;
+  assignedCourse: CourseKey;
+  courseName: string;
+  courseDistance: string;
+}
+
+// 팀 목록 (1~3조: 산림욕장 트레킹길 / 4~6조: 호수둘레길)
+export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
+  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
+  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
+  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
+  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
+  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
+  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
 ];
 
 // 코스 목록 편의 배열
