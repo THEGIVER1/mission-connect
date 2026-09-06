@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { AppState, Team, Mission, Alert, Notice, GpsCoord } from '../types';
 import {
   MOCK_SESSION, MOCK_TEAMS,
@@ -18,6 +19,7 @@ interface AppStore extends AppState {
   setCourse:                  (course: CourseKey) => void;
   setMyLocation:              (coord: GpsCoord) => void;
   selectTeam:                 (team: Team, name?: string, company?: string, course?: CourseKey) => void;
+  logout:                     () => void;
   completeMission:            (missionId: string, pointsEarned: number) => void;
   unlockMission:              (missionId: string) => void;
   addNotice:                  (notice: Notice) => void;
@@ -35,58 +37,70 @@ interface AppStore extends AppState {
   addAnsweredQuiz:            (quizId: string) => void;
 }
 
-export const useAppStore = create<AppStore>((set) => ({
-  session:    MOCK_SESSION,
-  myTeam:     null,
-  selectedCourse: DEFAULT_COURSE,
-  participantName: null as string | null,
-  participantCompany: null as string | null,
-  myLocation: null,
-  teams:      MOCK_TEAMS,
-  missions:   MOCK_MISSIONS,
-  alerts:     MOCK_ALERTS,
-  notices:    MOCK_NOTICES,
-  coreValues: MOCK_CORE_VALUES,
-  isAdmin:    false,
+export const useAppStore = create<AppStore>()(
+  persist(
+    (set) => ({
+      session:    MOCK_SESSION,
+      myTeam:     null,
+      selectedCourse: DEFAULT_COURSE,
+      participantName: null as string | null,
+      participantCompany: null as string | null,
+      myLocation: null,
+      teams:      MOCK_TEAMS,
+      missions:   MOCK_MISSIONS,
+      alerts:     MOCK_ALERTS,
+      notices:    MOCK_NOTICES,
+      coreValues: MOCK_CORE_VALUES,
+      isAdmin:    false,
 
-  // CHRO 액티비티
-  peopleQuestDraft: {},
-  isPeopleQuestSubmitted: false,
-  setPeopleQuestDraft: (questionId, rec) =>
-    set((s) => ({
-      peopleQuestDraft: { ...s.peopleQuestDraft, [questionId]: rec },
-    })),
-  setPeopleQuestSubmitted: (submitted) => set({ isPeopleQuestSubmitted: submitted }),
+      // CHRO 액티비티
+      peopleQuestDraft: {},
+      isPeopleQuestSubmitted: false,
+      setPeopleQuestDraft: (questionId, rec) =>
+        set((s) => ({
+          peopleQuestDraft: { ...s.peopleQuestDraft, [questionId]: rec },
+        })),
+      setPeopleQuestSubmitted: (submitted) => set({ isPeopleQuestSubmitted: submitted }),
 
-  answeredQuizIds: [],
-  addAnsweredQuiz: (quizId) =>
-    set((s) => ({
-      answeredQuizIds: s.answeredQuizIds.includes(quizId) ? s.answeredQuizIds : [...s.answeredQuizIds, quizId],
-    })),
+      answeredQuizIds: [],
+      addAnsweredQuiz: (quizId) =>
+        set((s) => ({
+          answeredQuizIds: s.answeredQuizIds.includes(quizId) ? s.answeredQuizIds : [...s.answeredQuizIds, quizId],
+        })),
 
-  setCourse: (course) => set({ selectedCourse: course }),
+      setCourse: (course) => set({ selectedCourse: course }),
 
-  // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
-  selectTeam: (team, name?: string, company?: string, course?: CourseKey) =>
-    set((s) => {
-      const activeCourse = course ?? s.selectedCourse;
-      return {
-        myTeam:     team,
-        selectedCourse: activeCourse,
-        participantName: name ?? s.participantName,
-        participantCompany: company ?? s.participantCompany,
-        myLocation: null,
-        missions:   [],
-        coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
-        teams: s.teams.map((t) =>
-          t.id === team.id
-            ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
-            : t
-        ),
-      };
-    }),
+      logout: () =>
+        set({
+          myTeam: null,
+          participantName: null,
+          participantCompany: null,
+          peopleQuestDraft: {},
+          isPeopleQuestSubmitted: false,
+          answeredQuizIds: [],
+        }),
 
-  setMyLocation: (coord) => set({ myLocation: coord }),
+      // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
+      selectTeam: (team, name?: string, company?: string, course?: CourseKey) =>
+        set((s) => {
+          const activeCourse = course ?? s.selectedCourse;
+          return {
+            myTeam:     team,
+            selectedCourse: activeCourse,
+            participantName: name ?? s.participantName,
+            participantCompany: company ?? s.participantCompany,
+            myLocation: null,
+            missions:   [],
+            coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
+            teams: s.teams.map((t) =>
+              t.id === team.id
+                ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
+                : t
+            ),
+          };
+        }),
+
+      setMyLocation: (coord) => set({ myLocation: coord }),
 
   // ── 미션 완료: 내 팀 점수 & teams 리더보드 동시 갱신 ─────
   completeMission: (missionId, pointsEarned) =>
@@ -162,4 +176,18 @@ export const useAppStore = create<AppStore>((set) => ({
     set((s) => ({
       teams: s.teams.map((t) => (t.id === teamId ? { ...t, status } : t)),
     })),
-}));
+    }),
+    {
+      name: 'mission_connect_session',
+      partialize: (state) => ({
+        myTeam: state.myTeam,
+        participantName: state.participantName,
+        participantCompany: state.participantCompany,
+        selectedCourse: state.selectedCourse,
+        peopleQuestDraft: state.peopleQuestDraft,
+        isPeopleQuestSubmitted: state.isPeopleQuestSubmitted,
+        answeredQuizIds: state.answeredQuizIds,
+      }),
+    }
+  )
+);

@@ -15,12 +15,12 @@ type Step = 'info' | 'jinjinga';
 
 const TeamSelect: React.FC = () => {
   const navigate = useNavigate();
-  const { selectTeam } = useAppStore();
+  const { selectTeam, myTeam, participantName, participantCompany, logout } = useAppStore();
 
   const [step, setStep] = useState<Step>('info');
-  const [name, setName] = useState('');
-  const [company, setCompany] = useState('');
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [name, setName] = useState(participantName || '');
+  const [company, setCompany] = useState(participantCompany || '');
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(myTeam?.id || null);
 
   // 진진가 사전정보 (진짜 2개 + 가짜 1개)
   const [truth1, setTruth1] = useState('');
@@ -199,6 +199,39 @@ const TeamSelect: React.FC = () => {
       {/* STEP 1: 참가자 기본 정보 입력 & 조 선택 */}
       {step === 'info' && (
         <div className="px-5 pt-4 flex flex-col gap-3.5 flex-1 overflow-y-auto pb-6">
+          {/* 이미 로그인된 세션이 있는 경우 바로가기 카드 */}
+          {myTeam && participantName && (
+            <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-3.5 text-center space-y-2 shadow-lg">
+              <span className="text-[10px] bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-bold">
+                ✓ 자동 로그인 세션 유지됨
+              </span>
+              <p className="text-[13px] text-white">
+                <strong className="text-amber-400">{participantName}</strong>님 ({participantCompany} · {myTeam.name})
+              </p>
+              <div className="flex gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-bold text-[12px] rounded-xl active:scale-98 shadow"
+                >
+                  대시보드로 바로 이동 →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setName('');
+                    setCompany('');
+                    setSelectedTeamId(null);
+                  }}
+                  className="px-3 py-2 bg-black/30 hover:bg-black/50 text-slate-400 hover:text-white text-[11px] rounded-xl border border-white/10"
+                >
+                  새로 입력
+                </button>
+              </div>
+            </div>
+          )}
+
           <div>
             <p className="text-[17px] font-bold text-white">참가자 정보 입력 👋</p>
             <p className="text-[12px] text-slate-400">이름, 소속, 배정받은 행사 조를 선택하세요</p>

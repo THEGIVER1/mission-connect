@@ -21,11 +21,19 @@
 
 ---
 
-## 2. 리더보드 & 실시간 타이머 체계 (최근 점검 및 업그레이드 완료)
+## 2. 자동 로그인 세션 유지 (Auto-Login Persistence via localStorage)
+- **Zustand `persist` 미들웨어 적용 (`mission_connect_session`)**:
+  - 참가자가 모바일 브라우저를 닫거나, 다른 앱(카톡, 카메라 등)을 사용하다 복귀하거나, 새로고침하더라도 **입장 화면으로 튕기지 않고 대시보드로 즉시 자동 복귀**합니다.
+  - 저장 대상: `myTeam`, `participantName`, `participantCompany`, `selectedCourse`, `peopleQuestDraft`, `isPeopleQuestSubmitted`, `answeredQuizIds`.
+  - `/team-select` 진입 시 기존 로그인 세션 바로가기 카드 및 새로 로그인(로그아웃) 기능 제공.
+
+---
+
+## 3. 리더보드 & 실시간 타이머 체계
 - **실시간 초 단위 타이머 (Live Ticking Timer)**:
-  - 대시보드 상단 및 리더보드 상단 통계 영역에 `hh:mm:ss` 포맷으로 **매 1초마다 실시간 카운트다운**이 정확하게 작동하도록 개선.
+  - 대시보드 상단 및 리더보드 상단 통계 영역에 `hh:mm:ss` 포맷으로 **매 1초마다 실시간 카운트다운** 작동.
 - **팀 순위 탭 (`TeamTab`)**:
-  - Firebase RTDB의 `participants`(개인별 점수/미션) 및 `peopleQuest`(조별 제출 상태)를 실시간 결합하여 1~6조의 누적 점수와 완료 미션 수를 실시간 산출.
+  - Firebase RTDB의 `participants`(개인별 점수/미션) 및 `peopleQuest`(조별 제출 상태)를 실시간 결합하여 1~6조 누적 점수와 완료 미션 수 실시간 산출.
   - TOP 3 시상대 및 조별 뱃지(🌲산림 / 🌊호수) 노출.
 - **미션별 현황 탭 (`MissionTab`)**:
   - **Activity 1: People Quest**: 조별 제출 완료율(N/6개 조 완료, %) 및 1~6조 각각의 완료 상태 뱃지 실시간 노출.
@@ -35,7 +43,8 @@
 
 ---
 
-## 3. 완료된 기능 현황 ✅
+## 4. 완료된 기능 현황 ✅
+- [x] **모바일 브라우저 자동 로그인 세션 유지 (`localStorage` / Zustand `persist`)**
 - [x] **초 단위 실시간 타이머(Dashboard & Leaderboard) 작동 보장 (`hh:mm:ss`)**
 - [x] **리더보드 3대 탭(팀 순위 / 2대 액티비티 미션별 현황 / 개인 기여 점수) 실시간 동기화**
 - [x] **2026 CHRO Trekking 전용 설정 및 50명 사전 참가자 풀 등록 (`src/config/workshopConfig.ts`)**
