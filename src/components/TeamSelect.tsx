@@ -295,10 +295,10 @@ const TeamSelect: React.FC = () => {
             </label>
 
             <div className="space-y-3">
-              {/* 산림욕장 조 */}
+              {/* 동물원둘레길 조 */}
               <div>
                 <p className="text-[11px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
-                  🌲 산림욕장 트레킹 (1~3조)
+                  🦁 동물원둘레길 트레킹 (1~3조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {forestTeams.map(renderTeamCard)}

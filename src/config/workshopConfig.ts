@@ -4,7 +4,10 @@
  * =====================================================================
  * 2026 CHRO 부문 트레킹 워크샵 (약 50명 대상)
  * - 공통 출발/도착: 코끼리열차 매표소 앞 종합광장 (원점 회귀 순환 코스)
- * - 코스: 1~3조(산림욕장 트레킹길) / 4~6조(호수둘레길 코스)
+ * - 공통 단체사진 촬영지: 국립현대미술관 과천관 앞
+ * - 코스:
+ *    • 1~3조: 동물원둘레길 (약 4.5km 순환)
+ *    • 4~6조: 호수둘레길 코스 (약 2.8km 순환)
  * - 2대 핵심 Activity:
  *    1) People Quest (통합 1개 조별 대화 & 동료 추천 미션 - 200pt)
  *    2) Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개 - 문항당 100pt, 총 300pt)
@@ -44,15 +47,15 @@ export const WORKSHOP_COMPANIES = [
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────
-// 2. 6개 조 구성 (1~3조: 산림욕장 순환 / 4~6조: 호수둘레길 순환)
+// 2. 6개 조 구성 (1~3조: 동물원둘레길 순환 / 4~6조: 호수둘레길 순환)
 // ─────────────────────────────────────────────────────────────────
 export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
-  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길 (순환)', courseDistance: '4.5km' },
-  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길 (순환)', courseDistance: '4.5km' },
-  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길 (순환)', courseDistance: '4.5km' },
-  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스 (순환)', courseDistance: '2.8km' },
-  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스 (순환)', courseDistance: '2.8km' },
-  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스 (순환)', courseDistance: '2.8km' },
+  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 (순환)', courseDistance: '4.5km' },
+  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 (순환)', courseDistance: '4.5km' },
+  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 (순환)', courseDistance: '4.5km' },
+  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 (순환)', courseDistance: '2.8km' },
+  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 (순환)', courseDistance: '2.8km' },
+  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 (순환)', courseDistance: '2.8km' },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -128,35 +131,35 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     locationLabel: '코끼리열차 매표소 앞 광장 [출발/도착]',
     courseKey: 'all',
   },
-  // [공통 2] 국립현대미술관 과천 야외조각공원 (중간 공통 경유지)
+  // [공통 2] 국립현대미술관 과천관 앞 (📸 단체사진 촬영지 & 공통 퀴즈)
   {
     id: 'dq_museum',
     title: '노래하는 거인상',
-    questionText: '국립현대미술관 과천 야외조각공원의 대표 상징 조형물로, 실제 턱을 움직이며 노래를 부르는 거대한 거인상의 명칭은?',
+    questionText: '국립현대미술관 과천관 야외조각공원의 대표 상징 조형물로, 실제 턱을 움직이며 노래를 부르는 거대한 거인상의 명칭은?',
     options: ['생각하는 사람', '노래하는 사람 (Singing Man)', '바람의 탑', '달빛 소나타'],
     correctIndex: 1,
     explanation: '미국 조각가 조나단 보로프스키의 작품으로 실제 턱을 움직이며 잔잔한 노래를 부르는 "노래하는 사람"입니다.',
     coords: { lat: 37.4315, lng: 127.0225 },
     radiusMeters: 70,
     points: 100,
-    locationLabel: '국립현대미술관 야외조각공원',
+    locationLabel: '국립현대미술관 앞 [📸 단체사진 촬영지]',
     courseKey: 'all',
   },
-  // [산림길 전용 1] 1~3조: 산림욕장 생각하는 숲 쉼터
+  // [동물원둘레길 전용 1] 1~3조: 동물원둘레길 피톤치드 숲길 쉼터
   {
-    id: 'dq_forest',
-    title: '산림욕장 피톤치드 숲',
-    questionText: '산림욕장을 걸을 때 나무들이 해충과 균으로부터 스스로를 보호하기 위해 내뿜는 천연 숲의 항균 물질은?',
+    id: 'dq_zoo',
+    title: '동물원둘레길 피톤치드 숲',
+    questionText: '동물원둘레길을 걸을 때 나무들이 해충과 균으로부터 스스로를 보호하기 위해 내뿜는 천연 숲의 항균 물질은?',
     options: ['피톤치드(Phytoncide)', '플라보노이드', '카테킨', '글루코사민'],
     correctIndex: 0,
     explanation: '피톤치드는 숲속 나무들이 방출하는 천연 물질로, 스트레스 완화와 면역력 증진에 탁월합니다.',
-    coords: { lat: 37.4270, lng: 127.0250 },
+    coords: { lat: 37.4265, lng: 127.0255 },
     radiusMeters: 70,
     points: 100,
-    locationLabel: '산림욕장 생각하는 숲 쉼터 (1~3조 전용)',
+    locationLabel: '동물원둘레길 숲길 쉼터 (1~3조 전용)',
     courseKey: 'forest',
   },
-  // [호수길 전용 1] 4~6조: 호수 브릿지 전망 데크
+  // [호수둘레길 전용 1] 4~6조: 대공원 호수 브릿지 전망 데크
   {
     id: 'dq_lake',
     title: '대공원 호수와 청계저수지',
@@ -176,7 +179,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
 // 6. 사전 등록된 50명 참가자 명단 풀
 // ─────────────────────────────────────────────────────────────────
 export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
-  // 1조 (산림욕장)
+  // 1조 (동물원둘레길)
   { id: 'p01', name: '김민준', company: '㈜두산', teamId: 'team1', teamName: '1조' },
   { id: 'p02', name: '이서연', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
   { id: 'p03', name: '박도윤', company: '㈜두산', teamId: 'team1', teamName: '1조' },
@@ -186,7 +189,7 @@ export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
   { id: 'p07', name: '조현우', company: '㈜두산', teamId: 'team1', teamName: '1조' },
   { id: 'p08', name: '윤하은', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
 
-  // 2조 (산림욕장)
+  // 2조 (동물원둘레길)
   { id: 'p09', name: '장시우', company: '㈜두산', teamId: 'team2', teamName: '2조' },
   { id: 'p10', name: '임수아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
   { id: 'p11', name: '한지호', company: '㈜두산', teamId: 'team2', teamName: '2조' },
@@ -196,7 +199,7 @@ export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
   { id: 'p15', name: '권예준', company: '㈜두산', teamId: 'team2', teamName: '2조' },
   { id: 'p16', name: '황나은', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
 
-  // 3조 (산림욕장)
+  // 3조 (동물원둘레길)
   { id: 'p17', name: '안준우', company: '㈜두산', teamId: 'team3', teamName: '3조' },
   { id: 'p18', name: '송민서', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
   { id: 'p19', name: '전도경', company: '㈜두산', teamId: 'team3', teamName: '3조' },
@@ -246,6 +249,10 @@ export const ACTIVE_VENUE = {
   departurePoint: {
     name: '코끼리열차 매표소 앞 광장 [출발/도착]',
     coords: { lat: 37.4347, lng: 127.0132 },
+  },
+  photoSpot: {
+    name: '국립현대미술관 과천관 앞 [📸 단체사진]',
+    coords: { lat: 37.4315, lng: 127.0225 },
   },
   mapLabel: '서울대공원 · 국립현대미술관 (순환 동선)',
 };

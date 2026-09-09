@@ -207,13 +207,13 @@ const ActivitySection: React.FC = () => {
             </div>
           </div>
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-            answeredQuizCount >= 5
+            answeredQuizCount >= 3
               ? 'bg-green-500/15 text-green-400 border-green-500/30'
               : answeredQuizCount > 0
               ? 'bg-sky-500/15 text-sky-400 border-sky-500/30'
               : 'bg-white/5 text-slate-400 border-white/10'
           }`}>
-            {answeredQuizCount >= 5 ? '✅ 5/5 완주' : answeredQuizCount > 0 ? `진행 중 (${answeredQuizCount}/5)` : 'GPS 탐색 중'}
+            {answeredQuizCount >= 3 ? '✅ 3/3 완주' : answeredQuizCount > 0 ? `진행 중 (${answeredQuizCount}/3)` : 'GPS 탐색 중'}
           </span>
         </div>
 

@@ -28,7 +28,7 @@ function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 const LAKE_TRACK: [number, number][] = [
   [37.4347, 127.0132], // 1. 코끼리열차 매표소 [출발]
   [37.4342, 127.0160], // 호수 북측 산책로
-  [37.4315, 127.0225], // 2. 국립현대미술관 과천 [공통 경유지]
+  [37.4315, 127.0225], // 2. 국립현대미술관 과천 [공통 경유지 / 📸 단체사진]
   [37.4310, 127.0185], // 3. 호수 브릿지 전망 데크 [호수길 전용]
   [37.4285, 127.0170], // 테마가든 장미원 수변길
   [37.4288, 127.0145], // 호수 남측 둑길
@@ -36,16 +36,16 @@ const LAKE_TRACK: [number, number][] = [
   [37.4347, 127.0132], // 4. 코끼리열차 매표소 [도착/회귀]
 ];
 
-const FOREST_TRACK: [number, number][] = [
+const ZOO_TRACK: [number, number][] = [
   [37.4347, 127.0132], // 1. 코끼리열차 매표소 [출발]
   [37.4358, 127.0178], // 대공원 정문 및 미술관 셔틀도로
-  [37.4315, 127.0225], // 2. 국립현대미술관 과천 [공통 경유지]
-  [37.4292, 127.0245], // 산림욕장 트레킹길 입구
-  [37.4270, 127.0250], // 3. 산림욕장 생각하는 숲 쉼터 [산림길 전용]
-  [37.4248, 127.0215], // 다람쥐광장 숲길
-  [37.4265, 127.0185], // 동물원 후문 방면 숲길
-  [37.4285, 127.0170], // 테마가든 외곽 둘레길
-  [37.4315, 127.0130], // 수변 숲길
+  [37.4315, 127.0225], // 2. 국립현대미술관 과천 [공통 경유지 / 📸 단체사진]
+  [37.4285, 127.0260], // 동물원둘레길 동측 숲길
+  [37.4265, 127.0255], // 3. 동물원둘레길 피톤치드 숲길 쉼터 [동물원둘레길 전용]
+  [37.4225, 127.0230], // 동물원 남측 외곽 둘레길 (조절저수지 상류)
+  [37.4210, 127.0175], // 동물원 남서측 외곽 둘레길
+  [37.4245, 127.0135], // 동물원 서측 순환길 (외곽 숲길)
+  [37.4285, 127.0145], // 동물원 정문 광장 / 테마가든 수변길
   [37.4347, 127.0132], // 4. 코끼리열차 매표소 [도착/회귀]
 ];
 
@@ -130,7 +130,7 @@ const MapScreen: React.FC = () => {
     };
   }, []);
 
-  // 3. 코스 트랙선, 출발/도착점, 퀴즈 핀(3개), 내 위치 마커 렌더링
+  // 3. 코스 트랙선, 출발/도착점, 단체사진 스팟, 퀴즈 핀(3개), 내 위치 마커 렌더링
   useEffect(() => {
     if (!mapRef.current || !elementsLayerRef.current) return;
     elementsLayerRef.current.clearLayers();
@@ -138,7 +138,7 @@ const MapScreen: React.FC = () => {
     const layer = elementsLayerRef.current;
 
     // 1) 코스 경로선 (원점 순환 Polyline)
-    const trackCoords = activeCourse === 'lake' ? LAKE_TRACK : FOREST_TRACK;
+    const trackCoords = activeCourse === 'lake' ? LAKE_TRACK : ZOO_TRACK;
     const trackColor = activeCourse === 'lake' ? '#38BDF8' : '#34D399';
 
     // 트랙 외곽선 (블랙 섀도우)
@@ -190,7 +190,37 @@ const MapScreen: React.FC = () => {
       icon: departureIcon,
     }).addTo(layer);
 
-    // 3) Discovery Quiz 마커 (선택된 코스에 해당하는 3개 핀만 노출)
+    // 3) 단체사진 촬영지 배지 (국립현대미술관 과천관 앞)
+    const photoSpotIcon = L.divIcon({
+      className: 'custom-photo-spot-pin',
+      html: `
+        <div style="
+          background: rgba(227, 24, 55, 0.95);
+          color: #FFFFFF;
+          border: 2px solid #FFFFFF;
+          padding: 4px 9px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+          box-shadow: 0 4px 14px rgba(227, 24, 55, 0.6);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        ">
+          <span>📸</span>
+          <span>단체사진 촬영지 (미술관 앞)</span>
+        </div>
+      `,
+      iconSize: [180, 28],
+      iconAnchor: [90, 42],
+    });
+
+    L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
+      icon: photoSpotIcon,
+    }).addTo(layer);
+
+    // 4) Discovery Quiz 마커 (선택된 코스에 해당하는 3개 핀만 노출)
     courseQuizzes.forEach((quiz, i) => {
       const isSelected = selectedQuizId === quiz.id;
       const markerBg = isSelected ? '#E31837' : '#0F172A';
@@ -249,7 +279,7 @@ const MapScreen: React.FC = () => {
       }).addTo(layer);
     });
 
-    // 4) 내 실시간 위치 마커 (GPS)
+    // 5) 내 실시간 위치 마커 (GPS)
     if (myLocation) {
       const myIcon = L.divIcon({
         className: 'custom-my-location-pin',
@@ -318,7 +348,7 @@ const MapScreen: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            🌲 산림욕장길 순환 (1~3조)
+            🦁 동물원둘레길 순환 (1~3조)
           </button>
         </div>
       </div>

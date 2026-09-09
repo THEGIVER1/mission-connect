@@ -4,8 +4,9 @@ import {
   WORKSHOP_TEAMS,
   MY_INFO_QUESTIONS,
   DISCOVERY_QUIZZES,
-  PRE_REGISTERED_PARTICIPANTS,
+  ACTIVE_VENUE,
 } from '../../config/workshopConfig';
+import { DiscoveryQuizItem } from '../../types';
 
 interface ParticipantRecord {
   id: string;
@@ -17,6 +18,12 @@ interface ParticipantRecord {
   score: number;
   missionsCompleted: number;
   myInfo?: Record<string, string>;
+  quizzes?: Record<string, {
+    selectedIdx: number;
+    isCorrect: boolean;
+    pointsEarned: number;
+    answeredAt: string;
+  }>;
   truth1?: string;
   truth2?: string;
   lie?: string;
@@ -38,7 +45,7 @@ interface PeopleQuestRecord {
   submittedBy?: string;
 }
 
-type AdminTab = 'quizMaster' | 'myInfoList' | 'peopleQuest' | 'teams';
+type AdminTab = 'quizMaster' | 'discoveryQuizzes' | 'myInfoList' | 'peopleQuest' | 'teams';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -53,12 +60,18 @@ const AdminScreen: React.FC = () => {
   const [blindMode, setBlindMode] = useState<boolean>(false);
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
 
+  // Discovery 퀴즈 관리/테스트 상태
+  const [adminSelectedQuizId, setAdminSelectedQuizId] = useState<string>(DISCOVERY_QUIZZES[0].id);
+  const [adminTestAnswers, setAdminTestAnswers] = useState<Record<string, number | null>>({});
+  const [adminSubmittedQuizzes, setAdminSubmittedQuizzes] = useState<Record<string, boolean>>({});
+  const [showAnswerDirectly, setShowAnswerDirectly] = useState<boolean>(true);
+
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // 1. 참가자 전체 목록
+      // 1. 참가자 전체 목록 (quizzes 포함)
       const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants.json`);
       if (pRes.ok) {
         const pData = await pRes.json();
@@ -103,6 +116,34 @@ const AdminScreen: React.FC = () => {
       return true;
     });
   }, [participants, selectedCompany, searchQuery]);
+
+  // Discovery 퀴즈별 실시간 풀이 통계 계산
+  const discoveryStats = useMemo(() => {
+    const stats: Record<string, { totalSolves: number; correctCount: number; wrongCount: number; solvesByTeam: Record<string, number> }> = {};
+
+    DISCOVERY_QUIZZES.forEach(q => {
+      stats[q.id] = { totalSolves: 0, correctCount: 0, wrongCount: 0, solvesByTeam: {} };
+    });
+
+    participants.forEach(p => {
+      if (p.quizzes && typeof p.quizzes === 'object') {
+        Object.entries(p.quizzes).forEach(([quizId, res]) => {
+          if (stats[quizId]) {
+            stats[quizId].totalSolves += 1;
+            if (res.isCorrect) {
+              stats[quizId].correctCount += 1;
+            } else {
+              stats[quizId].wrongCount += 1;
+            }
+            const team = p.teamName || p.teamId || '미배정';
+            stats[quizId].solvesByTeam[team] = (stats[quizId].solvesByTeam[team] || 0) + 1;
+          }
+        });
+      }
+    });
+
+    return stats;
+  }, [participants]);
 
   // People Quest 추천 받은 횟수 집계
   const nominationStats = useMemo(() => {
@@ -223,9 +264,9 @@ const AdminScreen: React.FC = () => {
     downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 3. 테스트용 샘플 데이터 생성 (관리자가 퀴즈 화면 테스트 시 활용)
+  // 3. 테스트용 샘플 데이터 생성
   const handleGenerateSampleData = async () => {
-    if (!window.confirm('저녁 퀴즈 테스트를 위해 샘플 참가자 3명(김민준, 이서연, 손우진)의 7문항 답변 데이터를 생성하시겠습니까?')) return;
+    if (!window.confirm('저녁 퀴즈 및 Discovery 퀴즈 테스트를 위해 샘플 참가자 3명(김민준, 이서연, 손우진)의 데이터를 생성하시겠습니까?')) return;
     setIsLoading(true);
     try {
       const samples = [
@@ -248,6 +289,11 @@ const AdminScreen: React.FC = () => {
             q6_growthExperience: '입사 후 첫 신사업 프로젝트 PM으로 3개 부서 협업 리딩',
             q7_careerChallenge: '글로벌 HR 데이터 분석 및 조직문화 신규 모델 구축',
           },
+          quizzes: {
+            dq_elephant: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
+            dq_museum: { selectedIdx: 1, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
+            dq_zoo: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
+          },
         },
         {
           name: '이서연',
@@ -268,6 +314,10 @@ const AdminScreen: React.FC = () => {
             q6_growthExperience: '어려웠던 전략 과제 분석 실패 후 재도전하여 CEO 보고 성공',
             q7_careerChallenge: '생성형 AI를 활용한 경영진 리더십 진단 툴 개발',
           },
+          quizzes: {
+            dq_elephant: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
+            dq_museum: { selectedIdx: 1, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
+          },
         },
         {
           name: '손우진',
@@ -287,6 +337,10 @@ const AdminScreen: React.FC = () => {
             q5_unexpectedFact: '스킨스쿠버 다이빙 마스터 자격증 보유',
             q6_growthExperience: '새로운 직무로 부서 이동 후 6개월 만에 최우수 조직원 선정',
             q7_careerChallenge: '타 계열사와의 전략적 인재 교류 프로그램 기획',
+          },
+          quizzes: {
+            dq_elephant: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
+            dq_lake: { selectedIdx: 1, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
           },
         },
       ];
@@ -328,9 +382,10 @@ const AdminScreen: React.FC = () => {
   };
 
   const currentP = participants[currentCardIndex] || participants[0];
+  const activeDiscoveryQuiz = DISCOVERY_QUIZZES.find(q => q.id === adminSelectedQuizId) || DISCOVERY_QUIZZES[0];
 
   return (
-    <div className="max-w-[420px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
+    <div className="max-w-[440px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
       {/* 헤더 */}
       <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
@@ -345,7 +400,7 @@ const AdminScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               ADMIN · <span className="text-red-500">CONTROL CENTER</span>
             </span>
-            <p className="text-[10px] text-slate-400">2026 CHRO Trekking 운영본부 & 저녁 퀴즈 센터</p>
+            <p className="text-[10px] text-slate-400">2026 CHRO Trekking 운영본부 & 퀴즈 센터</p>
           </div>
           <button
             onClick={fetchData}
@@ -365,49 +420,58 @@ const AdminScreen: React.FC = () => {
           <span className="text-slate-500 ml-1">/ 50명</span>
         </div>
         <div>
-          <span>💡 7문항 답변 완료: </span>
+          <span>💡 7문항 답변: </span>
           <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
         </div>
       </div>
 
-      {/* 탭 네비게이션 */}
-      <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-4 gap-1 text-[11px] font-bold">
+      {/* 5개 탭 네비게이션 */}
+      <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-5 gap-1 text-[11px] font-bold">
         <button
           onClick={() => setActiveTab('quizMaster')}
-          className={`py-2 rounded-lg transition-all ${
+          className={`py-2 rounded-lg transition-all text-center ${
             activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          🎯 퀴즈 마스터
+          🎯 저녁퀴즈
+        </button>
+        <button
+          onClick={() => setActiveTab('discoveryQuizzes')}
+          className={`py-2 rounded-lg transition-all text-center ${
+            activeTab === 'discoveryQuizzes' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🧭 현장퀴즈
         </button>
         <button
           onClick={() => setActiveTab('myInfoList')}
-          className={`py-2 rounded-lg transition-all ${
+          className={`py-2 rounded-lg transition-all text-center ${
             activeTab === 'myInfoList' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          💡 나의 정보 ({participants.length})
+          💡 나의정보
         </button>
         <button
           onClick={() => setActiveTab('peopleQuest')}
-          className={`py-2 rounded-lg transition-all ${
+          className={`py-2 rounded-lg transition-all text-center ${
             activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          💬 추천 현황
+          💬 추천현황
         </button>
         <button
           onClick={() => setActiveTab('teams')}
-          className={`py-2 rounded-lg transition-all ${
+          className={`py-2 rounded-lg transition-all text-center ${
             activeTab === 'teams' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          📊 조별 순위
+          📊 조별순위
         </button>
       </div>
 
       {/* 탭 컨텐츠 */}
       <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+
         {/* TAB 1: 저녁 퀴즈 마스터 모드 */}
         {activeTab === 'quizMaster' && (
           <div className="space-y-4">
@@ -568,7 +632,231 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: 나의 정보 7문항 전체 목록 */}
+        {/* TAB 2: Discovery 현장 퀴즈 관리 & 실시간 풀이 테스트 */}
+        {activeTab === 'discoveryQuizzes' && (
+          <div className="space-y-4">
+            {/* 상단 안내 배너 */}
+            <div className="bg-[#1A2235] border border-sky-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold text-sky-400 flex items-center gap-1.5">
+                  🧭 Discovery 현장 퀴즈 관리 & 풀이 센터
+                </span>
+                <button
+                  onClick={() => setShowAnswerDirectly(!showAnswerDirectly)}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40"
+                >
+                  {showAnswerDirectly ? '정답 보기 ON' : '정답 숨김'}
+                </button>
+              </div>
+              <p className="text-[12px] text-slate-300 leading-relaxed">
+                총 4개 문항(공통 2개 + 코스별 전용 1개, 조당 3문항 300pt)을 운영자가 직접 검토 및 테스트 풀이할 수 있습니다.
+              </p>
+              <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 space-y-1">
+                <p>📸 <strong>공통 단체사진 스팟:</strong> {ACTIVE_VENUE.photoSpot.name} (두 코스 모두 통과)</p>
+                <p>🦁 <strong>1~3조 (동물원둘레길):</strong> 코끼리열차 매표소 + 미술관 + 동물원둘레길 쉼터 (3문항)</p>
+                <p>🌊 <strong>4~6조 (호수둘레길):</strong> 코끼리열차 매표소 + 미술관 + 호수 브릿지 데크 (3문항)</p>
+              </div>
+            </div>
+
+            {/* 4개 퀴즈 문항 탭 선택 바 */}
+            <div className="grid grid-cols-2 gap-2">
+              {DISCOVERY_QUIZZES.map((quiz, idx) => {
+                const isSel = quiz.id === adminSelectedQuizId;
+                const stat = discoveryStats[quiz.id] || { totalSolves: 0, correctCount: 0 };
+                const courseBadge = quiz.courseKey === 'all' ? '공통' : quiz.courseKey === 'forest' ? '동물원둘레길 (1~3조)' : '호수둘레길 (4~6조)';
+
+                return (
+                  <button
+                    key={quiz.id}
+                    onClick={() => setAdminSelectedQuizId(quiz.id)}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      isSel
+                        ? 'bg-sky-950/40 border-sky-400 shadow-md shadow-sky-500/20'
+                        : 'bg-[#1A2235] border-white/8 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        isSel ? 'bg-sky-400 text-slate-900' : 'bg-white/10 text-slate-300'
+                      }`}>
+                        문항 #{idx + 1} ({courseBadge})
+                      </span>
+                      <span className="text-[10px] text-amber-400 font-bold">100pt</span>
+                    </div>
+                    <h4 className="text-[13px] font-bold text-white truncate mt-1">
+                      {quiz.title}
+                    </h4>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      실시간 풀이: <strong className="text-green-400">{stat.totalSolves}명</strong> ({stat.correctCount}명 정답)
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 선택된 퀴즈 상세 풀이 & 관리 카드 */}
+            {activeDiscoveryQuiz && (
+              <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-sky-500/30 rounded-3xl p-5 shadow-2xl space-y-4">
+                <div className="flex justify-between items-start border-b border-white/10 pb-3">
+                  <div>
+                    <span className="text-[11px] text-sky-400 font-bold uppercase tracking-wider block">
+                      DISCOVERY QUIZ DETAIL & TEST
+                    </span>
+                    <h3 className="text-[18px] font-extrabold text-white mt-0.5">
+                      {activeDiscoveryQuiz.title}
+                    </h3>
+                    <p className="text-[12px] text-slate-300 mt-0.5">
+                      📍 위치: <strong className="text-sky-300">{activeDiscoveryQuiz.locationLabel}</strong>
+                    </p>
+                  </div>
+                  <span className="bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                    반경 {activeDiscoveryQuiz.radiusMeters}m
+                  </span>
+                </div>
+
+                {/* 문제 내용 */}
+                <div className="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-2">
+                  <span className="text-[11px] font-bold text-amber-400 block">
+                    [문제 내용]
+                  </span>
+                  <p className="text-[14px] font-bold text-white leading-relaxed">
+                    {activeDiscoveryQuiz.questionText}
+                  </p>
+                </div>
+
+                {/* 보기 리스트 (운영자 즉시 테스트 가능) */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 block">
+                    [보기 선택 및 테스트 풀이]
+                  </span>
+                  {activeDiscoveryQuiz.options.map((opt, oIdx) => {
+                    const selected = adminTestAnswers[activeDiscoveryQuiz.id] === oIdx;
+                    const isCorrectAnswer = oIdx === activeDiscoveryQuiz.correctIndex;
+                    const submitted = adminSubmittedQuizzes[activeDiscoveryQuiz.id];
+
+                    let btnClass = 'bg-black/30 border-white/10 text-slate-200';
+                    if (submitted) {
+                      if (isCorrectAnswer) {
+                        btnClass = 'bg-green-500/20 border-green-500 text-green-300 font-bold';
+                      } else if (selected) {
+                        btnClass = 'bg-red-500/20 border-red-500 text-red-300';
+                      } else {
+                        btnClass = 'bg-black/20 border-white/5 text-slate-500 opacity-60';
+                      }
+                    } else if (showAnswerDirectly && isCorrectAnswer) {
+                      btnClass = 'bg-green-950/40 border-green-500/60 text-green-300';
+                    } else if (selected) {
+                      btnClass = 'bg-sky-500/20 border-sky-400 text-sky-300 font-bold';
+                    }
+
+                    return (
+                      <button
+                        key={oIdx}
+                        type="button"
+                        onClick={() => {
+                          setAdminTestAnswers(prev => ({ ...prev, [activeDiscoveryQuiz.id]: oIdx }));
+                          setAdminSubmittedQuizzes(prev => ({ ...prev, [activeDiscoveryQuiz.id]: false }));
+                        }}
+                        className={`w-full p-3.5 rounded-xl border text-left text-[13px] flex items-center justify-between transition-all ${btnClass}`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold">
+                            {oIdx + 1}
+                          </span>
+                          <span>{opt}</span>
+                        </div>
+                        {showAnswerDirectly && isCorrectAnswer && !submitted && (
+                          <span className="text-[11px] font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
+                            정답 ✓
+                          </span>
+                        )}
+                        {submitted && isCorrectAnswer && (
+                          <span className="text-green-400 font-bold text-[12px]">정답 ✓</span>
+                        )}
+                        {submitted && selected && !isCorrectAnswer && (
+                          <span className="text-red-400 font-bold text-[12px]">오답 ✕</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 테스트 답안 제출 버튼 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (adminTestAnswers[activeDiscoveryQuiz.id] === undefined) {
+                        alert('보기를 먼저 선택해주세요.');
+                        return;
+                      }
+                      setAdminSubmittedQuizzes(prev => ({ ...prev, [activeDiscoveryQuiz.id]: true }));
+                    }}
+                    className="flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[13px] rounded-xl shadow active:scale-98 transition-all"
+                  >
+                    🧪 테스트 채점 및 해설 확인
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAdminTestAnswers(prev => ({ ...prev, [activeDiscoveryQuiz.id]: null }));
+                      setAdminSubmittedQuizzes(prev => ({ ...prev, [activeDiscoveryQuiz.id]: false }));
+                    }}
+                    className="px-3 py-3 bg-[#1A2235] text-slate-400 hover:text-white text-[12px] font-bold rounded-xl border border-white/10"
+                  >
+                    초기화
+                  </button>
+                </div>
+
+                {/* 해설 박스 */}
+                {(adminSubmittedQuizzes[activeDiscoveryQuiz.id] || showAnswerDirectly) && (
+                  <div className="bg-black/50 border border-sky-500/30 rounded-2xl p-4 space-y-1.5 animate-fade-in">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-bold text-amber-400">💡 정답 해설 & 현장 안내:</span>
+                    </div>
+                    <p className="text-[12.5px] text-slate-200 leading-relaxed">
+                      {activeDiscoveryQuiz.explanation}
+                    </p>
+                    <div className="pt-2 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
+                      <span>GPS 좌표: {activeDiscoveryQuiz.coords.lat}, {activeDiscoveryQuiz.coords.lng}</span>
+                      <span>지정 배점: +{activeDiscoveryQuiz.points}pt</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 실시간 참가자 풀이 현황 세부 */}
+                <div className="bg-black/30 border border-white/5 rounded-2xl p-3.5 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-300 block">
+                    📊 이 문항 실시간 참가자 풀이 내역
+                  </span>
+                  {(() => {
+                    const stat = discoveryStats[activeDiscoveryQuiz.id];
+                    if (!stat || stat.totalSolves === 0) {
+                      return <p className="text-[11px] text-slate-500 italic">아직 풀이를 완료한 참가자가 없습니다.</p>;
+                    }
+
+                    const accuracy = Math.round((stat.correctCount / stat.totalSolves) * 100);
+                    return (
+                      <div className="space-y-2 text-[12px]">
+                        <div className="flex justify-between items-center text-slate-300">
+                          <span>총 풀이 수: <strong className="text-white">{stat.totalSolves}명</strong></span>
+                          <span>정답률: <strong className="text-green-400">{accuracy}%</strong> ({stat.correctCount}명 성공)</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {Object.entries(stat.solvesByTeam).map(([team, count]) => (
+                            <span key={team} className="text-[10px] bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2 py-0.5 rounded-md">
+                              {team}: {count}명
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: 나의 정보 7문항 전체 목록 */}
         {activeTab === 'myInfoList' && (
           <div className="space-y-3">
             <div className="flex gap-2">
@@ -620,7 +908,7 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 3: 조별 People Quest 추천 현황 */}
+        {/* TAB 4: 조별 People Quest 추천 현황 */}
         {activeTab === 'peopleQuest' && (
           <div className="space-y-3">
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 space-y-2">
@@ -687,7 +975,7 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 4: 조별 순위 현황 */}
+        {/* TAB 5: 조별 순위 현황 */}
         {activeTab === 'teams' && (
           <div className="space-y-3">
             {WORKSHOP_TEAMS.map((team, idx) => {
@@ -721,6 +1009,7 @@ const AdminScreen: React.FC = () => {
             })}
           </div>
         )}
+
       </div>
     </div>
   );
