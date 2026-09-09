@@ -6,7 +6,6 @@ import {
   PEOPLE_QUEST_MISSION_TITLE,
   PEOPLE_QUEST_MISSION_GUIDE,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
-  MY_INFO_QUESTIONS,
   WORKSHOP_TEAMS,
 } from '../../config/workshopConfig';
 import { PreRegisteredPerson } from '../../types';
@@ -52,11 +51,12 @@ const PeopleQuestScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [companyFilter, setCompanyFilter] = useState<'all' | '㈜두산' | '두산경영연구원'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
+  const teamId = myTeam?.id ?? 'team1';
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
   const showToast = (msg: string) => {
@@ -96,11 +96,8 @@ const PeopleQuestScreen: React.FC = () => {
   // 2. 추천 대상자 검색 및 필터링 (본인 제외)
   const availablePeople = useMemo(() => {
     return PRE_REGISTERED_PARTICIPANTS.filter((p) => {
-      // 본인 제외
       if (participantName && p.name.trim() === participantName.trim()) return false;
-      // 회사 필터
       if (companyFilter !== 'all' && p.company !== companyFilter) return false;
-      // 검색어 필터
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         return p.name.toLowerCase().includes(q) || p.company.toLowerCase().includes(q) || p.teamName.includes(q);
@@ -126,7 +123,7 @@ const PeopleQuestScreen: React.FC = () => {
     setIsSaving(true);
     try {
       await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId: myTeam.id,
@@ -145,23 +142,12 @@ const PeopleQuestScreen: React.FC = () => {
     }
   };
 
-  // 5. 최종 제출 (조원당 +200pt 부여 및 제출 잠금)
-  const handleFinalSubmit = async () => {
+  // 5. 최종 제출 실행
+  const executeSubmit = async () => {
     if (!myTeam) return;
-    if (!recommendation.recommendedPersonName) {
-      alert('추천할 동료를 선택해주세요.');
-      return;
-    }
-    if (!recommendation.reason.trim()) {
-      alert('동료와 나눈 이야기나 추천 이유를 작성해주세요.');
-      return;
-    }
-
-    if (!window.confirm(`[${recommendation.recommendedPersonName}]님을 우리 조의 추천 동료로 최종 제출하시겠습니까?\n(제출 후에는 수정이 불가하며, 조원 전원에게 +200pt가 부여됩니다)`)) {
-      return;
-    }
-
     setIsSaving(true);
+    setIsConfirmModalOpen(false);
+
     try {
       const payload = {
         teamId: myTeam.id,
@@ -169,32 +155,43 @@ const PeopleQuestScreen: React.FC = () => {
         recommendation,
         status: 'submitted',
         submittedAt: new Date().toISOString(),
-        submittedBy: `${participantName}(${participantCompany})`,
+        submittedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
       };
 
+      // 1) People Quest 상태 저장
       await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      // 내 점수 및 미션 완료 반영
-      completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
-      updateTeamScore(myTeam.id, (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER);
-
-      // Firebase 내 조원 참가자 점수 동기화
+      // 2) 내 참가자 점수 동기화 (+200pt)
       if (participantName && participantCompany) {
         const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+        const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
+        const existing = pRes.ok ? await pRes.json() : null;
+        const prevScore = Number(existing?.score ?? 0);
+        const prevMissions = Number(existing?.missionsCompleted ?? 0);
+
+        // 이미 반영되었는지 확인 후 가산
+        const isAlreadyAdded = existing?.peopleQuestCompleted;
+        const newScore = isAlreadyAdded ? prevScore : prevScore + PEOPLE_QUEST_POINTS_PER_MEMBER;
+        const newMissions = isAlreadyAdded ? prevMissions : prevMissions + 1;
+
         await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            score: (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER,
-            missionsCompleted: (myTeam.missionsCompleted ?? 0) + 1,
+            score: newScore,
+            missionsCompleted: newMissions,
             peopleQuestCompleted: true,
           }),
         });
       }
+
+      // 3) 로컬 Zustand 스토어 반영
+      completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
+      updateTeamScore(myTeam.id, (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER);
 
       setIsSubmitted(true);
       setSubmittedData(payload);
@@ -204,6 +201,18 @@ const PeopleQuestScreen: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleOpenConfirm = () => {
+    if (!recommendation.recommendedPersonName) {
+      alert('추천할 동료를 먼저 선택해주세요.');
+      return;
+    }
+    if (!recommendation.reason.trim()) {
+      alert('동료와 나눈 이야기나 추천 사유를 작성해주세요.');
+      return;
+    }
+    setIsConfirmModalOpen(true);
   };
 
   if (isLoading) {
@@ -258,7 +267,7 @@ const PeopleQuestScreen: React.FC = () => {
             </span>
             {isSubmitted ? (
               <span className="text-[11px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                ✓ 제출 완료
+                ✓ 제출 완료 (+200pt)
               </span>
             ) : (
               <span className="text-[11px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
@@ -304,12 +313,20 @@ const PeopleQuestScreen: React.FC = () => {
               </p>
             </div>
 
-            <button
-              onClick={() => navigate('/')}
-              className="w-full py-3 bg-red-500 text-white font-bold text-[14px] rounded-xl active:scale-98 shadow"
-            >
-              대시보드로 돌아가기
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate('/leaderboard')}
+                className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[13px] rounded-xl active:scale-98 shadow"
+              >
+                🏆 실시간 순위 확인하기
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="flex-1 py-3 bg-[#13192A] border border-white/10 text-white font-bold text-[13px] rounded-xl active:scale-98 shadow"
+              >
+                대시보드로 돌아가기
+              </button>
+            </div>
           </div>
         ) : (
           /* 작성 및 입력 폼 */
@@ -411,7 +428,7 @@ const PeopleQuestScreen: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={handleFinalSubmit}
+                onClick={handleOpenConfirm}
                 disabled={isSaving}
                 className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-1.5"
               >
@@ -421,6 +438,41 @@ const PeopleQuestScreen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 최종 제출 확인 모달 */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#13192A] border border-red-500/40 w-full max-w-[340px] rounded-3xl p-5 text-center space-y-4 shadow-2xl">
+            <div className="w-12 h-12 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center text-xl mx-auto">
+              💬
+            </div>
+            <div>
+              <h3 className="text-[16px] font-bold text-white leading-snug">
+                [{recommendation.recommendedPersonName}] 님을 최종 추천할까요?
+              </h3>
+              <p className="text-[12px] text-slate-400 mt-1">
+                제출 시 조원 전원에게 <strong>+200pt</strong>가 즉시 부여되며, 실시간 리더보드에 반영됩니다.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="flex-1 py-3 bg-[#1A2235] text-slate-400 font-bold text-[13px] rounded-xl border border-white/10"
+              >
+                취소
+              </button>
+              <button
+                onClick={executeSubmit}
+                disabled={isSaving}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl shadow active:scale-98"
+              >
+                {isSaving ? '제출 중...' : '최종 제출'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 50명 참가자 명단 검색 모달 */}
       {isModalOpen && (
