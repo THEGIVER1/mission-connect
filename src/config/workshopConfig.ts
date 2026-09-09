@@ -3,11 +3,12 @@
  * Workshop & Venue Configuration (2026 CHRO Trekking)
  * =====================================================================
  * 2026 CHRO 부문 트레킹 워크샵 (약 50명 대상)
- * - 공통 출발: 코끼리열차 매표소 앞 광장
+ * - 공통 출발/도착: 코끼리열차 매표소 앞 종합광장 (원점 회귀 순환 코스)
  * - 코스: 1~3조(산림욕장 트레킹길) / 4~6조(호수둘레길 코스)
  * - 2대 핵심 Activity:
- *    1) People Quest (통합 1개 조별 대화 & 인물 추천 미션)
- *    2) Discovery Quiz (5개 스팟 현장 객관식 퀴즈)
+ *    1) People Quest (통합 1개 조별 대화 & 동료 추천 미션 - 200pt)
+ *    2) Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개 - 문항당 100pt, 총 300pt)
+ * - 총 만점: 500pt
  */
 
 import {
@@ -43,19 +44,19 @@ export const WORKSHOP_COMPANIES = [
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────
-// 2. 6개 조 구성 (1~3조: 산림욕장 / 4~6조: 호수둘레길)
+// 2. 6개 조 구성 (1~3조: 산림욕장 순환 / 4~6조: 호수둘레길 순환)
 // ─────────────────────────────────────────────────────────────────
 export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
-  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
-  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
-  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길', courseDistance: '4.5km' },
-  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
-  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
-  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스', courseDistance: '2.8km' },
+  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길 (순환)', courseDistance: '4.5km' },
+  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길 (순환)', courseDistance: '4.5km' },
+  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '산림욕장 트레킹길 (순환)', courseDistance: '4.5km' },
+  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스 (순환)', courseDistance: '2.8km' },
+  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스 (순환)', courseDistance: '2.8km' },
+  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 코스 (순환)', courseDistance: '2.8km' },
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 3. 플랫폼 입장: 「나의 정보 입력」 7개 질문 (모듈화)
+// 3. 플랫폼 입장: 「나의 정보 입력」 7개 질문
 // ─────────────────────────────────────────────────────────────────
 export const MY_INFO_QUESTIONS: MyInfoQuestion[] = [
   {
@@ -103,87 +104,76 @@ export const MY_INFO_QUESTIONS: MyInfoQuestion[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 4. Activity 1: People Quest (통합된 1개 조별 대화 & 추천 미션)
+// 4. Activity 1: People Quest (단일 통합 조별 대화 & 추천 미션)
 // ─────────────────────────────────────────────────────────────────
 export const PEOPLE_QUEST_MISSION_TITLE = "우리 조가 발견한 '최고의 스토리 동료' 추천";
 export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들과 7가지 주제(취미, 버킷리스트, 성장 경험 등)에 대해 자유롭게 대화해 보세요. 대화 중 가장 인상 깊었던 동료 1명을 선택하고 나누었던 스토리를 작성해 주세요. (저녁 퀴즈 및 네트워킹에 활용됩니다)";
-
-// People Quest 완료 시 조원 1인당 부여 점수
 export const PEOPLE_QUEST_POINTS_PER_MEMBER = 200;
 
 // ─────────────────────────────────────────────────────────────────
-// 5. Activity 2: Discovery Quiz 현장 객관식 문항 목록
+// 5. Activity 2: Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개)
 // ─────────────────────────────────────────────────────────────────
 export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
+  // [공통 1] 코끼리열차 매표소 앞 광장 (출발 및 도착 기점)
   {
-    id: 'dq1',
-    title: '코끼리열차 매표소의 비밀',
-    questionText: '서울대공원의 명물인 코끼리열차가 최초로 운행을 시작한 연도는 언제일까요? (매표소 안내판 참고)',
+    id: 'dq_elephant',
+    title: '코끼리열차의 역사',
+    questionText: '서울대공원의 상징인 코끼리열차가 최초로 개통 및 운행을 시작한 연도는 언제일까요? (매표소 안내판 참고)',
     options: ['1984년', '1988년', '1992년', '1996년'],
     correctIndex: 0,
     explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
     coords: { lat: 37.4347, lng: 127.0132 },
     radiusMeters: 60,
     points: 100,
-    locationLabel: '코끼리열차 종합 매표소 앞',
+    locationLabel: '코끼리열차 매표소 앞 광장 [출발/도착]',
     courseKey: 'all',
   },
+  // [공통 2] 국립현대미술관 과천 야외조각공원 (중간 공통 경유지)
   {
-    id: 'dq2',
-    title: '대공원 호수의 물줄기',
-    questionText: '서울대공원 호수둘레길을 감싸고 있는 이 거대한 호수의 공식 명칭은 무엇일까요?',
-    options: ['과천호', '청계저수지', '대공원호', '관악호'],
-    correctIndex: 1,
-    explanation: '서울대공원 중심에 위치한 호수의 공식 하천 명칭은 청계산 자락의 물이 모이는 "청계저수지"입니다.',
-    coords: { lat: 37.4310, lng: 127.0185 },
-    radiusMeters: 60,
-    points: 100,
-    locationLabel: '호수 브릿지 전망 데크',
-    courseKey: 'lake',
-  },
-  {
-    id: 'dq3',
-    title: '테마가든 메타세쿼이아길',
-    questionText: '테마가든 둘레길에 심어진 메타세쿼이아 나무의 원산지로 가장 알맞은 것은?',
-    options: ['중국', '캐나다', '호주', '남아공'],
-    correctIndex: 0,
-    explanation: '살아있는 화석이라 불리는 메타세쿼이아의 원산지는 중국 양쯔강 상류 지역입니다.',
-    coords: { lat: 37.4285, lng: 127.0170 },
-    radiusMeters: 60,
-    points: 100,
-    locationLabel: '테마가든 장미원 산책로',
-    courseKey: 'lake',
-  },
-  {
-    id: 'dq4',
-    title: '국립현대미술관 과천 조각공원',
-    questionText: '국립현대미술관 과천관 야외조각공원의 대표 상징 조형물로, 노래하는 거대한 거인상의 명칭은?',
+    id: 'dq_museum',
+    title: '노래하는 거인상',
+    questionText: '국립현대미술관 과천 야외조각공원의 대표 상징 조형물로, 실제 턱을 움직이며 노래를 부르는 거대한 거인상의 명칭은?',
     options: ['생각하는 사람', '노래하는 사람 (Singing Man)', '바람의 탑', '달빛 소나타'],
     correctIndex: 1,
-    explanation: '미국 조각가 조나단 보로프스키의 작품으로 실제 턱을 움직이며 노래를 부르는 "노래하는 사람"입니다.',
+    explanation: '미국 조각가 조나단 보로프스키의 작품으로 실제 턱을 움직이며 잔잔한 노래를 부르는 "노래하는 사람"입니다.',
     coords: { lat: 37.4315, lng: 127.0225 },
     radiusMeters: 70,
     points: 100,
     locationLabel: '국립현대미술관 야외조각공원',
     courseKey: 'all',
   },
+  // [산림길 전용 1] 1~3조: 산림욕장 생각하는 숲 쉼터
   {
-    id: 'dq5',
-    title: '청계산 산림욕장의 피톤치드',
-    questionText: '산림욕장에서 우리 몸의 면역력을 높여주고 스트레스를 해소해 주는 숲의 천연 물질은?',
+    id: 'dq_forest',
+    title: '산림욕장 피톤치드 숲',
+    questionText: '산림욕장을 걸을 때 나무들이 해충과 균으로부터 스스로를 보호하기 위해 내뿜는 천연 숲의 항균 물질은?',
     options: ['피톤치드(Phytoncide)', '플라보노이드', '카테킨', '글루코사민'],
     correctIndex: 0,
-    explanation: '피톤치드는 나무가 해충과 균으로부터 스스로를 보호하기 위해 내뿜는 천연 항균 물질입니다.',
+    explanation: '피톤치드는 숲속 나무들이 방출하는 천연 물질로, 스트레스 완화와 면역력 증진에 탁월합니다.',
     coords: { lat: 37.4270, lng: 127.0250 },
     radiusMeters: 70,
     points: 100,
-    locationLabel: '산림욕장 생각하는 숲 쉼터',
+    locationLabel: '산림욕장 생각하는 숲 쉼터 (1~3조 전용)',
     courseKey: 'forest',
+  },
+  // [호수길 전용 1] 4~6조: 호수 브릿지 전망 데크
+  {
+    id: 'dq_lake',
+    title: '대공원 호수와 청계저수지',
+    questionText: '서울대공원 호수둘레길이 둘러싸고 있는 이 거대한 호수의 공식 명칭은 무엇일까요?',
+    options: ['과천호', '청계저수지', '대공원호', '관악호'],
+    correctIndex: 1,
+    explanation: '청계산 자락의 물이 모여 형성된 서울대공원 호수의 공식 하천 명칭은 "청계저수지"입니다.',
+    coords: { lat: 37.4310, lng: 127.0185 },
+    radiusMeters: 60,
+    points: 100,
+    locationLabel: '호수 브릿지 전망 데크 (4~6조 전용)',
+    courseKey: 'lake',
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 6. 사전 등록된 50명 참가자 명단 풀 (A방식 사전 등록)
+// 6. 사전 등록된 50명 참가자 명단 풀
 // ─────────────────────────────────────────────────────────────────
 export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
   // 1조 (산림욕장)
@@ -254,10 +244,10 @@ export const ACTIVE_VENUE = {
   eventName: '2026 CHRO Trekking',
   sessionKey: 'trekking2026',
   departurePoint: {
-    name: '코끼리열차 매표소 앞 광장',
+    name: '코끼리열차 매표소 앞 광장 [출발/도착]',
     coords: { lat: 37.4347, lng: 127.0132 },
   },
-  mapLabel: '서울대공원 · 국립현대미술관',
+  mapLabel: '서울대공원 · 국립현대미술관 (순환 동선)',
 };
 
 export const DEFAULT_COURSE: CourseKey = 'lake';

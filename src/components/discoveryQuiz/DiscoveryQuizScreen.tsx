@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
-import { BottomNav } from '../dashboard/Dashboard';
 import {
   DISCOVERY_QUIZZES,
-  ACTIVE_VENUE,
+  WORKSHOP_TEAMS,
+  CourseKey,
 } from '../../config/workshopConfig';
 import { DiscoveryQuizItem } from '../../types';
 
@@ -34,31 +34,36 @@ const DiscoveryQuizScreen: React.FC = () => {
     participantCompany,
     myLocation,
     setMyLocation,
+    selectedCourse,
     updateTeamScore,
   } = useAppStore();
 
-  const participantId = participantName && participantCompany
-    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
-    : 'anonymous';
+  const activeCourse = selectedCourse;
+  const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
-  const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
+  // 내 코스에 해당하는 3개 퀴즈 (공통 2개 + 코스 전용 1개)
+  const activeQuizzes: DiscoveryQuizItem[] = useMemo(() => {
+    return DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === activeCourse);
+  }, [activeCourse]);
+
+  const [currentIdx, setCurrentIdx] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
+  const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState<boolean>(false);
   const [quizResults, setQuizResults] = useState<Record<string, UserQuizResult>>({});
-
-  // GPS 관련
+  const [isLocating, setIsLocating] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  // 테스트 및 비상용 GPS 우회 모드
-  const [devBypassGps, setDevBypassGps] = useState(false);
+  const [devBypassGps, setDevBypassGps] = useState<boolean>(false); // 테스트 편의용
+
+  const currentQuiz = activeQuizzes[currentIdx] || activeQuizzes[0];
+  const participantId = participantName && participantCompany
+    ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
+    : 'anonymous';
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  const currentQuiz: DiscoveryQuizItem = DISCOVERY_QUIZZES[currentQuizIdx];
-
-  // 1. 기존 풀이 기록 로드
+  // 1. Firebase에서 내가 이미 푼 퀴즈 결과 불러오기
   useEffect(() => {
-    const loadQuizHistory = async () => {
+    const fetchMyQuizzes = async () => {
       try {
         const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/quizzes.json`);
         if (res.ok) {
@@ -68,13 +73,27 @@ const DiscoveryQuizScreen: React.FC = () => {
           }
         }
       } catch (err) {
-        console.warn('퀴즈 기록 로드 실패:', err);
+        console.warn('퀴즈 결과 로드 실패:', err);
       }
     };
-    loadQuizHistory();
+
+    fetchMyQuizzes();
   }, [participantId, dbUrl]);
 
-  // 2. GPS 위치 측정
+  // 2. 현재 퀴즈 전환 시 이전 풀이 상태 복원
+  useEffect(() => {
+    if (!currentQuiz) return;
+    const existing = quizResults[currentQuiz.id];
+    if (existing) {
+      setSelectedOption(existing.selectedIdx);
+      setHasSubmittedAnswer(true);
+    } else {
+      setSelectedOption(null);
+      setHasSubmittedAnswer(false);
+    }
+  }, [currentIdx, currentQuiz, quizResults]);
+
+  // 3. GPS 현재 위치 측정
   const checkCurrentLocation = () => {
     if (!navigator.geolocation) {
       setGpsError('기기에서 위치 정보를 지원하지 않습니다.');
@@ -93,9 +112,9 @@ const DiscoveryQuizScreen: React.FC = () => {
       err => {
         setIsLocating(false);
         if (err.code === err.PERMISSION_DENIED) {
-          setGpsError('Discovery Quiz 참여를 위해 위치정보 사용이 필요합니다. 브라우저 또는 기기 설정에서 위치 권한을 허용해 주세요.');
+          setGpsError('Discovery Quiz 참여를 위해 위치 권한을 허용해 주세요.');
         } else {
-          setGpsError('위치 정보를 가져오는 데 실패했습니다. 다시 시도해 주세요.');
+          setGpsError('위치 정보를 가져오는 데 실패했습니다.');
         }
       },
       { enableHighAccuracy: true, timeout: 8000 }
@@ -114,9 +133,9 @@ const DiscoveryQuizScreen: React.FC = () => {
 
   const isInRange = devBypassGps || (distance <= (currentQuiz?.radiusMeters ?? 60));
 
-  // 정답 제출 핸들러
+  // 4. 정답 제출 핸들러
   const handleAnswerSubmit = async () => {
-    if (selectedOption === null || hasSubmittedAnswer) return;
+    if (selectedOption === null || hasSubmittedAnswer || !currentQuiz) return;
 
     const isCorrect = selectedOption === currentQuiz.correctIndex;
     const pointsEarned = isCorrect ? currentQuiz.points : 0;
@@ -140,272 +159,283 @@ const DiscoveryQuizScreen: React.FC = () => {
         body: JSON.stringify(newResult),
       });
 
-      if (pointsEarned > 0) {
-        // 참가자 점수 가산
-        const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
-        const existing = pRes.ok ? await pRes.json() : null;
-        const prevScore = Number(existing?.score ?? 0);
-        const nextScore = prevScore + pointsEarned;
+      // 참가자 점수 및 퀴즈 카운트 동기화
+      const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
+      const existing = pRes.ok ? await pRes.json() : null;
+      const prevScore = Number(existing?.score ?? 0);
+      const nextScore = prevScore + pointsEarned;
 
-        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ score: nextScore }),
-        });
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          score: nextScore,
+        }),
+      });
 
-        if (myTeam?.id) {
-          updateTeamScore(myTeam.id, nextScore);
-        }
+      if (myTeam?.id && pointsEarned > 0) {
+        updateTeamScore(myTeam.id, nextScore);
       }
     } catch (err) {
       console.warn('퀴즈 결과 저장 실패:', err);
     }
   };
 
-  // 다음 퀴즈로 이동
-  const handleNextQuiz = () => {
-    setSelectedOption(null);
-    setHasSubmittedAnswer(false);
-    if (currentQuizIdx < DISCOVERY_QUIZZES.length - 1) {
-      setCurrentQuizIdx(prev => prev + 1);
-    }
-  };
+  // 5. 전체 3개 퀴즈 풀이 결과 통계
+  const completedCount = useMemo(() => {
+    return activeQuizzes.filter(q => quizResults[q.id] !== undefined).length;
+  }, [activeQuizzes, quizResults]);
 
-  // 완료 통계
-  const completedQuizzesCount = Object.keys(quizResults).length;
-  const isAllQuizzesCompleted = completedQuizzesCount >= DISCOVERY_QUIZZES.length;
-  const totalCorrectCount = Object.values(quizResults).filter(r => r.isCorrect).length;
-  const totalEarnedPoints = Object.values(quizResults).reduce((sum, r) => sum + r.pointsEarned, 0);
+  const totalPointsEarned = useMemo(() => {
+    return Object.values(quizResults).reduce((sum, r) => sum + (r.pointsEarned || 0), 0);
+  }, [quizResults]);
+
+  const isAllCompleted = completedCount === activeQuizzes.length && activeQuizzes.length > 0;
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100">
+    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-20 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
       {/* 상단 헤더 */}
-      <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative flex-shrink-0">
+      <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative flex-shrink-0 z-10">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
-            className="w-9 h-9 rounded-xl bg-[#1A2235] border border-white/8 flex items-center justify-center text-white text-base"
+            className="w-9 h-9 rounded-xl bg-[#1A2235] border border-white/8 flex items-center justify-center text-white text-base active:scale-95"
           >
             ←
           </button>
           <div className="text-center">
             <span className="font-bebas text-xl tracking-widest text-white">
-              DISCOVERY <span className="text-sky-400">QUIZ</span>
+              ACTIVITY 2 · <span className="text-sky-400">DISCOVERY QUIZ</span>
             </span>
-            <p className="text-[9px] text-slate-400">현장 정보 관찰 퀴즈</p>
+            <p className="text-[10px] text-slate-400">
+              {teamConfig?.courseName} (총 3문항)
+            </p>
           </div>
-          <span className="text-[11px] font-bold text-sky-400">
-            문항당 +100pt
+          <span className="text-[11px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
+            {completedCount}/{activeQuizzes.length} 완료
           </span>
         </div>
       </header>
 
-      {/* 전체 완료 화면 */}
-      {isAllQuizzesCompleted ? (
-        <div className="px-5 py-8 flex-1 flex flex-col justify-center items-center text-center">
-          <div className="w-16 h-16 rounded-full bg-sky-500/20 border-2 border-sky-500 flex items-center justify-center text-3xl mb-4">
-            🏛️
-          </div>
-          <h2 className="text-[19px] font-bold text-white mb-2">Discovery Quiz 완료!</h2>
-          <p className="text-[13px] text-sky-400 font-medium mb-1">
-            서울대공원과 미술관 곳곳의 정보를 모두 발견했습니다.
-          </p>
-          <p className="text-[12px] text-slate-400 mb-6">
-            모든 퀴즈 미션을 성공적으로 완수하셨습니다.
-          </p>
+      {/* 3개 스팟 진행 인디케이터 바 */}
+      <div className="bg-[#101626] border-b border-white/8 px-4 py-2.5 flex items-center justify-between gap-2 z-10">
+        <div className="flex gap-2 flex-1">
+          {activeQuizzes.map((quiz, i) => {
+            const res = quizResults[quiz.id];
+            const isCurrent = i === currentIdx;
 
-          <div className="w-full bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 mb-6">
-            <div className="flex justify-between items-center py-1 border-b border-white/5">
-              <span className="text-[13px] text-slate-400">완료 문항 수</span>
-              <span className="text-[14px] font-bold text-white">{completedQuizzesCount} / {DISCOVERY_QUIZZES.length}문항</span>
-            </div>
-            <div className="flex justify-between items-center py-1 border-b border-white/5">
-              <span className="text-[13px] text-slate-400">정답 맞힌 수</span>
-              <span className="text-[14px] font-bold text-green-400">{totalCorrectCount}문항</span>
-            </div>
-            <div className="flex justify-between items-center py-1">
-              <span className="text-[13px] text-slate-400">획득 점수</span>
-              <span className="text-[16px] font-bold text-amber-400">+{totalEarnedPoints}pt</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/')}
-            className="w-full py-3.5 bg-red-500 text-white font-bold rounded-xl active:scale-98 shadow-md"
-          >
-            메인 화면으로 이동
-          </button>
+            return (
+              <button
+                key={quiz.id}
+                onClick={() => setCurrentIdx(i)}
+                className={`flex-1 py-1.5 px-2 rounded-xl text-center border transition-all ${
+                  isCurrent
+                    ? 'border-sky-400 bg-sky-500/20 text-sky-300 font-bold'
+                    : res
+                    ? res.isCorrect
+                      ? 'border-green-500/40 bg-green-500/10 text-green-400'
+                      : 'border-red-500/40 bg-red-500/10 text-red-400'
+                    : 'border-white/5 bg-[#1A2235] text-slate-500'
+                }`}
+              >
+                <span className="text-[11px] block font-bold">Q{i + 1}</span>
+                <span className="text-[9px] block truncate">
+                  {res ? (res.isCorrect ? '정답 +100' : '오답') : `스팟 ${i + 1}`}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      ) : (
-        <div className="flex-1 flex flex-col p-4 overflow-y-auto pb-24">
-          {/* 문항 번호 인디케이터 */}
-          <div className="flex items-center justify-between mb-3 bg-[#1A2235] border border-white/5 px-3.5 py-2 rounded-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] font-bold text-sky-400">
-                QUIZ {currentQuizIdx + 1} / {DISCOVERY_QUIZZES.length}
-              </span>
-              <span className="text-[11px] text-slate-400">📍 {currentQuiz.locationLabel}</span>
-            </div>
-            <span className="text-[11px] bg-white/5 px-2 py-0.5 rounded text-slate-400">
-              +{currentQuiz.points}pt
+      </div>
+
+      <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+        {/* GPS 현장 인증 상태 카드 */}
+        <div className={`border rounded-2xl p-4 space-y-2 transition-all shadow-lg ${
+          isInRange
+            ? 'bg-emerald-950/20 border-emerald-500/40'
+            : 'bg-[#1A2235] border-white/10'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+              isInRange
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+            }`}>
+              {isInRange ? '📍 현장 도착 완료 (퀴즈 풀이 가능)' : '🚶‍♂️ 스팟으로 이동 중'}
+            </span>
+            <button
+              onClick={checkCurrentLocation}
+              disabled={isLocating}
+              className="text-[11px] text-sky-400 hover:text-sky-300 underline flex items-center gap-1"
+            >
+              {isLocating ? '측정 중...' : 'GPS 새로고침'}
+            </button>
+          </div>
+
+          <div>
+            <h3 className="text-[16px] font-bold text-white mb-0.5">
+              스팟 {currentIdx + 1}: {currentQuiz?.title}
+            </h3>
+            <p className="text-[12px] text-slate-300">
+              위치: <strong className="text-white">{currentQuiz?.locationLabel}</strong>
+            </p>
+          </div>
+
+          <div className="flex justify-between items-center text-[11px] pt-1 text-slate-400 border-t border-white/5">
+            <span>인증 반경: <strong>{currentQuiz?.radiusMeters}m 이내</strong></span>
+            <span>
+              현재 거리:{' '}
+              <strong className={distance <= (currentQuiz?.radiusMeters ?? 60) ? 'text-emerald-400' : 'text-amber-400'}>
+                {distance !== Infinity ? `약 ${distance}m` : '위치 확인 필요'}
+              </strong>
             </span>
           </div>
 
-          {/* 위치 권한 오류 화면 */}
-          {gpsError ? (
-            <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-5 text-center my-auto space-y-4">
-              <div className="text-3xl">📡</div>
-              <h3 className="text-[15px] font-bold text-white">위치 권한 필요</h3>
-              <p className="text-[12px] text-slate-300 leading-relaxed">{gpsError}</p>
-              <button
-                onClick={checkCurrentLocation}
-                className="w-full py-3 bg-red-500 text-white font-bold rounded-xl text-[13px]"
-              >
-                다시 시도하기
-              </button>
+          {gpsError && (
+            <p className="text-[11px] text-red-400 bg-red-500/10 p-2 rounded-lg mt-1">
+              ⚠️ {gpsError}
+            </p>
+          )}
+
+          {/* 데스크톱/테스트용 우회 토글 */}
+          <div className="pt-1 flex justify-end">
+            <button
+              onClick={() => setDevBypassGps(!devBypassGps)}
+              className="text-[10px] text-slate-500 hover:text-slate-400 underline"
+            >
+              {devBypassGps ? '🔒 GPS 실제 측정 모드 전환' : '🧪 데스크톱/테스트 우회 활성화'}
+            </button>
+          </div>
+        </div>
+
+        {/* 퀴즈 문제 카드 */}
+        <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-4 shadow-xl">
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-bold text-sky-400">
+                QUESTION {currentIdx + 1} / {activeQuizzes.length}
+              </span>
+              <span className="text-[12px] font-bold text-amber-400">
+                +{currentQuiz?.points}pt
+              </span>
             </div>
-          ) : !isInRange ? (
-            /* GPS 범위 밖: 잠금 화면 */
-            <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-6 text-center my-auto space-y-4 shadow-lg">
-              <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-2xl">
-                🔒
-              </div>
-              <div>
-                <h3 className="text-[16px] font-bold text-white mb-1.5">{currentQuiz.title}</h3>
-                <p className="text-[12px] text-amber-300 leading-relaxed">
-                  아직 퀴즈 장소에 도착하지 않았습니다.<br />
-                  안내된 트레킹 코스를 따라 지정 장소로 이동해 주세요.
-                </p>
-              </div>
+            <p className="text-[15px] font-bold text-white leading-relaxed">
+              {currentQuiz?.questionText}
+            </p>
+          </div>
 
-              <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 text-[12px]">
-                <p className="text-slate-400">퀴즈 장소: <strong className="text-white">{currentQuiz.locationLabel}</strong></p>
-                <p className="text-slate-400 mt-1">
-                  남은 거리: <strong className="text-amber-400">{distance === Infinity ? '측정 중...' : `약 ${distance}m` }</strong>
-                  <span className="text-[10px] text-slate-500 ml-1">(인증 반경 {currentQuiz.radiusMeters}m 이내)</span>
-                </p>
-              </div>
+          {/* 객관식 보기 리스트 */}
+          <div className="space-y-2">
+            {currentQuiz?.options.map((optionText, idx) => {
+              const isSelected = selectedOption === idx;
+              let optionStyle = 'bg-black/30 border-white/10 text-slate-200 hover:bg-black/50';
 
-              <div className="space-y-2 pt-2">
+              if (hasSubmittedAnswer) {
+                if (idx === currentQuiz.correctIndex) {
+                  optionStyle = 'bg-green-500/20 border-green-500 text-green-300 font-bold';
+                } else if (isSelected) {
+                  optionStyle = 'bg-red-500/20 border-red-500 text-red-300';
+                } else {
+                  optionStyle = 'bg-black/20 border-white/5 text-slate-500 opacity-60';
+                }
+              } else if (isSelected) {
+                optionStyle = 'bg-sky-500/20 border-sky-400 text-sky-300 font-bold shadow-md';
+              }
+
+              return (
                 <button
-                  onClick={checkCurrentLocation}
-                  disabled={isLocating}
-                  className="w-full py-3 bg-[#212C42] border border-white/15 text-white font-bold rounded-xl text-[13px] active:scale-98 flex items-center justify-center gap-1.5"
-                >
-                  {isLocating ? '위치 측정 중...' : '🔄 위치 재확인'}
-                </button>
-
-                {/* 개발 / 현장 비상용 우회 토글 */}
-                <button
+                  key={idx}
                   type="button"
-                  onClick={() => setDevBypassGps(true)}
-                  className="w-full py-2 bg-transparent text-slate-500 hover:text-slate-400 text-[11px] underline"
+                  disabled={hasSubmittedAnswer || !isInRange}
+                  onClick={() => setSelectedOption(idx)}
+                  className={`w-full p-3.5 rounded-xl border text-left text-[13px] flex items-center justify-between transition-all ${optionStyle}`}
                 >
-                  [현장 테스트 모드로 바로 풀기]
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold">
+                      {idx + 1}
+                    </span>
+                    <span>{optionText}</span>
+                  </div>
+                  {hasSubmittedAnswer && idx === currentQuiz.correctIndex && (
+                    <span className="text-green-400 font-bold text-[12px]">정답 ✓</span>
+                  )}
+                  {hasSubmittedAnswer && isSelected && idx !== currentQuiz.correctIndex && (
+                    <span className="text-red-400 font-bold text-[12px]">오답 ✕</span>
+                  )}
                 </button>
-              </div>
-            </div>
-          ) : (
-            /* 범위 내: 퀴즈 풀이 화면 */
-            <div className="bg-[#1A2235] border border-sky-500/30 rounded-2xl p-4 flex flex-col space-y-4 shadow-xl">
-              <div>
-                <span className="text-[11px] bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-bold">
-                  ✅ 현장 도착 인증 완료
+              );
+            })}
+          </div>
+
+          {/* 정답 해설 박스 (제출 후 노출) */}
+          {hasSubmittedAnswer && (
+            <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5 animate-fade-in">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[13px]">
+                  {selectedOption === currentQuiz.correctIndex ? '🎉 정답입니다!' : '💡 아쉽네요! 오답입니다.'}
                 </span>
-                <h3 className="text-[16px] font-bold text-white mt-2 mb-1.5">
-                  {currentQuiz.title}
-                </h3>
-                <p className="text-[13px] text-slate-200 leading-relaxed font-medium bg-black/30 p-3 rounded-xl border border-white/5">
-                  {currentQuiz.questionText}
-                </p>
+                <span className="text-[11px] font-bold text-amber-400">
+                  {selectedOption === currentQuiz.correctIndex ? '+100pt 획득' : '+0pt'}
+                </span>
               </div>
+              <p className="text-[12px] text-slate-300 leading-relaxed">
+                {currentQuiz.explanation}
+              </p>
+            </div>
+          )}
 
-              {/* 보기 선택지 */}
-              <div className="space-y-2">
-                {currentQuiz.options.map((optText, oIdx) => {
-                  const isSelected = selectedOption === oIdx;
-                  let optStyle = 'border-white/10 bg-black/20 text-slate-200';
-
-                  if (hasSubmittedAnswer) {
-                    if (oIdx === currentQuiz.correctIndex) {
-                      optStyle = 'border-green-500 bg-green-500/20 text-green-300 font-bold';
-                    } else if (isSelected && oIdx !== currentQuiz.correctIndex) {
-                      optStyle = 'border-red-500 bg-red-500/20 text-red-300 line-through';
-                    } else {
-                      optStyle = 'opacity-40 border-white/5 text-slate-500';
-                    }
-                  } else if (isSelected) {
-                    optStyle = 'border-sky-500 bg-sky-500/20 text-white font-bold shadow-md shadow-sky-500/10';
-                  }
-
-                  return (
-                    <button
-                      key={oIdx}
-                      type="button"
-                      disabled={hasSubmittedAnswer}
-                      onClick={() => setSelectedOption(oIdx)}
-                      className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-[13px] transition-all ${optStyle}`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center text-[11px] font-bold">
-                          {oIdx + 1}
-                        </span>
-                        <span>{optText}</span>
-                      </div>
-                      {hasSubmittedAnswer && oIdx === currentQuiz.correctIndex && (
-                        <span className="text-green-400 text-sm font-bold">✓ 정답</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 해설 및 결과 표시 */}
-              {hasSubmittedAnswer && (
-                <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5 animate-fadeIn">
-                  <p className={`text-[13px] font-bold ${
-                    selectedOption === currentQuiz.correctIndex ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {selectedOption === currentQuiz.correctIndex ? '🎉 정답입니다! (+100pt)' : '😢 아쉽지만 틀렸습니다.'}
-                  </p>
-                  <p className="text-[12px] text-slate-300 leading-relaxed">
-                    💡 {currentQuiz.explanation}
-                  </p>
-                </div>
+          {/* 하단 액션 버튼 */}
+          {!hasSubmittedAnswer ? (
+            <button
+              onClick={handleAnswerSubmit}
+              disabled={selectedOption === null || !isInRange}
+              className="w-full py-3.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20"
+            >
+              {!isInRange ? '📍 스팟 반경 내 도착 시 제출 가능' : '답안 제출하기'}
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              {currentIdx > 0 && (
+                <button
+                  onClick={() => setCurrentIdx(prev => prev - 1)}
+                  className="px-4 py-3 bg-[#1A2235] text-slate-300 font-bold text-[13px] rounded-xl border border-white/10"
+                >
+                  ← 이전 문제
+                </button>
               )}
-
-              {/* 하단 버튼 */}
-              <div className="pt-2 mt-auto">
-                {!hasSubmittedAnswer ? (
-                  <button
-                    type="button"
-                    disabled={selectedOption === null}
-                    onClick={handleAnswerSubmit}
-                    className={`w-full py-3.5 rounded-xl font-bold text-[14px] transition-all active:scale-98 ${
-                      selectedOption !== null
-                        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
-                        : 'bg-[#212C42] text-slate-500 border border-white/5 cursor-not-allowed'
-                    }`}
-                  >
-                    정답 제출하기
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleNextQuiz}
-                    className="w-full py-3.5 bg-red-500 text-white font-bold rounded-xl text-[14px] active:scale-98 shadow-md"
-                  >
-                    {currentQuizIdx < DISCOVERY_QUIZZES.length - 1 ? '다음 문제 이동 →' : '퀴즈 결과 보기 🏆'}
-                  </button>
-                )}
-              </div>
+              {currentIdx < activeQuizzes.length - 1 ? (
+                <button
+                  onClick={() => setCurrentIdx(prev => prev + 1)}
+                  className="flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[13px] rounded-xl shadow"
+                >
+                  다음 스팟 퀴즈 (Q{currentIdx + 2}) →
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate('/leaderboard')}
+                  className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[13px] rounded-xl shadow"
+                >
+                  🏆 3문항 완료! 실시간 순위 확인 →
+                </button>
+              )}
             </div>
           )}
         </div>
-      )}
 
-      <BottomNav active="/" />
+        {/* 3문항 전체 완주 결과 배너 */}
+        {isAllCompleted && (
+          <div className="bg-gradient-to-r from-emerald-900/40 to-sky-900/40 border border-emerald-500/30 rounded-2xl p-4 text-center space-y-2 shadow-xl">
+            <span className="text-2xl">🏆</span>
+            <h4 className="text-[16px] font-bold text-white">
+              {teamConfig?.courseName} 3개 스팟 퀴즈 완주!
+            </h4>
+            <p className="text-[12px] text-slate-300">
+              총 300pt 중 <strong className="text-amber-400">{totalPointsEarned}pt</strong>를 획득하셨습니다.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
