@@ -48,22 +48,17 @@ const FOREST_TRACK: [number, number][] = [
   [37.4285, 127.0170], // 테마가든 인근 합류
 ];
 
-type MapTileMode = 'standard' | 'satellite';
-
 const MapScreen: React.FC = () => {
   const navigate = useNavigate();
   const { myTeam, myLocation, setMyLocation, selectedCourse, setCourse } = useAppStore();
 
   const [selectedQuizId, setSelectedQuizId] = useState<string>('dq1');
-  const [mapMode, setMapMode] = useState<MapTileMode>('standard');
   const [isLocating, setIsLocating] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const elementsLayerRef = useRef<L.LayerGroup | null>(null);
 
-  const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
   const activeCourse = selectedCourse;
   const selectedQuiz = DISCOVERY_QUIZZES.find(q => q.id === selectedQuizId) || DISCOVERY_QUIZZES[0];
 
@@ -93,7 +88,7 @@ const MapScreen: React.FC = () => {
     );
   };
 
-  // 2. Leaflet 맵 초기화
+  // 2. Leaflet 고해상도 위성 지도 초기화 (워터마크 없는 Esri World Imagery)
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -105,14 +100,18 @@ const MapScreen: React.FC = () => {
       attributionControl: false,
     });
 
-    // 기본 타일 레이어 (CartoDB Voyager: 한국어 고해상도 벡터 래스터)
-    const tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-    const tileLayer = L.tileLayer(tileUrl, {
+    // 1) 고해상도 항공 위성사진 베이스 타일
+    const satelliteTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    L.tileLayer(satelliteTileUrl, {
       maxZoom: 19,
-      subdomains: 'abcd',
     }).addTo(map);
 
-    tileLayerRef.current = tileLayer;
+    // 2) 위성사진 위 지명 및 도로 투명 오버레이 타일 (선택적 가독성 향상)
+    const labelsTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+    L.tileLayer(labelsTileUrl, {
+      maxZoom: 19,
+      opacity: 0.85,
+    }).addTo(map);
 
     // 마커/경로선 레이어 그룹
     const elementsLayer = L.layerGroup().addTo(map);
@@ -126,31 +125,7 @@ const MapScreen: React.FC = () => {
     };
   }, []);
 
-  // 3. 타일 모드(일반 vs 위성사진) 변경
-  useEffect(() => {
-    if (!mapRef.current) return;
-    if (tileLayerRef.current) {
-      mapRef.current.removeLayer(tileLayerRef.current);
-    }
-
-    let newUrl = '';
-    if (mapMode === 'satellite') {
-      // Esri World Imagery (실제 고해상도 항공/위성사진)
-      newUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-    } else {
-      // CartoDB Voyager (한국어 고해상도 정밀 지도)
-      newUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-    }
-
-    const newTileLayer = L.tileLayer(newUrl, {
-      maxZoom: 19,
-      subdomains: 'abcd',
-    }).addTo(mapRef.current);
-
-    tileLayerRef.current = newTileLayer;
-  }, [mapMode]);
-
-  // 4. 코스 트랙선, 출발점, 퀴즈 핀, 내 위치 마커 렌더링
+  // 3. 코스 트랙선, 출발점, 퀴즈 핀, 내 위치 마커 렌더링
   useEffect(() => {
     if (!mapRef.current || !elementsLayerRef.current) return;
     elementsLayerRef.current.clearLayers();
@@ -159,22 +134,22 @@ const MapScreen: React.FC = () => {
 
     // 1) 코스 경로선 (Polyline)
     const trackCoords = activeCourse === 'lake' ? LAKE_TRACK : FOREST_TRACK;
-    const trackColor = activeCourse === 'lake' ? '#0284C7' : '#10B981';
+    const trackColor = activeCourse === 'lake' ? '#38BDF8' : '#34D399';
 
-    // 트랙 그림자선
+    // 트랙 외곽선 (위성사진 위에서 선명하게 보이도록 블랙 섀도우)
     L.polyline(trackCoords, {
       color: '#000000',
-      weight: 6,
-      opacity: 0.35,
+      weight: 7,
+      opacity: 0.6,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(layer);
 
-    // 실제 트랙선
+    // 실제 트랙 발광선
     L.polyline(trackCoords, {
       color: trackColor,
-      weight: 4,
-      opacity: 0.95,
+      weight: 4.5,
+      opacity: 1,
       dashArray: '8, 6',
       lineCap: 'round',
       lineJoin: 'round',
@@ -185,15 +160,15 @@ const MapScreen: React.FC = () => {
       className: 'custom-departure-pin',
       html: `
         <div style="
-          background: #1E293B;
+          background: rgba(15, 23, 42, 0.95);
           color: #38BDF8;
           border: 2px solid #38BDF8;
-          padding: 4px 8px;
+          padding: 4px 9px;
           border-radius: 20px;
           font-size: 11px;
           font-weight: bold;
           white-space: nowrap;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.8);
           display: flex;
           align-items: center;
           gap: 4px;
@@ -227,7 +202,7 @@ const MapScreen: React.FC = () => {
             justify-content: center;
             cursor: pointer;
           ">
-            ${isSelected ? '<div style="position:absolute; width:44px; height:44px; border-radius:50%; background:rgba(227,24,55,0.35); animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>' : ''}
+            ${isSelected ? '<div style="position:absolute; width:46px; height:46px; border-radius:50%; background:rgba(227,24,55,0.45); animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>' : ''}
             <div style="
               width: 32px;
               height: 32px;
@@ -240,7 +215,7 @@ const MapScreen: React.FC = () => {
               justify-content: center;
               font-size: 11px;
               font-weight: 900;
-              box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+              box-shadow: 0 4px 16px rgba(0,0,0,0.8);
             ">
               Q${i + 1}
             </div>
@@ -263,8 +238,8 @@ const MapScreen: React.FC = () => {
         radius: quiz.radiusMeters,
         color: isSelected ? '#E31837' : '#38BDF8',
         fillColor: isSelected ? '#E31837' : '#38BDF8',
-        fillOpacity: isSelected ? 0.2 : 0.08,
-        weight: 1.5,
+        fillOpacity: isSelected ? 0.25 : 0.12,
+        weight: 2,
         dashArray: '4, 4',
       }).addTo(layer);
     });
@@ -274,13 +249,13 @@ const MapScreen: React.FC = () => {
       const myIcon = L.divIcon({
         className: 'custom-my-location-pin',
         html: `
-          <div style="position:relative; width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
-            <div style="position:absolute; width:24px; height:24px; border-radius:50%; background:rgba(14,165,233,0.4); animation:ping 1.2s infinite;"></div>
-            <div style="width:14px; height:14px; border-radius:50%; background:#0284C7; border:2.5px solid #FFFFFF; box-shadow:0 0 8px rgba(2,132,199,0.8);"></div>
+          <div style="position:relative; width:26px; height:26px; display:flex; align-items:center; justify-content:center;">
+            <div style="position:absolute; width:26px; height:26px; border-radius:50%; background:rgba(56,189,248,0.5); animation:ping 1.2s infinite;"></div>
+            <div style="width:14px; height:14px; border-radius:50%; background:#0284C7; border:2.5px solid #FFFFFF; box-shadow:0 0 10px rgba(56,189,248,0.9);"></div>
           </div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
       });
 
       L.marker([myLocation.lat, myLocation.lng], { icon: myIcon }).addTo(layer);
@@ -301,57 +276,44 @@ const MapScreen: React.FC = () => {
           </button>
           <div className="text-center">
             <span className="font-bebas text-xl tracking-widest text-white">
-              REAL <span className="text-sky-400">TREKKING MAP</span>
+              SATELLITE <span className="text-sky-400">TREKKING MAP</span>
             </span>
-            <p className="text-[10px] text-slate-400">서울대공원 · 국립현대미술관 실시간 지도</p>
+            <p className="text-[10px] text-slate-400">서울대공원 · 국립현대미술관 고해상도 위성지도</p>
           </div>
-          <span className="text-[11px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
-            GPS 연동
+          <span className="text-[11px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+            🛰️ 위성지도
           </span>
         </div>
       </header>
 
-      {/* 코스 선택 탭 및 위성 전환 바 */}
+      {/* 코스 선택 탭 바 */}
       <div className="bg-[#101626] border-b border-white/8 px-3 py-2 flex items-center justify-between gap-2 z-10">
-        {/* 코스 탭 */}
-        <div className="flex bg-[#1A2235] p-1 rounded-xl gap-1 flex-1">
+        <div className="flex bg-[#1A2235] p-1 rounded-xl gap-1.5 w-full">
           <button
             onClick={() => setCourse('lake')}
-            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeCourse === 'lake'
-                ? 'bg-sky-500 text-white shadow'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            🌊 호수길 (4~6조)
+            🌊 호수둘레길 (4~6조)
           </button>
           <button
             onClick={() => setCourse('forest')}
-            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeCourse === 'forest'
-                ? 'bg-emerald-600 text-white shadow'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            🌲 산림길 (1~3조)
+            🌲 산림욕장길 (1~3조)
           </button>
         </div>
-
-        {/* 지도 모드 토글 (일반 vs 위성사진) */}
-        <button
-          onClick={() => setMapMode(prev => (prev === 'standard' ? 'satellite' : 'standard'))}
-          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 shadow ${
-            mapMode === 'satellite'
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-              : 'bg-[#1A2235] text-slate-300 border-white/10'
-          }`}
-        >
-          {mapMode === 'satellite' ? '🛰️ 위성사진' : '🗺️ 일반지도'}
-        </button>
       </div>
 
-      {/* 실제 Leaflet 지도 뷰포트 */}
-      <div className="relative w-full h-[340px] border-b border-white/8 overflow-hidden">
+      {/* 실제 Leaflet 위성 지도 뷰포트 */}
+      <div className="relative w-full h-[350px] border-b border-white/8 overflow-hidden bg-[#0A0F1A]">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* 플로팅 컨트롤 (내 위치 찾기 & 전체 뷰 복귀) */}
@@ -359,7 +321,7 @@ const MapScreen: React.FC = () => {
           <button
             onClick={fetchMyLocation}
             disabled={isLocating}
-            className="w-10 h-10 rounded-xl bg-[#1A2235]/95 border border-white/20 text-white shadow-lg flex items-center justify-center text-lg active:scale-95 transition-all"
+            className="w-10 h-10 rounded-xl bg-[#1A2235]/95 border border-white/20 text-white shadow-xl flex items-center justify-center text-lg active:scale-95 transition-all"
             title="내 현재 GPS 위치로 이동"
           >
             {isLocating ? '⏳' : '📍'}
@@ -370,7 +332,7 @@ const MapScreen: React.FC = () => {
                 mapRef.current.flyTo([37.4320, 127.0180], 15, { duration: 1 });
               }
             }}
-            className="w-10 h-10 rounded-xl bg-[#1A2235]/95 border border-white/20 text-white shadow-lg flex items-center justify-center text-sm font-bold active:scale-95 transition-all"
+            className="w-10 h-10 rounded-xl bg-[#1A2235]/95 border border-white/20 text-white shadow-xl flex items-center justify-center text-xs font-bold active:scale-95 transition-all"
             title="전체 코스 보기"
           >
             전체
@@ -400,11 +362,11 @@ const MapScreen: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <div className="bg-black/30 p-2 rounded-xl text-[11px] text-slate-400 flex flex-col">
+            <div className="bg-black/40 p-2 rounded-xl text-[11px] text-slate-400 flex flex-col">
               <span>인증 반경</span>
               <strong className="text-white text-[12px] mt-0.5">{selectedQuiz.radiusMeters}m 이내</strong>
             </div>
-            <div className="bg-black/30 p-2 rounded-xl text-[11px] text-slate-400 flex flex-col">
+            <div className="bg-black/40 p-2 rounded-xl text-[11px] text-slate-400 flex flex-col">
               <span>내 위치로부터 거리</span>
               <strong className="text-amber-400 text-[12px] mt-0.5">
                 {distance !== null ? `약 ${distance}m` : 'GPS 측정 중'}
