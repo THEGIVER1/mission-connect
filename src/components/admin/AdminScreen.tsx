@@ -50,9 +50,8 @@ const AdminScreen: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState<'all' | '㈜두산' | '두산경영연구원'>('all');
 
   // 저녁 퀴즈 마스터 모드 상태
-  const [blindMode, setBlindMode] = useState<boolean>(true);
+  const [blindMode, setBlindMode] = useState<boolean>(false);
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
@@ -69,6 +68,8 @@ const AdminScreen: React.FC = () => {
             ...val,
           }));
           setParticipants(list);
+        } else {
+          setParticipants([]);
         }
       }
 
@@ -97,7 +98,7 @@ const AdminScreen: React.FC = () => {
       if (selectedCompany !== 'all' && p.company !== selectedCompany) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        return p.name.toLowerCase().includes(q) || (p.teamName || '').includes(q);
+        return (p.name || '').toLowerCase().includes(q) || (p.teamName || '').includes(q);
       }
       return true;
     });
@@ -117,6 +118,11 @@ const AdminScreen: React.FC = () => {
     });
     return map;
   }, [peopleQuests]);
+
+  // 7개 문항 답변을 작성한 참가자 수
+  const answeredParticipants = useMemo(() => {
+    return participants.filter(p => p.myInfo && Object.keys(p.myInfo).length > 0);
+  }, [participants]);
 
   // CSV 다운로드 유틸리티
   const downloadCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
@@ -217,7 +223,93 @@ const AdminScreen: React.FC = () => {
     downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 3. 조별 People Quest 제출 해제
+  // 3. 테스트용 샘플 데이터 생성 (관리자가 퀴즈 화면 테스트 시 활용)
+  const handleGenerateSampleData = async () => {
+    if (!window.confirm('저녁 퀴즈 테스트를 위해 샘플 참가자 3명(김민준, 이서연, 손우진)의 7문항 답변 데이터를 생성하시겠습니까?')) return;
+    setIsLoading(true);
+    try {
+      const samples = [
+        {
+          name: '김민준',
+          company: '㈜두산',
+          teamId: 'team1',
+          teamName: '1조',
+          course: 'forest',
+          score: 300,
+          missionsCompleted: 2,
+          joinedAt: new Date().toISOString(),
+          status: 'active',
+          myInfo: {
+            q1_passion: '주말 10km 한강 러닝과 마라톤 풀코스 준비',
+            q2_vacation: '스위스 인터라켄으로 떠나 대자연 트레킹하기',
+            q3_dreamJob: '골목길 작은 심야식당 오너 셰프',
+            q4_bucketList: '보스턴 마라톤 대회 완주 메달 획득하기',
+            q5_unexpectedFact: '대학 시절 록밴드 드럼 연주자 출신',
+            q6_growthExperience: '입사 후 첫 신사업 프로젝트 PM으로 3개 부서 협업 리딩',
+            q7_careerChallenge: '글로벌 HR 데이터 분석 및 조직문화 신규 모델 구축',
+          },
+        },
+        {
+          name: '이서연',
+          company: '두산경영연구원',
+          teamId: 'team1',
+          teamName: '1조',
+          course: 'forest',
+          score: 200,
+          missionsCompleted: 1,
+          joinedAt: new Date().toISOString(),
+          status: 'active',
+          myInfo: {
+            q1_passion: '프랑스 제과 제빵 베이킹 클래스 수강',
+            q2_vacation: '제주도 조용한 바닷가 북스테이에서 5일간 독서하기',
+            q3_dreamJob: '어린이 동화 작가 겸 일러스트레이터',
+            q4_bucketList: '나만의 홈베이킹 레시피북 독립출판하기',
+            q5_unexpectedFact: '바리스타 1급 자격증 보유 & 20개국 배낭여행',
+            q6_growthExperience: '어려웠던 전략 과제 분석 실패 후 재도전하여 CEO 보고 성공',
+            q7_careerChallenge: '생성형 AI를 활용한 경영진 리더십 진단 툴 개발',
+          },
+        },
+        {
+          name: '손우진',
+          company: '㈜두산',
+          teamId: 'team4',
+          teamName: '4조',
+          course: 'lake',
+          score: 200,
+          missionsCompleted: 1,
+          joinedAt: new Date().toISOString(),
+          status: 'active',
+          myInfo: {
+            q1_passion: '골프 숏게임 연습 및 주말 스크린 골프 대회',
+            q2_vacation: '가족들과 함께 하와이 휴양지에서 온전한 휴식',
+            q3_dreamJob: '세계 여행 전문 여행 다큐멘터리 PD',
+            q4_bucketList: '골프 싱글 타수 달성 & 가족 해외여행 3회',
+            q5_unexpectedFact: '스킨스쿠버 다이빙 마스터 자격증 보유',
+            q6_growthExperience: '새로운 직무로 부서 이동 후 6개월 만에 최우수 조직원 선정',
+            q7_careerChallenge: '타 계열사와의 전략적 인재 교류 프로그램 기획',
+          },
+        },
+      ];
+
+      for (const s of samples) {
+        const pId = `${s.name}_${s.company}`.replace(/\s/g, '_');
+        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(s),
+        });
+      }
+
+      await fetchData();
+      alert('샘플 참가자 데이터 3명이 성공적으로 등록되었습니다!');
+    } catch (e) {
+      alert('샘플 데이터 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 4. 조별 People Quest 제출 해제
   const handleResetPeopleQuest = async (teamId: string) => {
     if (!window.confirm(`[${teamId}]의 People Quest 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
       return;
@@ -234,6 +326,8 @@ const AdminScreen: React.FC = () => {
       alert('해제 중 오류가 발생했습니다.');
     }
   };
+
+  const currentP = participants[currentCardIndex] || participants[0];
 
   return (
     <div className="max-w-[420px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
@@ -262,6 +356,19 @@ const AdminScreen: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* 종합 현황 인포 바 */}
+      <div className="bg-[#101626] border-b border-white/8 px-4 py-2 flex items-center justify-between text-[11px] text-slate-300">
+        <div>
+          <span>👥 등록 참가자: </span>
+          <strong className="text-amber-400 font-bold">{participants.length}명</strong>
+          <span className="text-slate-500 ml-1">/ 50명</span>
+        </div>
+        <div>
+          <span>💡 7문항 답변 완료: </span>
+          <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
+        </div>
+      </div>
 
       {/* 탭 네비게이션 */}
       <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-4 gap-1 text-[11px] font-bold">
@@ -311,13 +418,13 @@ const AdminScreen: React.FC = () => {
                 </span>
                 <button
                   onClick={() => setBlindMode(!blindMode)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
                     blindMode
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       : 'bg-green-500/20 text-green-300 border-green-500/40'
                   }`}
                 >
-                  {blindMode ? '🔒 블라인드 모드 (이름 숨김)' : '🔓 정답 공개 모드'}
+                  {blindMode ? '🔒 블라인드 (이름 숨김)' : '🔓 정답 공개 모드'}
                 </button>
               </div>
               <p className="text-[12px] text-slate-300 leading-relaxed">
@@ -325,16 +432,42 @@ const AdminScreen: React.FC = () => {
               </p>
             </div>
 
+            {/* 참가자 선택 셀렉터 */}
+            {participants.length > 0 && (
+              <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-3 flex items-center justify-between gap-2">
+                <span className="text-[12px] font-bold text-slate-300 whitespace-nowrap">참가자 선택:</span>
+                <select
+                  value={currentCardIndex}
+                  onChange={e => setCurrentCardIndex(Number(e.target.value))}
+                  className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-[12px] text-white focus:outline-none focus:border-red-500"
+                >
+                  {participants.map((p, idx) => (
+                    <option key={p.id} value={idx} style={{ background: '#1A2235', color: 'white' }}>
+                      #{idx + 1} {p.name || '미입력'} ({p.company || ''} · {p.teamName || p.teamId || ''}) {p.myInfo ? '✓' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* 플래시 카드 */}
             {participants.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 text-[13px]">
-                등록된 참가자 정보가 없습니다.
+              <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-6 text-center space-y-3">
+                <p className="text-slate-400 text-[13px]">
+                  아직 실시간 데이터베이스에 등록된 참가자 정보가 없습니다.
+                </p>
+                <button
+                  onClick={handleGenerateSampleData}
+                  className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl shadow active:scale-98 transition-all"
+                >
+                  🧪 퀴즈 테스트용 샘플 참가자 데이터 생성
+                </button>
               </div>
             ) : (
               (() => {
-                const currentP = participants[currentCardIndex] || participants[0];
-                const info = currentP.myInfo || {};
-                const stat = nominationStats[currentP.name];
+                const info = currentP?.myInfo || {};
+                const stat = currentP ? nominationStats[currentP.name] : null;
+                const hasInfo = Object.keys(info).length > 0;
 
                 return (
                   <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4 relative overflow-hidden">
@@ -345,7 +478,7 @@ const AdminScreen: React.FC = () => {
                           QUIZ CARD #{currentCardIndex + 1} / {participants.length}
                         </span>
                         <h2 className="text-[20px] font-extrabold text-white mt-0.5">
-                          {blindMode ? '❓ 누구의 이야기일까요?' : `👑 ${currentP.name} 님`}
+                          {blindMode ? '❓ 누구의 이야기일까요?' : `👑 ${currentP.name || '미등록'} 님`}
                         </h2>
                         <span className="text-[12px] text-slate-400">
                           {blindMode ? `소속: ${currentP.company} · ${currentP.teamName}` : `${currentP.company} · ${currentP.teamName}`}
@@ -358,18 +491,23 @@ const AdminScreen: React.FC = () => {
                       )}
                     </div>
 
+                    {!hasInfo && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-[12px] text-amber-300 text-center">
+                        ⚠️ 이 참가자는 아직 7문항 답변을 입력하지 않았습니다.
+                      </div>
+                    )}
+
                     {/* 7개 질문 답변 리스트 */}
                     <div className="space-y-2.5">
                       {MY_INFO_QUESTIONS.map((q, idx) => {
                         const val = info[q.id] || (idx === 0 ? currentP.truth1 : idx === 2 ? currentP.lie : idx === 4 ? currentP.truth2 : '');
-                        if (!val) return null;
                         return (
                           <div key={q.id} className="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1">
                             <span className="text-[11px] text-red-400 font-bold block">
                               Q{idx + 1}. {q.title}
                             </span>
                             <p className="text-[13px] text-white font-medium leading-relaxed">
-                              "{val}"
+                              {val ? `"${val}"` : <span className="text-slate-500 italic">(미입력)</span>}
                             </p>
                           </div>
                         );
@@ -412,13 +550,19 @@ const AdminScreen: React.FC = () => {
               })()
             )}
 
-            {/* 하단 CSV 다운로드 버튼 */}
-            <div className="pt-2">
+            {/* 하단 CSV 다운로드 & 샘플 생성 버튼 */}
+            <div className="pt-2 space-y-2">
               <button
                 onClick={handleExportMasterMergedCSV}
                 className="w-full py-3.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-bold text-[14px] rounded-xl shadow-lg flex items-center justify-center gap-2"
               >
                 <span>📥 저녁 퀴즈용 전체 결합 엑셀(CSV) 다운로드</span>
+              </button>
+              <button
+                onClick={handleGenerateSampleData}
+                className="w-full py-2.5 bg-[#1A2235] hover:bg-[#222C44] text-slate-300 font-bold text-[12px] rounded-xl border border-white/10"
+              >
+                🧪 퀴즈 테스트용 샘플 참가자 데이터 3명 추가
               </button>
             </div>
           </div>
@@ -450,9 +594,9 @@ const AdminScreen: React.FC = () => {
                   <div key={p.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
                     <div className="flex justify-between items-center">
                       <div>
-                        <strong className="text-[14px] text-white">{p.name}</strong>
+                        <strong className="text-[14px] text-white">{p.name || '미등록'}</strong>
                         <span className="text-[11px] text-slate-400 ml-2">
-                          ({p.company} · {p.teamName || p.teamId})
+                          ({p.company || ''} · {p.teamName || p.teamId || ''})
                         </span>
                       </div>
                       <span className="text-[11px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold">
@@ -461,13 +605,13 @@ const AdminScreen: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-300 bg-black/30 p-2.5 rounded-xl">
-                      <p>• <strong>취미/관심사:</strong> {info['q1_passion'] || p.truth1 || '-'}</p>
-                      <p>• <strong>5일 자유시간:</strong> {info['q2_vacation'] || '-'}</p>
-                      <p>• <strong>원하는 직업:</strong> {info['q3_dreamJob'] || p.lie || '-'}</p>
-                      <p>• <strong>버킷리스트:</strong> {info['q4_bucketList'] || '-'}</p>
-                      <p>• <strong>의외의 사실:</strong> {info['q5_unexpectedFact'] || p.truth2 || '-'}</p>
-                      <p>• <strong>성장 경험:</strong> {info['q6_growthExperience'] || '-'}</p>
-                      <p>• <strong>새로운 도전:</strong> {info['q7_careerChallenge'] || '-'}</p>
+                      <p>• <strong>1. 취미/관심사:</strong> {info['q1_passion'] || p.truth1 || '-'}</p>
+                      <p>• <strong>2. 5일 자유시간:</strong> {info['q2_vacation'] || '-'}</p>
+                      <p>• <strong>3. 원하는 직업:</strong> {info['q3_dreamJob'] || p.lie || '-'}</p>
+                      <p>• <strong>4. 버킷리스트:</strong> {info['q4_bucketList'] || '-'}</p>
+                      <p>• <strong>5. 의외의 사실:</strong> {info['q5_unexpectedFact'] || p.truth2 || '-'}</p>
+                      <p>• <strong>6. 성장 경험:</strong> {info['q6_growthExperience'] || '-'}</p>
+                      <p>• <strong>7. 새로운 도전:</strong> {info['q7_careerChallenge'] || '-'}</p>
                     </div>
                   </div>
                 );
@@ -568,7 +712,7 @@ const AdminScreen: React.FC = () => {
                   <div className="flex flex-wrap gap-1 pt-1">
                     {teamMembers.map(m => (
                       <span key={m.id} className="text-[10px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
-                        {m.name} ({m.score ?? 0}pt)
+                        {m.name || '미등록'} ({m.score ?? 0}pt)
                       </span>
                     ))}
                   </div>

@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import {
   WORKSHOP_COMPANIES,
   WORKSHOP_TEAMS,
   MY_INFO_QUESTIONS,
-  ACTIVE_VENUE,
   WorkshopTeamConfig,
 } from '../config/workshopConfig';
 
@@ -30,6 +29,21 @@ const TeamSelect: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedTeam = TEAMS.find(t => t.id === selectedTeamId) || null;
+  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+
+  // 기존 저장된 답변 불러오기
+  useEffect(() => {
+    if (!name || !company) return;
+    const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
+    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.myInfo) {
+          setAnswers(d.myInfo);
+        }
+      })
+      .catch(() => {});
+  }, [name, company, dbUrl]);
 
   const handleAnswerChange = (qId: string, value: string) => {
     if (value.length > 100) return;
@@ -47,19 +61,11 @@ const TeamSelect: React.FC = () => {
 
   // Step 2 완료 및 최종 입장
   const handleFinalEnter = async () => {
-    // 최소 4개 이상 또는 전체 입력 확인
-    const answeredCount = MY_INFO_QUESTIONS.filter(q => (answers[q.id] || '').trim().length > 0).length;
-    if (answeredCount < 3) {
-      setError('동료들과 즐거운 대화를 위해 최소 3개 이상의 질문에 답해주세요!');
-      return;
-    }
-
     if (!selectedTeam) return;
     setIsSubmitting(true);
     setError('');
 
     const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
-    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
     try {
       const checkRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
@@ -67,25 +73,28 @@ const TeamSelect: React.FC = () => {
       const initialScore = Number(existing?.score ?? 0);
       const initialCompleted = Number(existing?.missionsCompleted ?? 0);
 
+      const payload = {
+        name: name.trim(),
+        company,
+        teamId: selectedTeam.id,
+        teamName: selectedTeam.name,
+        course: selectedTeam.assignedCourse,
+        myInfo: answers,
+        // 하위 호환 필드
+        truth1: answers['q1_passion'] || '',
+        truth2: answers['q5_unexpectedFact'] || answers['q4_bucketList'] || '',
+        lie: answers['q3_dreamJob'] || '',
+        score: initialScore,
+        missionsCompleted: initialCompleted,
+        joinedAt: existing?.joinedAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'active',
+      };
+
       await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          company,
-          teamId: selectedTeam.id,
-          teamName: selectedTeam.name,
-          course: selectedTeam.assignedCourse,
-          myInfo: answers,
-          // 하위 호환
-          truth1: answers['q1_passion'] || '',
-          truth2: answers['q5_unexpectedFact'] || answers['q4_bucketList'] || '',
-          lie: answers['q3_dreamJob'] || '',
-          score: initialScore,
-          missionsCompleted: initialCompleted,
-          joinedAt: existing?.joinedAt ?? new Date().toISOString(),
-          status: 'active',
-        }),
+        body: JSON.stringify(payload),
       });
 
       selectTeam({
@@ -204,35 +213,44 @@ const TeamSelect: React.FC = () => {
       {/* STEP 1: 참가자 기본 정보 입력 & 조 선택 */}
       {step === 'info' && (
         <div className="px-5 pt-4 flex flex-col gap-3.5 flex-1 overflow-y-auto pb-6">
-          {/* 이미 로그인된 세션이 있는 경우 바로가기 카드 */}
+          {/* 이미 로그인된 세션이 있는 경우 바로가기 & 수정 카드 */}
           {myTeam && participantName && (
-            <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-3.5 text-center space-y-2 shadow-lg">
-              <span className="text-[10px] bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-bold">
-                ✓ 자동 로그인 세션 유지됨
+            <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-4 text-center space-y-2.5 shadow-lg">
+              <span className="text-[10px] bg-green-500/15 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                ✓ 현재 로그인된 참가자
               </span>
-              <p className="text-[13px] text-white">
+              <p className="text-[14px] text-white">
                 <strong className="text-amber-400">{participantName}</strong>님 ({participantCompany} · {myTeam.name})
               </p>
-              <div className="flex gap-2 pt-0.5">
+              <div className="space-y-1.5 pt-1">
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-bold text-[12px] rounded-xl active:scale-98 shadow"
+                  className="w-full py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl active:scale-98 shadow"
                 >
                   대시보드로 바로 이동 →
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    setName('');
-                    setCompany('');
-                    setSelectedTeamId(null);
-                  }}
-                  className="px-3 py-2 bg-black/30 hover:bg-black/50 text-slate-400 hover:text-white text-[11px] rounded-xl border border-white/10"
-                >
-                  새로 입력
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep('myinfo')}
+                    className="flex-1 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 text-[12px] font-bold rounded-xl"
+                  >
+                    ✏️ 7문항 답변 수정/입력
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setName('');
+                      setCompany('');
+                      setSelectedTeamId(null);
+                    }}
+                    className="px-3 py-2 bg-black/40 text-slate-400 hover:text-white text-[11px] rounded-xl border border-white/10"
+                  >
+                    다른 이름으로 입장
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -317,7 +335,7 @@ const TeamSelect: React.FC = () => {
         </div>
       )}
 
-      {/* STEP 2: 나의 정보 입력 (7개 질문) */}
+      {/* STEP 2: 나의 정보 입력 (7개 질문 - 예시 줄바꿈 박스 적용) */}
       {step === 'myinfo' && (
         <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
@@ -328,21 +346,22 @@ const TeamSelect: React.FC = () => {
               </span>
             </div>
             <p className="text-[12px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-3 rounded-xl border border-white/5">
-              동료들과 나눌 <strong>나만의 관심사, 경험, 커리어 이야기</strong>를 편하게 작성해 주세요. (저녁 퀴즈쇼 및 네트워킹의 기초자료로 활용됩니다)
+              동료들과 나눌 <strong>나만의 관심사, 경험, 커리어 이야기</strong>를 작성해 주세요. (저녁 퀴즈쇼 및 네트워킹의 기초자료로 활용됩니다)
             </p>
           </div>
 
           {/* 7개 질문 카드 리스트 */}
-          <div className="space-y-3.5">
+          <div className="space-y-4">
             {MY_INFO_QUESTIONS.map((q, idx) => {
               const val = answers[q.id] || '';
               return (
-                <div key={q.id} className="bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 space-y-2">
+                <div key={q.id} className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2.5 shadow-md">
+                  {/* 질문 헤더 */}
                   <div className="flex justify-between items-start gap-2">
                     <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
-                    <label className="flex-1 text-[13px] font-bold text-white leading-snug">
+                    <label className="flex-1 text-[13.5px] font-bold text-white leading-snug">
                       {q.title}
                     </label>
                     <span className={`text-[10px] flex-shrink-0 ${val.length > 90 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
@@ -350,14 +369,20 @@ const TeamSelect: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* ★ 예시 텍스트: 인풋 안이 아니라 아래 별도 줄바꿈 박스로 100% 온전하게 노출 ★ */}
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-2.5 text-[11.5px] text-slate-300 leading-relaxed">
+                    💡 <strong className="text-amber-300">예시:</strong> {q.placeholder.replace(/^예시?:\s*/, '')}
+                  </div>
+
+                  {/* 실제 입력창 */}
                   <input
                     type="text"
                     maxLength={100}
                     value={val}
                     onChange={e => handleAnswerChange(q.id, e.target.value)}
-                    placeholder={q.placeholder}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5
-                      text-white text-[13px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors"
+                    placeholder="나의 답변 입력..."
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-3
+                      text-white text-[13.5px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors"
                   />
                 </div>
               );
@@ -391,9 +416,9 @@ const TeamSelect: React.FC = () => {
                 bg-red-500 hover:bg-red-600 active:scale-98 transition-all shadow-md shadow-red-500/20"
             >
               {isSubmitting ? (
-                <>입장 처리 중...</>
+                <>저장 처리 중...</>
               ) : (
-                <>입장 완료 및 트레킹 시작 🚀</>
+                <>입장 완료 및 정보 저장 🚀</>
               )}
             </button>
           </div>
