@@ -1,425 +1,473 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../store/useAppStore';
-import { LiveBadge } from '../shared';
 import {
   WORKSHOP_TEAMS,
-  PEOPLE_QUEST_QUESTIONS,
+  MY_INFO_QUESTIONS,
   DISCOVERY_QUIZZES,
   PRE_REGISTERED_PARTICIPANTS,
-  ACTIVE_VENUE,
 } from '../../config/workshopConfig';
 
-type AdminTab = 'candidates' | 'jinjinga' | 'peoplequest' | 'quizzes' | 'teams';
+interface ParticipantRecord {
+  id: string;
+  name: string;
+  company: string;
+  teamId: string;
+  teamName: string;
+  course: string;
+  score: number;
+  missionsCompleted: number;
+  myInfo?: Record<string, string>;
+  truth1?: string;
+  truth2?: string;
+  lie?: string;
+  joinedAt?: string;
+}
+
+interface PeopleQuestRecord {
+  teamId: string;
+  teamName: string;
+  status: 'draft' | 'submitted';
+  recommendation?: {
+    recommendedPersonId: string;
+    recommendedPersonName: string;
+    recommendedPersonCompany: string;
+    selectedTopic: string;
+    reason: string;
+  };
+  submittedAt?: string;
+  submittedBy?: string;
+}
+
+type AdminTab = 'quizMaster' | 'myInfoList' | 'peopleQuest' | 'teams';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<AdminTab>('candidates');
+  const [activeTab, setActiveTab] = useState<AdminTab>('quizMaster');
+  const [participants, setParticipants] = useState<ParticipantRecord[]>([]);
+  const [peopleQuests, setPeopleQuests] = useState<Record<string, PeopleQuestRecord>>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCompany, setSelectedCompany] = useState<'all' | '㈜두산' | '두산경영연구원'>('all');
 
-  const [participants, setParticipants] = useState<Record<string, any>>({});
-  const [peopleQuests, setPeopleQuests] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(false);
+  // 저녁 퀴즈 마스터 모드 상태
+  const [blindMode, setBlindMode] = useState<boolean>(true);
+  const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  // 데이터 로드
-  const fetchAllData = async () => {
-    setLoading(true);
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
-      const [pRes, qRes] = await Promise.all([
-        fetch(`${dbUrl}/sessions/trekking2026/participants.json`),
-        fetch(`${dbUrl}/sessions/trekking2026/peopleQuest.json`),
-      ]);
+      // 1. 참가자 전체 목록
+      const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants.json`);
       if (pRes.ok) {
         const pData = await pRes.json();
-        setParticipants(pData || {});
+        if (pData) {
+          const list: ParticipantRecord[] = Object.entries(pData).map(([id, val]: [string, any]) => ({
+            id,
+            ...val,
+          }));
+          setParticipants(list);
+        }
       }
-      if (qRes.ok) {
-        const qData = await qRes.json();
-        setPeopleQuests(qData || {});
+
+      // 2. People Quest 조별 제출 현황
+      const pqRes = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest.json`);
+      if (pqRes.ok) {
+        const pqData = await pqRes.json();
+        if (pqData) {
+          setPeopleQuests(pqData);
+        }
       }
-    } catch (err) {
-      console.warn('어드민 데이터 조회 실패:', err);
+    } catch (e) {
+      console.warn('Admin 데이터 로드 실패:', e);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAllData();
-    const timer = setInterval(fetchAllData, 10000); // 10초마다 자동 갱신
-    return () => clearInterval(timer);
-  }, []);
+    fetchData();
+  }, [dbUrl]);
 
-  // CSV 다운로드 유틸리티 함수
-  const downloadCsv = (filename: string, rows: (string | number)[][]) => {
-    const csvContent = '\uFEFF' + rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // 필터링된 참가자 목록
+  const filteredParticipants = useMemo(() => {
+    return participants.filter(p => {
+      if (selectedCompany !== 'all' && p.company !== selectedCompany) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        return p.name.toLowerCase().includes(q) || (p.teamName || '').includes(q);
+      }
+      return true;
+    });
+  }, [participants, selectedCompany, searchQuery]);
+
+  // People Quest 추천 받은 횟수 집계
+  const nominationStats = useMemo(() => {
+    const map: Record<string, { count: number; byTeams: string[]; reasons: string[] }> = {};
+    Object.values(peopleQuests).forEach(pq => {
+      if (pq.status === 'submitted' && pq.recommendation?.recommendedPersonName) {
+        const name = pq.recommendation.recommendedPersonName;
+        if (!map[name]) map[name] = { count: 0, byTeams: [], reasons: [] };
+        map[name].count += 1;
+        map[name].byTeams.push(pq.teamName);
+        map[name].reasons.push(`[${pq.teamName}] ${pq.recommendation.reason}`);
+      }
+    });
+    return map;
+  }, [peopleQuests]);
+
+  // CSV 다운로드 유틸리티
+  const downloadCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    const escape = (val: string | number) => `"${String(val || '').replace(/"/g, '""')}"`;
+    const csvContent = [
+      headers.map(escape).join(','),
+      ...rows.map(row => row.map(escape).join(',')),
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
+    link.href = url;
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // 7.4 진진가 후보 데이터 결합 (핵심 운영 데이터)
-  // ─────────────────────────────────────────────────────────────
-  const combinedCandidates = useMemo(() => {
-    // 1. People Quest 추천 내역 취합
-    const recList: {
-      teamId: string;
-      teamName: string;
-      questionId: string;
-      questionTitle: string;
-      recommendedPersonId: string;
-      recommendedPersonName: string;
-      recommendedPersonCompany: string;
-      reason: string;
-    }[] = [];
+  // 1. 나의 정보 7문항 전체 CSV 다운로드
+  const handleExportMyInfoCSV = () => {
+    const headers = [
+      '이름',
+      '소속',
+      '소속 조',
+      '배정 코스',
+      '현재 점수',
+      'Q1_가장 푹 빠진 것',
+      'Q2_5일 자유시간',
+      'Q3_해보고 싶은 직업',
+      'Q4_3년 내 버킷리스트',
+      'Q5_의외의 사실',
+      'Q6_가장 성장한 경험',
+      'Q7_새로운 커리어 도전',
+      '등록일시',
+    ];
 
-    // 추천 인물별 추천 횟수 계산
-    const recCountMap: Record<string, number> = {};
-
-    Object.entries(peopleQuests).forEach(([tId, questData]: [string, any]) => {
-      const recs = questData?.recommendations || {};
-      Object.entries(recs).forEach(([qId, item]: [string, any]) => {
-        if (item?.personName) {
-          const qTitle = PEOPLE_QUEST_QUESTIONS.find(q => q.id === qId)?.title || qId;
-          recList.push({
-            teamId: tId,
-            teamName: questData.teamName || tId,
-            questionId: qId,
-            questionTitle: qTitle,
-            recommendedPersonId: item.personId,
-            recommendedPersonName: item.personName,
-            recommendedPersonCompany: item.company,
-            reason: item.reason || '',
-          });
-          recCountMap[item.personName] = (recCountMap[item.personName] || 0) + 1;
-        }
-      });
+    const rows = participants.map(p => {
+      const info = p.myInfo || {};
+      return [
+        p.name || '',
+        p.company || '',
+        p.teamName || p.teamId || '',
+        p.course || '',
+        p.score ?? 0,
+        info['q1_passion'] || p.truth1 || '',
+        info['q2_vacation'] || '',
+        info['q3_dreamJob'] || p.lie || '',
+        info['q4_bucketList'] || '',
+        info['q5_unexpectedFact'] || p.truth2 || '',
+        info['q6_growthExperience'] || '',
+        info['q7_careerChallenge'] || '',
+        p.joinedAt || '',
+      ];
     });
 
-    // 2. 해당 인물의 진진가 사전정보 결합
-    return recList.map(rec => {
-      // 참가자 DB에서 진진가 찾기
-      const matchedP = Object.values(participants).find((p: any) => p?.name?.trim() === rec.recommendedPersonName.trim());
-      return {
-        ...rec,
-        truthCount: recCountMap[rec.recommendedPersonName] || 1,
-        truth1: matchedP?.truth1 || '(미입력)',
-        truth2: matchedP?.truth2 || '(미입력)',
-        lie: matchedP?.lie || '(미입력)',
-      };
-    });
-  }, [peopleQuests, participants]);
-
-  // 결합 데이터 CSV 다운로드
-  const handleDownloadCandidatesCsv = () => {
-    const headers = ['추천된 조', '질문 구분', '추천 인물', '소속', '추천 횟수', '선정 이유', '진짜 정보 1', '진짜 정보 2', '가짜 정보 1'];
-    const rows = combinedCandidates.map(c => [
-      c.teamName,
-      c.questionTitle,
-      c.recommendedPersonName,
-      c.recommendedPersonCompany,
-      c.truthCount,
-      c.reason,
-      c.truth1,
-      c.truth2,
-      c.lie,
-    ]);
-    downloadCsv(`2026_CHRO_진진가_후보_결합데이터_${new Date().toISOString().slice(0,10)}.csv`, [headers, ...rows]);
+    downloadCSV(`CHRO_트레킹_나의정보_7문항_원문_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // 7.2 진진가 사전정보 CSV 다운로드
-  // ─────────────────────────────────────────────────────────────
-  const handleDownloadJinjingaCsv = () => {
-    const headers = ['이름', '소속', '행사 조', '정보 문장', '진위 구분', '입력 일시'];
-    const rows: any[] = [];
-    Object.values(participants).forEach((p: any) => {
-      if (!p) return;
-      if (p.truth1) rows.push([p.name, p.company, p.teamName, p.truth1, '진짜', p.joinedAt || '']);
-      if (p.truth2) rows.push([p.name, p.company, p.teamName, p.truth2, '진짜', p.joinedAt || '']);
-      if (p.lie)    rows.push([p.name, p.company, p.teamName, p.lie, '가짜', p.joinedAt || '']);
+  // 2. 통합 저녁 행사용 결합 CSV (7문항 + 조별 추천 내역)
+  const handleExportMasterMergedCSV = () => {
+    const headers = [
+      '이름',
+      '소속',
+      '소속 조',
+      '추천받은 횟수',
+      '추천해준 조 목록',
+      '조별 추천 사유 통합',
+      'Q1_가장 푹 빠진 것',
+      'Q2_5일 자유시간',
+      'Q3_해보고 싶은 직업',
+      'Q4_3년 내 버킷리스트',
+      'Q5_의외의 사실',
+      'Q6_가장 성장한 경험',
+      'Q7_새로운 커리어 도전',
+    ];
+
+    const rows = participants.map(p => {
+      const info = p.myInfo || {};
+      const stat = nominationStats[p.name] || { count: 0, byTeams: [], reasons: [] };
+      return [
+        p.name || '',
+        p.company || '',
+        p.teamName || p.teamId || '',
+        stat.count,
+        stat.byTeams.join(' / '),
+        stat.reasons.join(' | '),
+        info['q1_passion'] || p.truth1 || '',
+        info['q2_vacation'] || '',
+        info['q3_dreamJob'] || p.lie || '',
+        info['q4_bucketList'] || '',
+        info['q5_unexpectedFact'] || p.truth2 || '',
+        info['q6_growthExperience'] || '',
+        info['q7_careerChallenge'] || '',
+      ];
     });
-    downloadCsv(`2026_CHRO_진진가_전체사전정보_${new Date().toISOString().slice(0,10)}.csv`, [headers, ...rows]);
+
+    downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // 7.3 People Quest CSV 다운로드
-  // ─────────────────────────────────────────────────────────────
-  const handleDownloadPeopleQuestCsv = () => {
-    const headers = ['추천한 행사 조', '질문 ID', '질문명', '추천 인물', '추천 인물 소속', '선정 이유', '제출 일시'];
-    const rows: any[] = [];
-    Object.entries(peopleQuests).forEach(([tId, qData]: [string, any]) => {
-      const recs = qData?.recommendations || {};
-      Object.entries(recs).forEach(([qId, item]: [string, any]) => {
-        const qTitle = PEOPLE_QUEST_QUESTIONS.find(q => q.id === qId)?.title || qId;
-        rows.push([
-          qData.teamName || tId,
-          qId,
-          qTitle,
-          item.personName || '',
-          item.company || '',
-          item.reason || '',
-          qData.submittedAt || '',
-        ]);
-      });
-    });
-    downloadCsv(`2026_CHRO_PeopleQuest_조별추천결과_${new Date().toISOString().slice(0,10)}.csv`, [headers, ...rows]);
-  };
-
-  // 조별 People Quest 제출 상태 해제 (재제출 허용)
-  const handleUnlockPeopleQuest = async (teamId: string) => {
-    if (!window.confirm(`${teamId}의 제출 상태를 해제하여 다시 수정할 수 있게 하시겠습니까?`)) return;
+  // 3. 조별 People Quest 제출 해제
+  const handleResetPeopleQuest = async (teamId: string) => {
+    if (!window.confirm(`[${teamId}]의 People Quest 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
+      return;
+    }
     try {
       await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'draft' }),
       });
-      alert('제출 상태가 해제되었습니다.');
-      fetchAllData();
+      fetchData();
+      alert('제출이 해제되었습니다.');
     } catch (e) {
-      alert('상태 해제 실패');
+      alert('해제 중 오류가 발생했습니다.');
     }
   };
 
   return (
-    <div className="max-w-[700px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100 font-['Noto_Sans_KR']">
-      {/* 상단 헤더 */}
-      <header className="bg-[#13192A] border-b border-white/10 px-5 pt-4 pb-3 relative flex-shrink-0">
+    <div className="max-w-[420px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
+      {/* 헤더 */}
+      <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-bebas text-2xl tracking-widest text-white">
-              CHRO <span className="text-red-500">ADMIN</span>
+          <button
+            onClick={() => navigate('/')}
+            className="w-9 h-9 rounded-xl bg-[#1A2235] border border-white/8 flex items-center justify-center text-white text-base"
+          >
+            ←
+          </button>
+          <div className="text-center">
+            <span className="font-bebas text-xl tracking-widest text-white">
+              ADMIN · <span className="text-red-500">CONTROL CENTER</span>
             </span>
-            <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold">
-              운영본부
-            </span>
+            <p className="text-[10px] text-slate-400">2026 CHRO Trekking 운영본부 & 저녁 퀴즈 센터</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/')}
-              className="text-[11px] bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-slate-300"
-            >
-              사용자 화면
-            </button>
-            <button
-              onClick={fetchAllData}
-              disabled={loading}
-              className="text-[11px] bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-white font-bold"
-            >
-              {loading ? '새로고침 중...' : '🔄 새로고침'}
-            </button>
-          </div>
-        </div>
-
-        {/* 탭 네비게이션 */}
-        <div className="flex gap-1 mt-3 overflow-x-auto pb-1 text-[12px] font-bold">
           <button
-            onClick={() => setTab('candidates')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-              tab === 'candidates' ? 'bg-red-500 text-white shadow' : 'bg-[#1A2235] text-slate-400 hover:text-white'
-            }`}
+            onClick={fetchData}
+            className="w-9 h-9 rounded-xl bg-[#1A2235] border border-white/8 flex items-center justify-center text-slate-300 active:scale-95"
+            title="새로고침"
           >
-            ⭐ 진진가 결합 후보 (저녁용)
-          </button>
-          <button
-            onClick={() => setTab('jinjinga')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-              tab === 'jinjinga' ? 'bg-red-500 text-white shadow' : 'bg-[#1A2235] text-slate-400 hover:text-white'
-            }`}
-          >
-            진진가 사전정보 ({Object.keys(participants).length}명)
-          </button>
-          <button
-            onClick={() => setTab('peoplequest')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-              tab === 'peoplequest' ? 'bg-red-500 text-white shadow' : 'bg-[#1A2235] text-slate-400 hover:text-white'
-            }`}
-          >
-            People Quest 현황
-          </button>
-          <button
-            onClick={() => setTab('quizzes')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-              tab === 'quizzes' ? 'bg-red-500 text-white shadow' : 'bg-[#1A2235] text-slate-400 hover:text-white'
-            }`}
-          >
-            Discovery Quiz 현황
+            🔄
           </button>
         </div>
       </header>
 
-      {/* 탭 내용 */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      {/* 탭 네비게이션 */}
+      <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-4 gap-1 text-[11px] font-bold">
+        <button
+          onClick={() => setActiveTab('quizMaster')}
+          className={`py-2 rounded-lg transition-all ${
+            activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🎯 퀴즈 마스터
+        </button>
+        <button
+          onClick={() => setActiveTab('myInfoList')}
+          className={`py-2 rounded-lg transition-all ${
+            activeTab === 'myInfoList' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          💡 나의 정보 ({participants.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('peopleQuest')}
+          className={`py-2 rounded-lg transition-all ${
+            activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          💬 추천 현황
+        </button>
+        <button
+          onClick={() => setActiveTab('teams')}
+          className={`py-2 rounded-lg transition-all ${
+            activeTab === 'teams' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          📊 조별 순위
+        </button>
+      </div>
 
-        {/* 1. 진진가 후보 데이터 결합 (핵심) */}
-        {tab === 'candidates' && (
+      {/* 탭 컨텐츠 */}
+      <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+        {/* TAB 1: 저녁 퀴즈 마스터 모드 */}
+        {activeTab === 'quizMaster' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-[#1A2235] p-3.5 rounded-xl border border-white/10">
-              <div>
-                <h2 className="text-[15px] font-bold text-white">진진가 후보 데이터 결합 테이블</h2>
-                <p className="text-[11px] text-slate-400">
-                  People Quest 추천 인물 + 해당 인물의 진짜 2개 / 가짜 1개 정보를 자동 결합하여 보여줍니다.
-                </p>
+            <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-4 space-y-3 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold text-red-400 flex items-center gap-1.5">
+                  🎤 저녁 퀴즈 출제 화면
+                </span>
+                <button
+                  onClick={() => setBlindMode(!blindMode)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                    blindMode
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-green-500/20 text-green-300 border-green-500/40'
+                  }`}
+                >
+                  {blindMode ? '🔒 블라인드 모드 (이름 숨김)' : '🔓 정답 공개 모드'}
+                </button>
               </div>
-              <button
-                onClick={handleDownloadCandidatesCsv}
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[12px] font-bold rounded-lg shadow flex items-center gap-1"
-              >
-                📥 CSV 다운로드
-              </button>
+              <p className="text-[12px] text-slate-300 leading-relaxed">
+                빔프로젝터에 띄우거나 MC가 읽어주며 <strong>"이 답변의 주인공은 누구일까요?"</strong> 퀴즈를 진행할 수 있습니다.
+              </p>
             </div>
 
-            {combinedCandidates.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 bg-[#121826] rounded-xl border border-white/5">
-                아직 People Quest 추천 데이터가 없습니다.
+            {/* 플래시 카드 */}
+            {participants.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 text-[13px]">
+                등록된 참가자 정보가 없습니다.
               </div>
             ) : (
-              <div className="space-y-3">
-                {combinedCandidates.map((c, idx) => (
-                  <div key={idx} className="bg-[#1A2235] border border-white/10 rounded-xl p-3.5 space-y-2">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-bold text-amber-400">
-                          {c.recommendedPersonName}
+              (() => {
+                const currentP = participants[currentCardIndex] || participants[0];
+                const info = currentP.myInfo || {};
+                const stat = nominationStats[currentP.name];
+
+                return (
+                  <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4 relative overflow-hidden">
+                    {/* 카드 헤더 */}
+                    <div className="flex justify-between items-start border-b border-white/10 pb-3">
+                      <div>
+                        <span className="text-[11px] text-red-400 font-bold tracking-wider uppercase block">
+                          QUIZ CARD #{currentCardIndex + 1} / {participants.length}
                         </span>
-                        <span className="text-[11px] text-slate-400">({c.recommendedPersonCompany})</span>
-                        <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
-                          추천 {c.truthCount}회
+                        <h2 className="text-[20px] font-extrabold text-white mt-0.5">
+                          {blindMode ? '❓ 누구의 이야기일까요?' : `👑 ${currentP.name} 님`}
+                        </h2>
+                        <span className="text-[12px] text-slate-400">
+                          {blindMode ? `소속: ${currentP.company} · ${currentP.teamName}` : `${currentP.company} · ${currentP.teamName}`}
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        추천한 조: <strong className="text-white">{c.teamName}</strong>
-                      </span>
+                      {stat && stat.count > 0 && (
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                          ⭐ 낮 트레킹 {stat.count}개 조 추천!
+                        </span>
+                      )}
                     </div>
 
-                    <p className="text-[12px] text-slate-300">
-                      <strong className="text-sky-400">[{c.questionTitle}]</strong> {c.reason ? `"${c.reason}"` : '(이유 미입력)'}
-                    </p>
+                    {/* 7개 질문 답변 리스트 */}
+                    <div className="space-y-2.5">
+                      {MY_INFO_QUESTIONS.map((q, idx) => {
+                        const val = info[q.id] || (idx === 0 ? currentP.truth1 : idx === 2 ? currentP.lie : idx === 4 ? currentP.truth2 : '');
+                        if (!val) return null;
+                        return (
+                          <div key={q.id} className="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1">
+                            <span className="text-[11px] text-red-400 font-bold block">
+                              Q{idx + 1}. {q.title}
+                            </span>
+                            <p className="text-[13px] text-white font-medium leading-relaxed">
+                              "{val}"
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
 
-                    <div className="bg-black/30 p-2.5 rounded-lg text-[11px] space-y-1 border border-white/5">
-                      <p className="text-emerald-400">✓ 진짜 1: <span className="text-white">{c.truth1}</span></p>
-                      <p className="text-emerald-400">✓ 진짜 2: <span className="text-white">{c.truth2}</span></p>
-                      <p className="text-red-400">✗ 가짜 1: <span className="text-white">{c.lie}</span></p>
+                    {/* 낮 트레킹 추천 사유가 있다면 노출 */}
+                    {stat && stat.reasons.length > 0 && (
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 space-y-1.5">
+                        <span className="text-[11px] text-red-400 font-bold block">
+                          💬 낮 트레킹 동료들의 추천 코멘트:
+                        </span>
+                        {stat.reasons.map((r, i) => (
+                          <p key={i} className="text-[12px] text-slate-200 italic">
+                            • {r}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 이전 / 다음 카드 전환 */}
+                    <div className="flex gap-2 pt-2 border-t border-white/10">
+                      <button
+                        onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
+                        disabled={currentCardIndex === 0}
+                        className="flex-1 py-3 bg-[#1A2235] hover:bg-[#222C44] disabled:opacity-40 text-white font-bold text-[13px] rounded-xl border border-white/10"
+                      >
+                        ← 이전 참가자
+                      </button>
+                      <button
+                        onClick={() => setCurrentCardIndex(prev => Math.min(participants.length - 1, prev + 1))}
+                        disabled={currentCardIndex === participants.length - 1}
+                        className="flex-1 py-3 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white font-bold text-[13px] rounded-xl shadow"
+                      >
+                        다음 참가자 →
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })()
             )}
+
+            {/* 하단 CSV 다운로드 버튼 */}
+            <div className="pt-2">
+              <button
+                onClick={handleExportMasterMergedCSV}
+                className="w-full py-3.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-bold text-[14px] rounded-xl shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>📥 저녁 퀴즈용 전체 결합 엑셀(CSV) 다운로드</span>
+              </button>
+            </div>
           </div>
         )}
 
-        {/* 2. 진진가 사전정보 관리 */}
-        {tab === 'jinjinga' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-[#1A2235] p-3.5 rounded-xl border border-white/10">
-              <div>
-                <h2 className="text-[15px] font-bold text-white">참가자별 진진가 사전정보</h2>
-                <p className="text-[11px] text-slate-400">입장 시 입력한 진짜 2개와 가짜 1개 원문 데이터입니다.</p>
-              </div>
+        {/* TAB 2: 나의 정보 7문항 전체 목록 */}
+        {activeTab === 'myInfoList' && (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="이름 또는 조 검색"
+                className="flex-1 bg-[#1A2235] border border-white/10 rounded-xl px-3 py-2 text-[12px] text-white placeholder-slate-600"
+              />
               <button
-                onClick={handleDownloadJinjingaCsv}
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[12px] font-bold rounded-lg shadow"
+                onClick={handleExportMyInfoCSV}
+                className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-[12px] font-bold rounded-xl whitespace-nowrap shadow"
               >
-                📥 전체 다운로드
+                CSV 받기
               </button>
             </div>
 
             <div className="space-y-2.5">
-              {Object.values(participants).length === 0 ? (
-                <div className="text-center py-12 text-slate-500 bg-[#121826] rounded-xl border border-white/5">
-                  입장한 참가자 데이터가 없습니다.
-                </div>
-              ) : (
-                Object.values(participants).map((p: any, i) => (
-                  <div key={i} className="bg-[#1A2235] border border-white/10 rounded-xl p-3.5 text-[12px] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <strong className="text-[14px] text-white">{p.name}</strong>
-                        <span className="text-slate-400">({p.company} · {p.teamName})</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500">{p.joinedAt?.slice(0, 16).replace('T', ' ')}</span>
-                    </div>
-                    <div className="bg-black/30 p-2.5 rounded-lg space-y-1">
-                      <p className="text-emerald-400">🟢 진짜 ①: <span className="text-slate-200">{p.truth1 || '-'}</span></p>
-                      <p className="text-emerald-400">🟢 진짜 ②: <span className="text-slate-200">{p.truth2 || '-'}</span></p>
-                      <p className="text-red-400">🔴 가짜 ①: <span className="text-slate-200">{p.lie || '-'}</span></p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 3. People Quest 조별 제출 관리 */}
-        {tab === 'peoplequest' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-[#1A2235] p-3.5 rounded-xl border border-white/10">
-              <div>
-                <h2 className="text-[15px] font-bold text-white">People Quest 조별 제출 현황</h2>
-                <p className="text-[11px] text-slate-400">조별 질문 추천 인물 및 선정 이유입니다.</p>
-              </div>
-              <button
-                onClick={handleDownloadPeopleQuestCsv}
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[12px] font-bold rounded-lg shadow"
-              >
-                📥 결과 다운로드
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {WORKSHOP_TEAMS.map(team => {
-                const quest = peopleQuests[team.id];
-                const isSub = quest?.status === 'submitted';
-                const recs = quest?.recommendations || {};
-
+              {filteredParticipants.map(p => {
+                const info = p.myInfo || {};
                 return (
-                  <div key={team.id} className="bg-[#1A2235] border border-white/10 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{team.emoji}</span>
-                        <strong className="text-[14px] text-white">{team.name}</strong>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                          isSub ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'
-                        }`}>
-                          {isSub ? '✅ 최종 제출' : '진행 중'}
+                  <div key={p.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <strong className="text-[14px] text-white">{p.name}</strong>
+                        <span className="text-[11px] text-slate-400 ml-2">
+                          ({p.company} · {p.teamName || p.teamId})
                         </span>
                       </div>
-                      {isSub && (
-                        <button
-                          onClick={() => handleUnlockPeopleQuest(team.id)}
-                          className="text-[11px] text-red-400 hover:underline"
-                        >
-                          제출 상태 해제
-                        </button>
-                      )}
+                      <span className="text-[11px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold">
+                        {p.score ?? 0}pt
+                      </span>
                     </div>
 
-                    <div className="space-y-2">
-                      {PEOPLE_QUEST_QUESTIONS.map(q => {
-                        const item = recs[q.id];
-                        return (
-                          <div key={q.id} className="bg-black/30 p-2.5 rounded-lg text-[11px]">
-                            <p className="text-amber-400 font-bold mb-0.5">{q.title}</p>
-                            {item?.personName ? (
-                              <p className="text-white">
-                                👉 <strong className="text-white">{item.personName}</strong> ({item.company}) : "{item.reason}"
-                              </p>
-                            ) : (
-                              <p className="text-slate-500">추천 대상 미선택</p>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-300 bg-black/30 p-2.5 rounded-xl">
+                      <p>• <strong>취미/관심사:</strong> {info['q1_passion'] || p.truth1 || '-'}</p>
+                      <p>• <strong>5일 자유시간:</strong> {info['q2_vacation'] || '-'}</p>
+                      <p>• <strong>원하는 직업:</strong> {info['q3_dreamJob'] || p.lie || '-'}</p>
+                      <p>• <strong>버킷리스트:</strong> {info['q4_bucketList'] || '-'}</p>
+                      <p>• <strong>의외의 사실:</strong> {info['q5_unexpectedFact'] || p.truth2 || '-'}</p>
+                      <p>• <strong>성장 경험:</strong> {info['q6_growthExperience'] || '-'}</p>
+                      <p>• <strong>새로운 도전:</strong> {info['q7_careerChallenge'] || '-'}</p>
                     </div>
                   </div>
                 );
@@ -428,30 +476,107 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* 4. Discovery Quiz 현황 */}
-        {tab === 'quizzes' && (
-          <div className="space-y-4">
-            <div className="bg-[#1A2235] p-3.5 rounded-xl border border-white/10">
-              <h2 className="text-[15px] font-bold text-white">Discovery Quiz 등록 문항 ({DISCOVERY_QUIZZES.length}개)</h2>
-              <p className="text-[11px] text-slate-400">현장 객관식 퀴즈 정보 및 좌표 안내입니다.</p>
+        {/* TAB 3: 조별 People Quest 추천 현황 */}
+        {activeTab === 'peopleQuest' && (
+          <div className="space-y-3">
+            <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 space-y-2">
+              <span className="text-[12px] font-bold text-white block">
+                💬 6개 조 People Quest 제출 상태
+              </span>
+              <p className="text-[11px] text-slate-400">
+                각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다.
+              </p>
             </div>
 
             <div className="space-y-2.5">
-              {DISCOVERY_QUIZZES.map((quiz, i) => (
-                <div key={quiz.id} className="bg-[#1A2235] border border-white/10 rounded-xl p-3 text-[12px] space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <strong className="text-sky-400">Q{i + 1}. {quiz.title}</strong>
-                    <span className="text-[10px] text-slate-400">{quiz.locationLabel}</span>
+              {WORKSHOP_TEAMS.map(team => {
+                const pq = peopleQuests[team.id];
+                const isSubmitted = pq?.status === 'submitted';
+                const rec = pq?.recommendation;
+
+                return (
+                  <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{team.emoji}</span>
+                        <strong className="text-[14px] text-white">{team.name}</strong>
+                      </div>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                        isSubmitted
+                          ? 'bg-green-500/15 text-green-400 border-green-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      }`}>
+                        {isSubmitted ? '✓ 최종 제출됨' : '진행 중'}
+                      </span>
+                    </div>
+
+                    {rec?.recommendedPersonName ? (
+                      <div className="bg-black/30 p-2.5 rounded-xl space-y-1 text-[12px]">
+                        <p className="text-white font-bold">
+                          👑 추천: <span className="text-amber-400">{rec.recommendedPersonName} 님</span> ({rec.recommendedPersonCompany})
+                        </p>
+                        <p className="text-slate-300 text-[11px]">
+                          주제: {rec.selectedTopic}
+                        </p>
+                        <p className="text-slate-400 text-[11px] italic bg-white/5 p-2 rounded-lg mt-1">
+                          "{rec.reason}"
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-500">아직 추천 대상자가 등록되지 않았습니다.</p>
+                    )}
+
+                    {isSubmitted && (
+                      <div className="pt-1 flex justify-end">
+                        <button
+                          onClick={() => handleResetPeopleQuest(team.id)}
+                          className="text-[11px] text-slate-400 hover:text-red-400 underline"
+                        >
+                          제출 취소 및 수정 허용
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-slate-200">{quiz.questionText}</p>
-                  <p className="text-[11px] text-green-400">정답: {quiz.options[quiz.correctIndex]}</p>
-                  <p className="text-[10px] text-slate-500">좌표: {quiz.coords.lat}, {quiz.coords.lng} (반경 {quiz.radiusMeters}m)</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
+        {/* TAB 4: 조별 순위 현황 */}
+        {activeTab === 'teams' && (
+          <div className="space-y-3">
+            {WORKSHOP_TEAMS.map((team, idx) => {
+              const teamMembers = participants.filter(p => p.teamId === team.id);
+              const totalScore = teamMembers.reduce((acc, cur) => acc + (cur.score ?? 0), 0);
+
+              return (
+                <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[11px] flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <strong className="text-[14px] text-white">{team.emoji} {team.name}</strong>
+                      <span className="text-[11px] text-slate-400">({teamMembers.length}명)</span>
+                    </div>
+                    <span className="text-[14px] font-extrabold text-amber-400">
+                      {totalScore.toLocaleString()} pt
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {teamMembers.map(m => (
+                      <span key={m.id} className="text-[10px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
+                        {m.name} ({m.score ?? 0}pt)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -179,11 +179,11 @@ const ActivitySection: React.FC = () => {
         </div>
 
         <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-          대화를 통해 우리 조직의 숨은 이야기를 가진 사람을 찾아보세요. (추천 인물은 저녁 진진가 퀴즈의 핵심 후보가 됩니다)
+          트레킹 대화를 통해 우리 조직의 가장 인상 깊은 동료를 찾아보세요. (추천 인물과 스토리는 저녁 퀴즈 대항전의 핵심 소재가 됩니다)
         </p>
 
         <div className="flex items-center justify-between text-[11px] pt-2.5 border-t border-white/5">
-          <span className="text-slate-400">GPS 무관 · 2명 추천 시 조원당 <strong>+200pt</strong></span>
+          <span className="text-slate-400">GPS 무관 · 조별 1명 추천 시 조원당 <strong>+200pt</strong></span>
           <span className="text-red-400 font-bold flex items-center gap-0.5">
             참여하기 →
           </span>

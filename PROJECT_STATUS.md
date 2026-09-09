@@ -21,46 +21,46 @@
 
 ---
 
-## 2. 고해상도 실제 항공 위성지도 일원화 (`MapScreen.tsx`)
+## 2. 핵심 컨셉 개편 (진진가 ➡️ 나의 정보 7문항 기반 대화 & 저녁 퀴즈 체계)
+1. **플랫폼 입장: 「나의 정보 입력」 7개 질문 (`TeamSelect.tsx`)**:
+   - Q1: 최근 가장 푹 빠져 있는 것은?
+   - Q2: 나 혼자만의 자유시간이 5일 생긴다면 가장 먼저 하고 싶은 것은?
+   - Q3: 다시 태어난다면 해보고 싶은 직업은?
+   - Q4: 향후 3년 내 꼭 이루고 싶은 버킷리스트가 있다면?
+   - Q5: 동료들이 들으면 의외라고 생각할 나만의 사실은?
+   - Q6: 지금까지 회사생활이나 사회생활을 하면서 나를 가장 많이 성장하게 한 경험은?
+   - Q7: 앞으로 업무나 커리어에서 새롭게 도전해보고 싶은 것은?
+   - 각 문항별 풍부한 예시 문구 플레이스홀더 제공 & Firebase RTDB 안전 저장.
+2. **트레킹 중 활동: 단일 통합 조별 대화 미션 (Activity 1: People Quest, `PeopleQuestScreen.tsx`)**:
+   - 미션명: **💬 우리 조가 발견한 '최고의 스토리 동료' 추천**
+   - 7가지 주제로 대화 후 우리 조가 추천하는 인물 1명 + 주제 태그 + 사유/스토리 작성 및 최종 제출 (조원당 +200pt).
+3. **저녁 식사 자리: 퀴즈 마스터 모드 & 통합 결합 데이터 (`AdminScreen.tsx`)**:
+   - **🎯 저녁 퀴즈 마스터 카드**: 50명 참가자 답변 플래시카드, [블라인드 이름 가리기 / 정답 공개] 토글 지원.
+   - **📥 원클릭 CSV 다운로드**: 나의 정보 7문항 원문 CSV 및 조별 추천 결합 마스터 엑셀(CSV) 다운로드.
+
+---
+
+## 3. 고해상도 실제 항공 위성지도 일원화 (`MapScreen.tsx`)
 - **워터마크 없는 고해상도 위성지도 (Esri World Imagery + Labels Overlay)**:
   - 어떠한 API 요청 워터마크나 제한 없이 **서울대공원·청계호수·국립현대미술관·청계산 자락의 실사 항공 위성사진**을 풀 해상도로 선명하게 렌더링.
-  - 지명 및 도로 레이어가 위성사진 위에 깔끔하게 오버레이되어 시인성 극대화.
-- **실시간 GPS 및 코스 트랙선**:
   - 호수둘레길(하늘색) / 산림욕장길(에메랄드 그린) 실제 GPS 경로선(Polyline) 및 공통 출발지(코끼리열차 매표소) 마커.
   - 참가자의 **실시간 현재 위치(파란색 펄스 점)** 표시 및 [내 위치로 이동] 버튼.
   - Discovery Quiz 5개 스팟 마커(Q1~Q5) 및 활성화 반경(60~70m) 원형 오버레이 인터랙션.
 
 ---
 
-## 3. 자동 로그인 세션 유지 (Auto-Login Persistence via localStorage)
+## 4. 자동 로그인 세션 유지 (Auto-Login Persistence via localStorage)
 - **Zustand `persist` 미들웨어 적용 (`mission_connect_session`)**:
   - 참가자가 모바일 브라우저를 닫거나, 다른 앱(카톡, 카메라 등)을 사용하다 복귀하거나, 새로고침하더라도 **입장 화면으로 튕기지 않고 대시보드로 즉시 자동 복귀**.
-  - 저장 대상: `myTeam`, `participantName`, `participantCompany`, `selectedCourse`, `peopleQuestDraft`, `isPeopleQuestSubmitted`, `answeredQuizIds`.
-  - `/team-select` 진입 시 기존 로그인 세션 바로가기 카드 및 새로 로그인(로그아웃) 기능 제공.
-
----
-
-## 4. 리더보드 & 실시간 타이머 체계
-- **실시간 초 단위 타이머 (Live Ticking Timer)**:
-  - 대시보드 상단 및 리더보드 상단 통계 영역에 `hh:mm:ss` 포맷으로 **매 1초마다 실시간 카운트다운** 작동.
-- **팀 순위 탭 (`TeamTab`)**:
-  - Firebase RTDB의 `participants`(개인별 점수/미션) 및 `peopleQuest`(조별 제출 상태)를 실시간 결합하여 1~6조 누적 점수와 완료 미션 수 실시간 산출.
-- **미션별 현황 탭 (`MissionTab`)**:
-  - **Activity 1: People Quest**: 조별 제출 완료율(N/6개 조 완료, %) 및 1~6조 각각의 완료 상태 뱃지 실시간 노출.
-  - **Activity 2: Discovery Quiz**: 5개 현장 퀴즈 스팟(Q1~Q5)별 참가자 풀이 수 및 정답 맞힌 인원 실시간 통계 노출.
-- **개인 기여 탭 (`IndividualTab`)**:
-  - 참가자별 미션 완료 점수 순 랭킹(나 뱃지 포함) 실시간 집계.
 
 ---
 
 ## 5. 완료된 기능 현황 ✅
+- [x] **「나의 정보 입력」 7개 질문 입장 폼 & Firebase RTDB 연동 (`TeamSelect.tsx`)**
+- [x] **단일 통합 조별 대화 & '최고의 스토리 동료' 추천 미션 완성 (`PeopleQuestScreen.tsx`)**
+- [x] **운영자 저녁 퀴즈 마스터 모드(블라인드 퀴즈 카드) 및 통합 결합 CSV 다운로드 (`AdminScreen.tsx`)**
 - [x] **워터마크 없는 고해상도 실제 항공 위성지도 일원화 (`MapScreen.tsx`)**
 - [x] **모바일 브라우저 자동 로그인 세션 유지 (`localStorage` / Zustand `persist`)**
 - [x] **Firebase Realtime Database 통신 및 쓰기/읽기 권한 검증 완료**
 - [x] **초 단위 실시간 타이머(Dashboard & Leaderboard) 작동 보장 (`hh:mm:ss`)**
 - [x] **리더보드 3대 탭(팀 순위 / 2대 액티비티 미션별 현황 / 개인 기여 점수) 실시간 동기화**
-- [x] **2026 CHRO Trekking 전용 설정 및 50명 사전 참가자 풀 등록 (`src/config/workshopConfig.ts`)**
-- [x] **진진가(진짜2개/가짜1개) 사전정보 수집 2단계 입장 화면 구축 (`src/components/TeamSelect.tsx`)**
-- [x] **Activity 1: People Quest 화면 및 중복방지/검색/임시저장/제출 완성 (`PeopleQuestScreen.tsx`)**
-- [x] **Activity 2: Discovery Quiz 화면 및 GPS 인증/객관식 퀴즈/해설 완성 (`DiscoveryQuizScreen.tsx`)**
-- [x] **운영자 전용 진진가 결합 데이터 CSV 다운로드 및 어드민 고도화 (`AdminScreen.tsx`)**

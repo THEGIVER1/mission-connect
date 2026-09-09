@@ -3,13 +3,15 @@
  * Workshop & Venue Configuration (2026 CHRO Trekking)
  * =====================================================================
  * 2026 CHRO 부문 트레킹 워크샵 (약 50명 대상)
- * - 공통 출발: 코끼리열차 매표소
+ * - 공통 출발: 코끼리열차 매표소 앞 광장
  * - 코스: 1~3조(산림욕장 트레킹길) / 4~6조(호수둘레길 코스)
- * - 2대 핵심 Activity: People Quest & Discovery Quiz
+ * - 2대 핵심 Activity:
+ *    1) People Quest (통합 1개 조별 대화 & 인물 추천 미션)
+ *    2) Discovery Quiz (5개 스팟 현장 객관식 퀴즈)
  */
 
 import {
-  PeopleQuestQuestion,
+  MyInfoQuestion,
   DiscoveryQuizItem,
   PreRegisteredPerson,
 } from '../types';
@@ -53,26 +55,64 @@ export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 3. Activity 1: People Quest 질문 목록 (모듈형 관리)
+// 3. 플랫폼 입장: 「나의 정보 입력」 7개 질문 (모듈화)
 // ─────────────────────────────────────────────────────────────────
-export const PEOPLE_QUEST_QUESTIONS: PeopleQuestQuestion[] = [
+export const MY_INFO_QUESTIONS: MyInfoQuestion[] = [
   {
-    id: 'pq1',
-    title: '가장 의외의 취미를 가지고 있을 것 같은 사람',
-    instruction: '평소 모습에서는 예상하기 어려운 취미나 활동을 꾸준히 즐기는 사람을 찾아보세요.',
+    id: 'q1_passion',
+    title: '최근 가장 푹 빠져 있는 것은?',
+    placeholder: '예: 러닝, 드라마, 골프, 특정 유튜브 채널, 투자 공부, 베이킹, 독서, AI 활용 등',
+    category: 'life',
   },
   {
-    id: 'pq2',
-    title: '특별한 경험을 가지고 있을 것 같은 사람',
-    instruction: '여행, 도전, 생활, 봉사 등 다른 구성원들이 흥미롭게 들을 만한 경험을 가진 사람을 찾아보세요.',
+    id: 'q2_vacation',
+    title: '나 혼자만의 자유시간이 5일 생긴다면 가장 먼저 하고 싶은 것은?',
+    placeholder: '예: 해외여행 가기, 집에서 푹 쉬기, 캠핑 떠나기, 가족과 시간 보내기, 맛집 투어 등',
+    category: 'life',
+  },
+  {
+    id: 'q3_dreamJob',
+    title: '다시 태어난다면 해보고 싶은 직업은?',
+    placeholder: '예: 셰프, 운동선수, 교사, 작가, 파일럿, 건축가, 여행 유튜버 등',
+    category: 'life',
+  },
+  {
+    id: 'q4_bucketList',
+    title: '향후 3년 내 꼭 이루고 싶은 버킷리스트가 있다면?',
+    placeholder: '예: 하프마라톤 완주, 가족 해외여행, 자격증 취득, 악기 배우기, 체중 감량 등',
+    category: 'life',
+  },
+  {
+    id: 'q5_unexpectedFact',
+    title: '동료들이 들으면 의외라고 생각할 나만의 사실은?',
+    placeholder: '예: 마라톤 완주 경험, 바리스타 자격증, 밴드 활동, 20개국 이상 여행, 악기 연주 등',
+    category: 'life',
+  },
+  {
+    id: 'q6_growthExperience',
+    title: '지금까지 회사생활이나 사회생활을 하면서 나를 가장 많이 성장하게 한 경험은?',
+    placeholder: '예: 새로운 직무로의 이동, 첫 프로젝트 리딩, 어려운 과제 수행, 실패 후 재도전, 타 조직 협업 등',
+    category: 'career',
+  },
+  {
+    id: 'q7_careerChallenge',
+    title: '앞으로 업무나 커리어에서 새롭게 도전해보고 싶은 것은?',
+    placeholder: '예: 새로운 직무&프로젝트, 다른 조직과의 협업, 글로벌 업무, 전문자격 취득, AI 활용 등',
+    category: 'career',
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────
+// 4. Activity 1: People Quest (통합된 1개 조별 대화 & 추천 미션)
+// ─────────────────────────────────────────────────────────────────
+export const PEOPLE_QUEST_MISSION_TITLE = "우리 조가 발견한 '최고의 스토리 동료' 추천";
+export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들과 7가지 주제(취미, 버킷리스트, 성장 경험 등)에 대해 자유롭게 대화해 보세요. 대화 중 가장 인상 깊었던 동료 1명을 선택하고 나누었던 스토리를 작성해 주세요. (저녁 퀴즈 및 네트워킹에 활용됩니다)";
 
 // People Quest 완료 시 조원 1인당 부여 점수
 export const PEOPLE_QUEST_POINTS_PER_MEMBER = 200;
 
 // ─────────────────────────────────────────────────────────────────
-// 4. Activity 2: Discovery Quiz 현장 객관식 문항 목록
+// 5. Activity 2: Discovery Quiz 현장 객관식 문항 목록
 // ─────────────────────────────────────────────────────────────────
 export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
   {
@@ -143,7 +183,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 5. 사전 등록된 50명 참가자 명단 풀 (A방식 사전 등록)
+// 6. 사전 등록된 50명 참가자 명단 풀 (A방식 사전 등록)
 // ─────────────────────────────────────────────────────────────────
 export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
   // 1조 (산림욕장)

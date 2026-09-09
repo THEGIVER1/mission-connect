@@ -13,6 +13,13 @@ export interface Team {
   status: 'active' | 'sos' | 'warning' | 'inactive';
 }
 
+export interface MyInfoQuestion {
+  id: string;
+  title: string;
+  placeholder: string;
+  category: 'life' | 'career';
+}
+
 export interface Participant {
   id: string;
   name: string;
@@ -23,6 +30,8 @@ export interface Participant {
   role: 'member' | 'leader';
   deviceToken?: string;
   score?: number;
+  myInfo?: Record<string, string>;
+  // 하위 호환용 필드
   truth1?: string;
   truth2?: string;
   lie?: string;
@@ -37,18 +46,12 @@ export interface PreRegisteredPerson {
   teamName: string;
 }
 
-export interface PeopleQuestQuestion {
-  id: string;
-  title: string;
-  instruction: string;
-}
-
 export interface PeopleQuestRecommendation {
-  questionId: string;
   recommendedPersonId: string;
   recommendedPersonName: string;
   recommendedPersonCompany: string;
   reason: string;
+  selectedTopic?: string;
 }
 
 export interface DiscoveryQuizOption {

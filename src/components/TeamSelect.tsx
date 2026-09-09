@@ -4,6 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import {
   WORKSHOP_COMPANIES,
   WORKSHOP_TEAMS,
+  MY_INFO_QUESTIONS,
   ACTIVE_VENUE,
   WorkshopTeamConfig,
 } from '../config/workshopConfig';
@@ -11,7 +12,7 @@ import {
 const COMPANIES = WORKSHOP_COMPANIES;
 const TEAMS = WORKSHOP_TEAMS;
 
-type Step = 'info' | 'jinjinga';
+type Step = 'info' | 'myinfo';
 
 const TeamSelect: React.FC = () => {
   const navigate = useNavigate();
@@ -22,15 +23,18 @@ const TeamSelect: React.FC = () => {
   const [company, setCompany] = useState(participantCompany || '');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(myTeam?.id || null);
 
-  // 진진가 사전정보 (진짜 2개 + 가짜 1개)
-  const [truth1, setTruth1] = useState('');
-  const [truth2, setTruth2] = useState('');
-  const [lie, setLie] = useState('');
+  // 「나의 정보 7개 질문」 답변 상태 관리
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedTeam = TEAMS.find(t => t.id === selectedTeamId) || null;
+
+  const handleAnswerChange = (qId: string, value: string) => {
+    if (value.length > 100) return;
+    setAnswers(prev => ({ ...prev, [qId]: value }));
+  };
 
   // Step 1 -> Step 2 검증
   const handleInfoNext = () => {
@@ -38,16 +42,15 @@ const TeamSelect: React.FC = () => {
     if (!company) { setError('소속을 선택해주세요.'); return; }
     if (!selectedTeamId) { setError('배정받은 행사 조를 선택해주세요.'); return; }
     setError('');
-    setStep('jinjinga');
+    setStep('myinfo');
   };
 
   // Step 2 완료 및 최종 입장
   const handleFinalEnter = async () => {
-    if (!truth1.trim()) { setError('진짜 정보 1을 입력해주세요.'); return; }
-    if (!truth2.trim()) { setError('진짜 정보 2를 입력해주세요.'); return; }
-    if (!lie.trim()) { setError('가짜 정보 1을 입력해주세요.'); return; }
-    if (truth1.length > 60 || truth2.length > 60 || lie.length > 60) {
-      setError('각 항목은 60자 이내로 입력해주세요.');
+    // 최소 4개 이상 또는 전체 입력 확인
+    const answeredCount = MY_INFO_QUESTIONS.filter(q => (answers[q.id] || '').trim().length > 0).length;
+    if (answeredCount < 3) {
+      setError('동료들과 즐거운 대화를 위해 최소 3개 이상의 질문에 답해주세요!');
       return;
     }
 
@@ -73,9 +76,11 @@ const TeamSelect: React.FC = () => {
           teamId: selectedTeam.id,
           teamName: selectedTeam.name,
           course: selectedTeam.assignedCourse,
-          truth1: truth1.trim(),
-          truth2: truth2.trim(),
-          lie: lie.trim(),
+          myInfo: answers,
+          // 하위 호환
+          truth1: answers['q1_passion'] || '',
+          truth2: answers['q5_unexpectedFact'] || answers['q4_bucketList'] || '',
+          lie: answers['q3_dreamJob'] || '',
           score: initialScore,
           missionsCompleted: initialCompleted,
           joinedAt: existing?.joinedAt ?? new Date().toISOString(),
@@ -189,10 +194,10 @@ const TeamSelect: React.FC = () => {
         <div className="w-8 h-0.5 bg-slate-700" />
         <div className="flex items-center gap-1.5">
           <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-            ${step === 'jinjinga' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
+            ${step === 'myinfo' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
             2
           </div>
-          <span className={`text-[11px] ${step === 'jinjinga' ? 'text-white font-bold' : 'text-slate-500'}`}>진진가 사전정보</span>
+          <span className={`text-[11px] ${step === 'myinfo' ? 'text-white font-bold' : 'text-slate-500'}`}>나의 정보 입력 (7문항)</span>
         </div>
       </div>
 
@@ -304,88 +309,64 @@ const TeamSelect: React.FC = () => {
             <button
               onClick={handleInfoNext}
               className="w-full py-3.5 rounded-xl font-bold text-[15px] text-white
-                bg-red-500 active:scale-98 transition-all shadow-md shadow-red-500/20">
-              다음 → 진진가 정보 입력
+                bg-red-500 active:scale-98 transition-all shadow-md shadow-red-500/20"
+            >
+              다음 → 나의 정보 7문항 입력
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: 진진가 사전정보 입력 */}
-      {step === 'jinjinga' && (
-        <div className="px-5 pt-4 flex flex-col gap-3 flex-1 overflow-y-auto pb-6">
+      {/* STEP 2: 나의 정보 입력 (7개 질문) */}
+      {step === 'myinfo' && (
+        <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-[17px] font-bold text-white">진진가 사전정보 작성 💡</p>
-              <span className="text-[11px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30">
-                저녁 퀴즈용
+              <p className="text-[17px] font-bold text-white">나의 정보 입력 💡</p>
+              <span className="text-[11px] bg-red-500/15 text-red-400 px-2.5 py-0.5 rounded-full border border-red-500/30 font-bold">
+                저녁 퀴즈 & 대화용
               </span>
             </div>
-            <p className="text-[12px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-2.5 rounded-xl border border-white/5">
-              다른 구성원들이 잘 모를 만한 나의 경험, 취미, 재능, 이력 등을 활용해 <strong className="text-amber-400">진짜 정보 2개와 가짜 정보 1개</strong>를 작성해 주세요. (저녁 진진가 퀴즈의 기초자료로 활용됩니다)
+            <p className="text-[12px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-3 rounded-xl border border-white/5">
+              동료들과 나눌 <strong>나만의 관심사, 경험, 커리어 이야기</strong>를 편하게 작성해 주세요. (저녁 퀴즈쇼 및 네트워킹의 기초자료로 활용됩니다)
             </p>
           </div>
 
-          {/* 진짜 정보 1 */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-[12px] font-bold text-green-400">1. 진짜 정보 ① *</label>
-              <span className={`text-[10px] ${truth1.length > 55 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
-                {truth1.length}/60자
-              </span>
-            </div>
-            <input
-              type="text"
-              maxLength={60}
-              value={truth1}
-              onChange={e => setTruth1(e.target.value)}
-              placeholder="예: 밴드에서 드럼을 연주한 경험이 있다."
-              className="w-full bg-[#1A2235] border border-green-500/30 rounded-xl px-3.5 py-2.5
-                text-white text-[13px] placeholder-slate-600 focus:outline-none focus:border-green-500 transition-colors"
-            />
-          </div>
+          {/* 7개 질문 카드 리스트 */}
+          <div className="space-y-3.5">
+            {MY_INFO_QUESTIONS.map((q, idx) => {
+              const val = answers[q.id] || '';
+              return (
+                <div key={q.id} className="bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <label className="flex-1 text-[13px] font-bold text-white leading-snug">
+                      {q.title}
+                    </label>
+                    <span className={`text-[10px] flex-shrink-0 ${val.length > 90 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                      {val.length}/100자
+                    </span>
+                  </div>
 
-          {/* 진짜 정보 2 */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-[12px] font-bold text-green-400">2. 진짜 정보 ② *</label>
-              <span className={`text-[10px] ${truth2.length > 55 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
-                {truth2.length}/60자
-              </span>
-            </div>
-            <input
-              type="text"
-              maxLength={60}
-              value={truth2}
-              onChange={e => setTruth2(e.target.value)}
-              placeholder="예: 10km 마라톤을 완주했다."
-              className="w-full bg-[#1A2235] border border-green-500/30 rounded-xl px-3.5 py-2.5
-                text-white text-[13px] placeholder-slate-600 focus:outline-none focus:border-green-500 transition-colors"
-            />
-          </div>
-
-          {/* 가짜 정보 1 */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-[12px] font-bold text-red-400">3. 가짜 정보 ① *</label>
-              <span className={`text-[10px] ${lie.length > 55 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
-                {lie.length}/60자
-              </span>
-            </div>
-            <input
-              type="text"
-              maxLength={60}
-              value={lie}
-              onChange={e => setLie(e.target.value)}
-              placeholder="예: 스쿠버다이빙 강사 자격증이 있다."
-              className="w-full bg-[#1A2235] border border-red-500/30 rounded-xl px-3.5 py-2.5
-                text-white text-[13px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors"
-            />
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={val}
+                    onChange={e => handleAnswerChange(q.id, e.target.value)}
+                    placeholder={q.placeholder}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5
+                      text-white text-[13px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors"
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {/* 개인정보 유의 안내 문구 */}
           <div className="bg-[#121826] border border-white/5 rounded-xl p-2.5 text-[11px] text-slate-400">
-            🔒 입력한 정보는 <strong>2026 CHRO Trekking</strong>의 팀빌딩 활동과 저녁 진진가 퀴즈 운영을 위해서만 활용되며, 일반 참가자에게는 공개되지 않습니다.
+            🔒 입력하신 내용은 <strong>2026 CHRO Trekking</strong> 팀빌딩 활동 및 저녁 퀴즈 대항전 운영을 위해서만 안전하게 활용됩니다.
           </div>
 
           {error && (
@@ -399,18 +380,20 @@ const TeamSelect: React.FC = () => {
               onClick={() => setStep('info')}
               disabled={isSubmitting}
               className="w-16 py-3.5 rounded-xl font-bold text-slate-400
-                bg-[#1A2235] border border-white/10 active:scale-98 transition-all">
+                bg-[#1A2235] border border-white/10 active:scale-98 transition-all"
+            >
               ←
             </button>
             <button
               onClick={handleFinalEnter}
               disabled={isSubmitting}
               className="flex-1 py-3.5 rounded-xl font-bold text-[15px] text-white flex items-center justify-center gap-2
-                bg-red-500 active:scale-98 transition-all shadow-md shadow-red-500/20">
+                bg-red-500 hover:bg-red-600 active:scale-98 transition-all shadow-md shadow-red-500/20"
+            >
               {isSubmitting ? (
                 <>입장 처리 중...</>
               ) : (
-                <>입장 완료 및 시작하기 🚀</>
+                <>입장 완료 및 트레킹 시작 🚀</>
               )}
             </button>
           </div>
