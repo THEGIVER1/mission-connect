@@ -234,24 +234,6 @@ const ActivitySection: React.FC = () => {
         💡 <strong>트레킹 활동 안내</strong><br />
         트레킹 중 미션은 두 가지입니다. <strong>People Quest</strong>는 이동하며 자유롭게 대화해 수행하고, <strong>Discovery Quiz</strong>는 코스 내 지정 장소에 도착하면 참여할 수 있습니다.
       </div>
-
-      {/* 내 정보 수정 & 운영본부 퀵 링크 바 */}
-      <div className="flex gap-2 pt-1">
-        <button
-          type="button"
-          onClick={() => navigate('/team-select')}
-          className="flex-1 py-2.5 bg-[#1A2235] hover:bg-[#222C44] border border-white/10 rounded-xl text-slate-300 text-[11.5px] font-bold flex items-center justify-center gap-1 active:scale-98 transition-all"
-        >
-          <span>✏️ 내 정보/7문항 수정</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/admin')}
-          className="flex-1 py-2.5 bg-[#1A2235] hover:bg-[#222C44] border border-red-500/30 rounded-xl text-red-400 text-[11.5px] font-bold flex items-center justify-center gap-1 active:scale-98 transition-all"
-        >
-          <span>⚙️ 운영본부/퀴즈센터 →</span>
-        </button>
-      </div>
     </div>
   );
 };
