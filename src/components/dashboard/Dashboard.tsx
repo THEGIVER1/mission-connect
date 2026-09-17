@@ -2,14 +2,16 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { LiveBadge, Card, ScoreBar } from '../shared';
+import { onValue, ref } from 'firebase/database';
+import { rtdb } from '../../lib/firebase';
 import {
   ACTIVE_VENUE,
   WORKSHOP_TEAMS,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
-  getCourseQuizTotalPoints,
   getCourseTotalMaxPoints,
   DISCOVERY_QUIZZES,
 } from '../../config/workshopConfig';
+import type { Team } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
 const Header: React.FC = () => {
@@ -25,7 +27,7 @@ const Header: React.FC = () => {
     if (!session) return '00:00:00';
     const diff = Math.max(0, session.endsAt.getTime() - now);
     const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const m = String(Math.floor(((diff % 3600000) / 60000))).padStart(2, '0');
     const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
     return `${h}:${m}:${s}`;
   }, [session, now]);
@@ -86,73 +88,51 @@ const Header: React.FC = () => {
   );
 };
 
-// ─── 점수 & 순위 카드 (동적 만점 계산) ─────────────────────────
-const ScoreCard: React.FC = () => {
-  const { myTeam, teams, selectedCourse } = useAppStore();
-  const maxPossible = getCourseTotalMaxPoints(selectedCourse);
-  const maxScore = Math.max(...teams.map(t => t.score), maxPossible);
+// ─── 점수 & 순위 카드 (실시간 RTDB 동기화 & 개인 점수 노출) ────────
+const ScoreCard: React.FC<{
+  teamScore: number;
+  teamRank: number;
+  personalScore: number;
+  maxScore: number;
+}> = ({ teamScore, teamRank, personalScore, maxScore }) => {
+  const { myTeam } = useAppStore();
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
   return (
-    <Card className="mx-4 mt-3 p-3.5">
+    <Card className="mx-4 mt-3 p-3.5 shadow-xl">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
-          {myTeam?.name ?? '우리 조'} 획득 점수
+          {myTeam?.name ?? '우리 조'} 실시간 획득 점수
         </span>
-        <span className="text-[11px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">
-          현재 {myTeam?.rank ?? 1}위
+        <span className="text-[11px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
+          현재 {teamRank}위 🏆
         </span>
       </div>
 
       <div className="flex items-end justify-between mb-2">
         <div className="font-['Bebas_Neue'] text-4xl text-white leading-none">
-          {myTeam?.score.toLocaleString() ?? '0'}
+          {teamScore.toLocaleString()}
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
-        <span className="text-[11px] text-slate-400">
-          활동 미션 2개 완료 기준
-        </span>
+        <div className="text-right">
+          <span className="text-[11px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold block">
+            내 기여: {personalScore}pt
+          </span>
+        </div>
       </div>
 
-      <ScoreBar value={myTeam?.score ?? 0} max={maxScore} color={teamConfig?.color || '#E31837'} />
+      <ScoreBar value={teamScore} max={maxScore} color={teamConfig?.color || '#E31837'} />
     </Card>
   );
 };
 
-// ─── 2대 핵심 액티비티 카드 섹션 (동적 배점 연동) ────────────────
-const ActivitySection: React.FC = () => {
+// ─── 2대 핵심 액티비티 카드 섹션 (실시간 RTDB 상태 연동) ────────
+const ActivitySection: React.FC<{
+  pqSubmitted: boolean;
+  answeredQuizCount: number;
+  totalQuizCount: number;
+}> = ({ pqSubmitted, answeredQuizCount, totalQuizCount }) => {
   const navigate = useNavigate();
-  const { myTeam, participantName, participantCompany, selectedCourse } = useAppStore();
-
-  const [pqSubmitted, setPqSubmitted] = useState(false);
-  const [answeredQuizCount, setAnsweredQuizCount] = useState(0);
-
-  const teamId = myTeam?.id ?? 'team1';
-  const participantId = participantName && participantCompany
-    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
-    : 'anonymous';
-
-  const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
-  const totalQuizCount = activeCourseQuizzes.length;
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
-
-  useEffect(() => {
-    // People Quest 상태 확인
-    fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d && d.status === 'submitted') setPqSubmitted(true);
-      })
-      .catch(() => {});
-
-    // Discovery Quiz 상태 확인
-    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/quizzes.json`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d && typeof d === 'object') setAnsweredQuizCount(Object.keys(d).length);
-      })
-      .catch(() => {});
-  }, [teamId, participantId, dbUrl]);
 
   return (
     <div className="mx-4 mt-4 space-y-3">
@@ -276,13 +256,135 @@ const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   );
 };
 
-// ─── 대시보드 페이지 ─────────────────────────────────────────
+// ─── 대시보드 메인 컴포넌트 (실시간 RTDB 양방향 바인딩) ─────────
 const Dashboard: React.FC = () => {
+  const { myTeam, participantName, participantCompany, selectedCourse, updateTeamScore } = useAppStore();
+
+  const [liveTeamScore, setLiveTeamScore] = useState<number>(myTeam?.score ?? 0);
+  const [liveTeamRank, setLiveTeamRank] = useState<number>(myTeam?.rank ?? 1);
+  const [livePersonalScore, setLivePersonalScore] = useState<number>(0);
+  const [maxScore, setMaxScore] = useState<number>(100);
+  const [pqSubmitted, setPqSubmitted] = useState<boolean>(false);
+  const [answeredQuizCount, setAnsweredQuizCount] = useState<number>(0);
+
+  const teamId = myTeam?.id ?? 'team1';
+  const participantId = participantName && participantCompany
+    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
+    : 'anonymous';
+
+  const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
+  const totalQuizCount = activeCourseQuizzes.length;
+  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+
+  // 실시간 점수 및 미션 상태 집계 함수
+  const fetchAndSyncLiveScore = async () => {
+    try {
+      const [pRes, qRes] = await Promise.all([
+        fetch(`${dbUrl}/sessions/trekking2026/participants.json`),
+        fetch(`${dbUrl}/sessions/trekking2026/peopleQuest.json`),
+      ]);
+
+      const participants: Record<string, any> | null = pRes.ok ? await pRes.json() : null;
+      const quests: Record<string, any> | null = qRes.ok ? await qRes.json() : null;
+
+      // 1) People Quest 제출 상태 확인
+      if (quests && quests[teamId]?.status === 'submitted') {
+        setPqSubmitted(true);
+      } else {
+        setPqSubmitted(false);
+      }
+
+      // 2) 참가자 개인 퀴즈 풀이 상태 및 점수 확인
+      if (participants && typeof participants === 'object') {
+        const myP = Object.values(participants).find((p: any) => {
+          return p.name === participantName && (p.company === participantCompany || !participantCompany);
+        });
+
+        if (myP) {
+          let pQuizPts = 0;
+          let pQuizCount = 0;
+          if (myP.quizzes && typeof myP.quizzes === 'object') {
+            Object.values(myP.quizzes).forEach((q: any) => {
+              pQuizPts += Number(q.pointsEarned || 0);
+              if (q.isCorrect || q.pointsEarned !== undefined) pQuizCount += 1;
+            });
+          }
+          const isPqDone = quests && quests[teamId]?.status === 'submitted';
+          const personalTotal = pQuizPts + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+          setLivePersonalScore(personalTotal);
+          setAnsweredQuizCount(pQuizCount);
+        }
+      }
+
+      // 3) 전체 6개 조 점수 & 순위 실시간 집계
+      const aggregated = new Map<string, { id: string; score: number }>();
+      WORKSHOP_TEAMS.forEach(t => {
+        aggregated.set(t.id, { id: t.id, score: 0 });
+      });
+
+      if (participants && typeof participants === 'object') {
+        Object.values(participants).forEach((p: any) => {
+          if (!p?.teamId) return;
+          const current = aggregated.get(p.teamId);
+          if (current) {
+            let pScore = Number(p.score ?? 0);
+            if (quests && quests[p.teamId]?.status === 'submitted' && !p.peopleQuestCompleted) {
+              pScore += PEOPLE_QUEST_POINTS_PER_MEMBER;
+            }
+            current.score += pScore;
+          }
+        });
+      }
+
+      const ranked = Array.from(aggregated.values())
+        .sort((a, b) => b.score - a.score)
+        .map((t, idx) => ({ ...t, rank: idx + 1 }));
+
+      const highest = Math.max(...ranked.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
+      setMaxScore(highest);
+
+      const myRankObj = ranked.find(r => r.id === teamId);
+      if (myRankObj) {
+        setLiveTeamScore(myRankObj.score);
+        setLiveTeamRank(myRankObj.rank);
+        updateTeamScore(teamId, myRankObj.score);
+      }
+    } catch (err) {
+      console.warn('대시보드 실시간 점수 집계 실패:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAndSyncLiveScore();
+    const timer = setInterval(fetchAndSyncLiveScore, 2500); // 2.5초 주기 실시간 폴링
+
+    // Firebase RTDB Event Listener
+    const pRef = ref(rtdb, 'sessions/trekking2026/participants');
+    const qRef = ref(rtdb, 'sessions/trekking2026/peopleQuest');
+    const unsubP = onValue(pRef, () => fetchAndSyncLiveScore());
+    const unsubQ = onValue(qRef, () => fetchAndSyncLiveScore());
+
+    return () => {
+      clearInterval(timer);
+      unsubP();
+      unsubQ();
+    };
+  }, [teamId, participantId, selectedCourse]);
+
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
       <Header />
-      <ScoreCard />
-      <ActivitySection />
+      <ScoreCard
+        teamScore={liveTeamScore}
+        teamRank={liveTeamRank}
+        personalScore={livePersonalScore}
+        maxScore={maxScore}
+      />
+      <ActivitySection
+        pqSubmitted={pqSubmitted}
+        answeredQuizCount={answeredQuizCount}
+        totalQuizCount={totalQuizCount}
+      />
       <BottomNav active="/" />
     </div>
   );
