@@ -22,32 +22,50 @@ const TeamSelect: React.FC = () => {
   const [company, setCompany] = useState(participantCompany || '');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(myTeam?.id || null);
 
-  // 「나의 정보 7개 질문」 답변 상태 관리
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // 「나의 정보 7개 질문」 답변 상태 관리 (로컬 드래프트 우선 복원)
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('my_info_answers_draft');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
   const selectedTeam = TEAMS.find(t => t.id === selectedTeamId) || null;
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  // 기존 저장된 답변 불러오기
+  // 1. 기존 RTDB 데이터 불러오기 (서버 데이터 우선 병합)
   useEffect(() => {
     if (!name || !company) return;
     const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
     fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
-        if (d && d.myInfo) {
-          setAnswers(d.myInfo);
+        if (d && d.myInfo && Object.keys(d.myInfo).length > 0) {
+          setAnswers(prev => ({ ...prev, ...d.myInfo }));
         }
       })
       .catch(() => {});
   }, [name, company, dbUrl]);
 
+  // 2. 실시간 입력 디바운스 로컬 자동 저장 (작성 도중 유실 원천 방어)
   const handleAnswerChange = (qId: string, value: string) => {
     if (value.length > 100) return;
-    setAnswers(prev => ({ ...prev, [qId]: value }));
+    setAnswers(prev => {
+      const updated = { ...prev, [qId]: value };
+      try {
+        localStorage.setItem('my_info_answers_draft', JSON.stringify(updated));
+        setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } catch (e) {
+        console.warn('로컬 드래프트 저장 실패:', e);
+      }
+      return updated;
+    });
   };
 
   // Step 1 -> Step 2 검증
@@ -335,14 +353,15 @@ const TeamSelect: React.FC = () => {
         </div>
       )}
 
-      {/* STEP 2: 나의 정보 입력 (7개 질문 - 예시 줄바꿈 박스 적용) */}
+      {/* STEP 2: 나의 정보 입력 (7개 질문 - 실시간 자동 저장 적용) */}
       {step === 'myinfo' && (
         <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
             <div className="flex items-center justify-between">
               <p className="text-[17px] font-bold text-white">나의 정보 입력 💡</p>
-              <span className="text-[11px] bg-red-500/15 text-red-400 px-2.5 py-0.5 rounded-full border border-red-500/30 font-bold">
-                저녁 퀴즈 & 대화용
+              <span className="text-[11px] bg-green-500/15 text-green-400 px-2.5 py-0.5 rounded-full border border-green-500/30 font-bold flex items-center gap-1">
+                <span>💾</span>
+                <span>{lastSavedTime ? `${lastSavedTime} 자동 저장됨` : '실시간 자동 저장 중'}</span>
               </span>
             </div>
             <p className="text-[12px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-3 rounded-xl border border-white/5">
@@ -369,7 +388,7 @@ const TeamSelect: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* ★ 예시 텍스트: 인풋 안이 아니라 아래 별도 줄바꿈 박스로 100% 온전하게 노출 ★ */}
+                  {/* 예시 텍스트: 별도 줄바꿈 박스로 100% 온전하게 노출 */}
                   <div className="bg-black/30 border border-white/5 rounded-xl p-2.5 text-[11.5px] text-slate-300 leading-relaxed">
                     💡 <strong className="text-amber-300">예시:</strong> {q.placeholder.replace(/^예시?:\s*/, '')}
                   </div>

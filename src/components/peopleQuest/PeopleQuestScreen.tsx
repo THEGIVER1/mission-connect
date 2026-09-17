@@ -9,6 +9,7 @@ import {
   WORKSHOP_TEAMS,
 } from '../../config/workshopConfig';
 import { PreRegisteredPerson } from '../../types';
+import { fireConfetti } from '../../lib/confetti';
 
 interface UnifiedRecommendation {
   recommendedPersonId: string;
@@ -142,7 +143,7 @@ const PeopleQuestScreen: React.FC = () => {
     }
   };
 
-  // 5. 최종 제출 실행
+  // 5. 최종 제출 실행 (동적 배점 & 축하 컨페티)
   const executeSubmit = async () => {
     if (!myTeam) return;
     setIsSaving(true);
@@ -165,18 +166,24 @@ const PeopleQuestScreen: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      // 2) 내 참가자 점수 동기화 (+200pt)
+      // 2) 내 참가자 점수 동적 멱등 동기화
       if (participantName && participantCompany) {
         const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
         const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
         const existing = pRes.ok ? await pRes.json() : null;
-        const prevScore = Number(existing?.score ?? 0);
-        const prevMissions = Number(existing?.missionsCompleted ?? 0);
 
-        // 이미 반영되었는지 확인 후 가산
-        const isAlreadyAdded = existing?.peopleQuestCompleted;
-        const newScore = isAlreadyAdded ? prevScore : prevScore + PEOPLE_QUEST_POINTS_PER_MEMBER;
-        const newMissions = isAlreadyAdded ? prevMissions : prevMissions + 1;
+        // 퀴즈 점수 + People Quest 점수
+        let quizEarned = 0;
+        let quizCompletedCount = 0;
+        if (existing?.quizzes && typeof existing.quizzes === 'object') {
+          Object.values(existing.quizzes).forEach((q: any) => {
+            quizEarned += Number(q.pointsEarned || 0);
+            if (q.isCorrect) quizCompletedCount += 1;
+          });
+        }
+
+        const newScore = quizEarned + PEOPLE_QUEST_POINTS_PER_MEMBER;
+        const newMissions = quizCompletedCount + 1;
 
         await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
           method: 'PATCH',
@@ -195,7 +202,10 @@ const PeopleQuestScreen: React.FC = () => {
 
       setIsSubmitted(true);
       setSubmittedData(payload);
-      showToast('🎉 조별 추천 미션이 최종 제출되었습니다!');
+
+      // 축하 컨페티 효과 실행
+      fireConfetti({ count: 80, spread: 85 });
+      showToast(`🎉 조별 추천 미션 완료! (조원 전원 +${PEOPLE_QUEST_POINTS_PER_MEMBER}pt)`);
     } catch (e) {
       showToast('⚠️ 제출 중 오류가 발생했습니다.');
     } finally {
@@ -267,7 +277,7 @@ const PeopleQuestScreen: React.FC = () => {
             </span>
             {isSubmitted ? (
               <span className="text-[11px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                ✓ 제출 완료 (+200pt)
+                ✓ 제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
               </span>
             ) : (
               <span className="text-[11px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
@@ -432,7 +442,7 @@ const PeopleQuestScreen: React.FC = () => {
                 disabled={isSaving}
                 className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-1.5"
               >
-                <span>최종 제출 (+200pt)</span>
+                <span>최종 제출 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)</span>
               </button>
             </div>
           </div>
@@ -451,7 +461,7 @@ const PeopleQuestScreen: React.FC = () => {
                 [{recommendation.recommendedPersonName}] 님을 최종 추천할까요?
               </h3>
               <p className="text-[12px] text-slate-400 mt-1">
-                제출 시 조원 전원에게 <strong>+200pt</strong>가 즉시 부여되며, 실시간 리더보드에 반영됩니다.
+                제출 시 조원 전원에게 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 즉시 부여되며, 실시간 리더보드에 반영됩니다.
               </p>
             </div>
 

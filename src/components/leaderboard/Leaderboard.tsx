@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
-import { LiveBadge, TeamAvatar, ScoreBar } from '../shared';
+import { LiveBadge, ScoreBar } from '../shared';
 import { onValue, ref } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import {
@@ -10,6 +10,7 @@ import {
   DISCOVERY_QUIZZES,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   PRE_REGISTERED_PARTICIPANTS,
+  getCourseTotalMaxPoints,
 } from '../../config/workshopConfig';
 import type { Team } from '../../types';
 
@@ -32,7 +33,7 @@ function useSessionTimer() {
   const total = session.endsAt.getTime() - session.startedAt.getTime();
   const left  = Math.max(0, session.endsAt.getTime() - now);
   const h = String(Math.floor(left / 3600000)).padStart(2, '0');
-  const m = String(Math.floor((diff => (diff % 3600000) / 60000)(left))).padStart(2, '0');
+  const m = String(Math.floor(((left % 3600000) / 60000))).padStart(2, '0');
   const s = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');
   const pct = Math.min(100, Math.max(0, Math.round(((total - left) / total) * 100)));
   return { h, m, s, pct, urgent: left < 15 * 60 * 1000 };
@@ -102,7 +103,6 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
         const actualRank = team.rank;
         const isFirst = actualRank === 1;
         const isSecond = actualRank === 2;
-        const isThird = actualRank === 3;
         const isMe = team.id === myTeamId;
 
         const heights = isFirst ? 'h-28' : isSecond ? 'h-22' : 'h-18';
@@ -201,7 +201,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 2: 미션별 현황 (CHRO 2대 Activity 전용 - 실시간 상태 반영)
+// 탭 2: 미션별 현황 (동적 배점 연동)
 // ─────────────────────────────────────────────────────────────────
 const MissionTab: React.FC<{
   peopleQuests: Record<string, any>;
@@ -316,14 +316,14 @@ const MissionTab: React.FC<{
           <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
             🧭 Activity 2: Discovery Quiz 현장 퀴즈 ({DISCOVERY_QUIZZES.length}문항)
           </span>
-          <span className="text-[11px] text-sky-400 font-bold">문항당 +100pt</span>
+          <span className="text-[11px] text-sky-400 font-bold">문항별 배점</span>
         </div>
 
         {quizStats.map(({ quiz, idx, completedCount, correctCount }) => (
           <div key={quiz.id} className="bg-[#1A2235] border border-white/8 rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-bold text-sky-400">
-                QUIZ {idx + 1}. {quiz.title}
+                QUIZ {idx + 1}. {quiz.title} (+{quiz.points}pt)
               </span>
               <span className="text-[10px] text-slate-400">📍 {quiz.locationLabel}</span>
             </div>
@@ -342,7 +342,7 @@ const MissionTab: React.FC<{
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 3: 개인 기여 순위 (실시간 RTDB & People Quest 점수 즉시 가산)
+// 탭 3: 개인 기여 순위 (동적 멱등 점수 집계)
 // ─────────────────────────────────────────────────────────────────
 const IndividualTab: React.FC<{
   participants: Record<string, any>;
@@ -369,7 +369,7 @@ const IndividualTab: React.FC<{
         });
       }
 
-      // 조별 People Quest 완료 여부에 따른 200pt 자동 가산
+      // 조별 People Quest 완료 여부에 따른 점수 동적 가산
       const isTeamPqDone = peopleQuests[p.teamId]?.status === 'submitted' || p.peopleQuestCompleted;
       const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
       const pqMissions = isTeamPqDone ? 1 : 0;
@@ -525,7 +525,7 @@ const Leaderboard: React.FC = () => {
           });
         });
 
-        // 1) 조별 People Quest 완료 여부에 따른 기본 점수/미션 반영
+        // 1) 조별 People Quest 완료 여부에 따른 기본 미션 카운트 반영
         if (quests && typeof quests === 'object') {
           Object.entries(quests).forEach(([teamId, questData]: [string, any]) => {
             const current = aggregated.get(teamId);

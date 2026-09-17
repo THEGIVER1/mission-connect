@@ -2,7 +2,14 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { LiveBadge, Card, ScoreBar } from '../shared';
-import { ACTIVE_VENUE, WORKSHOP_TEAMS } from '../../config/workshopConfig';
+import {
+  ACTIVE_VENUE,
+  WORKSHOP_TEAMS,
+  PEOPLE_QUEST_POINTS_PER_MEMBER,
+  getCourseQuizTotalPoints,
+  getCourseTotalMaxPoints,
+  DISCOVERY_QUIZZES,
+} from '../../config/workshopConfig';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
 const Header: React.FC = () => {
@@ -79,10 +86,11 @@ const Header: React.FC = () => {
   );
 };
 
-// ─── 점수 & 순위 카드 ─────────────────────────────────────────
+// ─── 점수 & 순위 카드 (동적 만점 계산) ─────────────────────────
 const ScoreCard: React.FC = () => {
-  const { myTeam, teams } = useAppStore();
-  const maxScore = Math.max(...teams.map(t => t.score), 1);
+  const { myTeam, teams, selectedCourse } = useAppStore();
+  const maxPossible = getCourseTotalMaxPoints(selectedCourse);
+  const maxScore = Math.max(...teams.map(t => t.score), maxPossible);
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
   return (
@@ -102,7 +110,7 @@ const ScoreCard: React.FC = () => {
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
         <span className="text-[11px] text-slate-400">
-          활동 미션 2개
+          활동 미션 2개 완료 기준
         </span>
       </div>
 
@@ -111,10 +119,10 @@ const ScoreCard: React.FC = () => {
   );
 };
 
-// ─── 2대 핵심 액티비티 카드 섹션 ───────────────────────────────
+// ─── 2대 핵심 액티비티 카드 섹션 (동적 배점 연동) ────────────────
 const ActivitySection: React.FC = () => {
   const navigate = useNavigate();
-  const { myTeam, participantName, participantCompany } = useAppStore();
+  const { myTeam, participantName, participantCompany, selectedCourse } = useAppStore();
 
   const [pqSubmitted, setPqSubmitted] = useState(false);
   const [answeredQuizCount, setAnsweredQuizCount] = useState(0);
@@ -124,6 +132,8 @@ const ActivitySection: React.FC = () => {
     ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
     : 'anonymous';
 
+  const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
+  const totalQuizCount = activeCourseQuizzes.length;
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
   useEffect(() => {
@@ -183,7 +193,7 @@ const ActivitySection: React.FC = () => {
         </p>
 
         <div className="flex items-center justify-between text-[11px] pt-2.5 border-t border-white/5">
-          <span className="text-slate-400">GPS 무관 · 조별 1명 추천 시 조원당 <strong>+200pt</strong></span>
+          <span className="text-slate-400">조별 1명 추천 시 조원당 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
           <span className="text-red-400 font-bold flex items-center gap-0.5">
             참여하기 →
           </span>
@@ -207,13 +217,13 @@ const ActivitySection: React.FC = () => {
             </div>
           </div>
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-            answeredQuizCount >= 3
+            answeredQuizCount >= totalQuizCount
               ? 'bg-green-500/15 text-green-400 border-green-500/30'
               : answeredQuizCount > 0
               ? 'bg-sky-500/15 text-sky-400 border-sky-500/30'
               : 'bg-white/5 text-slate-400 border-white/10'
           }`}>
-            {answeredQuizCount >= 3 ? '✅ 3/3 완주' : answeredQuizCount > 0 ? `진행 중 (${answeredQuizCount}/3)` : 'GPS 탐색 중'}
+            {answeredQuizCount >= totalQuizCount ? `✅ ${totalQuizCount}/${totalQuizCount} 완주` : answeredQuizCount > 0 ? `진행 중 (${answeredQuizCount}/${totalQuizCount})` : 'GPS 탐색 중'}
           </span>
         </div>
 
@@ -238,7 +248,7 @@ const ActivitySection: React.FC = () => {
   );
 };
 
-// ─── 하단 3개 탭 네비게이션 (초간결화) ─────────────────────────
+// ─── 하단 3개 탭 네비게이션 ──────────────────────────────────
 const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   const navigate = useNavigate();
   const NAV = [

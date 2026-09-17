@@ -9,9 +9,9 @@
  *    • 1~3조: 동물원둘레길 (약 4.5km 순환)
  *    • 4~6조: 호수둘레길 코스 (약 2.8km 순환)
  * - 2대 핵심 Activity:
- *    1) People Quest (통합 1개 조별 대화 & 동료 추천 미션 - 200pt)
- *    2) Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개 - 문항당 100pt, 총 300pt)
- * - 총 만점: 500pt
+ *    1) People Quest (통합 1개 조별 대화 & 동료 추천 미션)
+ *    2) Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개)
+ * - 모든 배점은 config 변수로 유연하게 중앙 집중 관리됩니다.
  */
 
 import {
@@ -37,6 +37,11 @@ export interface WorkshopTeamConfig {
   courseName: string;
   courseDistance: string;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// 0. 현장 비상 패스코드 (GPS 음영지역 / 권한 거부 시 운영진 안내용)
+// ─────────────────────────────────────────────────────────────────
+export const EMERGENCY_GPS_BYPASS_CODE = '2026';
 
 // ─────────────────────────────────────────────────────────────────
 // 1. 소속 회사 목록
@@ -111,7 +116,7 @@ export const MY_INFO_QUESTIONS: MyInfoQuestion[] = [
 // ─────────────────────────────────────────────────────────────────
 export const PEOPLE_QUEST_MISSION_TITLE = "우리 조가 발견한 '최고의 스토리 동료' 추천";
 export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들과 7가지 주제(취미, 버킷리스트, 성장 경험 등)에 대해 자유롭게 대화해 보세요. 대화 중 가장 인상 깊었던 동료 1명을 선택하고 나누었던 스토리를 작성해 주세요. (저녁 퀴즈 및 네트워킹에 활용됩니다)";
-export const PEOPLE_QUEST_POINTS_PER_MEMBER = 200;
+export const PEOPLE_QUEST_POINTS_PER_MEMBER = 200; // 배점 변경 시 이 값만 수정하면 전역 연동
 
 // ─────────────────────────────────────────────────────────────────
 // 5. Activity 2: Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개)
@@ -127,7 +132,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
     coords: { lat: 37.4347, lng: 127.0132 },
     radiusMeters: 60,
-    points: 100,
+    points: 100, // 문항별 배점
     locationLabel: '코끼리열차 매표소 앞 광장 [출발/도착]',
     courseKey: 'all',
   },
@@ -141,7 +146,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     explanation: '미국 조각가 조나단 보로프스키의 작품으로 실제 턱을 움직이며 잔잔한 노래를 부르는 "노래하는 사람"입니다.',
     coords: { lat: 37.4315, lng: 127.0225 },
     radiusMeters: 70,
-    points: 100,
+    points: 100, // 문항별 배점
     locationLabel: '국립현대미술관 앞 [📸 단체사진 촬영지]',
     courseKey: 'all',
   },
@@ -155,7 +160,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     explanation: '피톤치드는 숲속 나무들이 방출하는 천연 물질로, 스트레스 완화와 면역력 증진에 탁월합니다.',
     coords: { lat: 37.4265, lng: 127.0255 },
     radiusMeters: 70,
-    points: 100,
+    points: 100, // 문항별 배점
     locationLabel: '동물원둘레길 숲길 쉼터 (1~3조 전용)',
     courseKey: 'forest',
   },
@@ -169,14 +174,27 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     explanation: '청계산 자락의 물이 모여 형성된 서울대공원 호수의 공식 하천 명칭은 "청계저수지"입니다.',
     coords: { lat: 37.4310, lng: 127.0185 },
     radiusMeters: 60,
-    points: 100,
+    points: 100, // 문항별 배점
     locationLabel: '호수 브릿지 전망 데크 (4~6조 전용)',
     courseKey: 'lake',
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 6. 사전 등록된 50명 참가자 명단 풀
+// 6. 점수 동적 계산 헬퍼 함수 (점수 변경 시 자동 반영)
+// ─────────────────────────────────────────────────────────────────
+export function getCourseQuizTotalPoints(courseKey: CourseKey = 'lake'): number {
+  return DISCOVERY_QUIZZES
+    .filter(q => q.courseKey === 'all' || q.courseKey === courseKey)
+    .reduce((sum, q) => sum + (q.points || 0), 0);
+}
+
+export function getCourseTotalMaxPoints(courseKey: CourseKey = 'lake'): number {
+  return PEOPLE_QUEST_POINTS_PER_MEMBER + getCourseQuizTotalPoints(courseKey);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 7. 사전 등록된 50명 참가자 명단 풀
 // ─────────────────────────────────────────────────────────────────
 export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
   // 1조 (동물원둘레길)

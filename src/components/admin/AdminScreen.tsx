@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   WORKSHOP_TEAMS,
   MY_INFO_QUESTIONS,
   DISCOVERY_QUIZZES,
   ACTIVE_VENUE,
+  PEOPLE_QUEST_POINTS_PER_MEMBER,
+  EMERGENCY_GPS_BYPASS_CODE,
 } from '../../config/workshopConfig';
-import { DiscoveryQuizItem } from '../../types';
+import { fireConfetti } from '../../lib/confetti';
 
 interface ParticipantRecord {
   id: string;
@@ -59,6 +61,9 @@ const AdminScreen: React.FC = () => {
   // 저녁 퀴즈 마스터 모드 상태
   const [blindMode, setBlindMode] = useState<boolean>(false);
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
+
+  // 빔프로젝터 무대 퀴즈쇼 풀스크린 모드 상태
+  const [isStageMode, setIsStageMode] = useState<boolean>(false);
 
   // Discovery 퀴즈 관리/테스트 상태
   const [adminSelectedQuizId, setAdminSelectedQuizId] = useState<string>(DISCOVERY_QUIZZES[0].id);
@@ -164,6 +169,28 @@ const AdminScreen: React.FC = () => {
   const answeredParticipants = useMemo(() => {
     return participants.filter(p => p.myInfo && Object.keys(p.myInfo).length > 0);
   }, [participants]);
+
+  // 키보드 단축키 핸들러 (무대 모드 전용)
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isStageMode) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+      setCurrentCardIndex(prev => Math.min(participants.length - 1, prev + 1));
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      setCurrentCardIndex(prev => Math.max(0, prev - 1));
+    } else if (e.key === ' ' || e.key === 'b' || e.key === 'B') {
+      e.preventDefault();
+      setBlindMode(prev => !prev);
+    } else if (e.key === 'c' || e.key === 'C') {
+      fireConfetti({ count: 80 });
+    } else if (e.key === 'Escape') {
+      setIsStageMode(false);
+    }
+  }, [isStageMode, participants.length]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   // CSV 다운로드 유틸리티
   const downloadCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
@@ -384,6 +411,133 @@ const AdminScreen: React.FC = () => {
   const currentP = participants[currentCardIndex] || participants[0];
   const activeDiscoveryQuiz = DISCOVERY_QUIZZES.find(q => q.id === adminSelectedQuizId) || DISCOVERY_QUIZZES[0];
 
+  // ─────────────────────────────────────────────────────────────────
+  // 빔프로젝터 무대 퀴즈쇼 풀스크린 뷰
+  // ─────────────────────────────────────────────────────────────────
+  if (isStageMode && currentP) {
+    const info = currentP?.myInfo || {};
+    const stat = currentP ? nominationStats[currentP.name] : null;
+
+    return (
+      <div className="fixed inset-0 z-[9999] bg-[#0A0E17] text-slate-100 flex flex-col font-['Noto_Sans_KR'] select-none p-6 md:p-10 overflow-hidden">
+        {/* 상단 무대 헤더 바 */}
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <span style={{ color: '#005EB8', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
+              DOOSAN
+            </span>
+            <div className="h-6 w-0.5 bg-white/20" />
+            <span className="text-lg font-bold text-white tracking-widest uppercase">
+              2026 CHRO TREKKING · 저녁 퀴즈쇼
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setBlindMode(!blindMode)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                blindMode
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-lg'
+                  : 'bg-green-500/20 text-green-300 border-green-500/40'
+              }`}
+            >
+              {blindMode ? '🔒 블라인드 모드 ON (Space)' : '🔓 정답 공개 모드 (Space)'}
+            </button>
+            <button
+              onClick={() => fireConfetti({ count: 90 })}
+              className="px-3 py-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-sm font-bold active:scale-95"
+            >
+              🎉 축하 폭죽 (C)
+            </button>
+            <button
+              onClick={() => setIsStageMode(false)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-sm font-bold"
+            >
+              ✕ 일반 모드로 복귀 (ESC)
+            </button>
+          </div>
+        </div>
+
+        {/* 퀴즈쇼 메인 플래시 카드 (와이드 16:9 대형 폰트) */}
+        <div className="flex-1 flex flex-col justify-between py-6 max-w-5xl mx-auto w-full">
+          <div className="bg-gradient-to-br from-[#131B2C] to-[#0E1524] border-2 border-white/15 rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+              <div>
+                <span className="text-sm text-red-400 font-bold tracking-widest uppercase block mb-1">
+                  STAGE QUIZ #{currentCardIndex + 1} / {participants.length}
+                </span>
+                <h1 className="text-3xl md:text-4xl font-black text-white">
+                  {blindMode ? '❓ 과연 이 답변의 주인공은 누구일까요?' : `👑 ${currentP.name || '미등록'} 님`}
+                </h1>
+                <p className="text-base text-slate-400 mt-1">
+                  {blindMode ? `소속: ${currentP.company} · ${currentP.teamName}` : `${currentP.company} · ${currentP.teamName}`}
+                </p>
+              </div>
+              {stat && stat.count > 0 && (
+                <div className="bg-amber-500/20 border border-amber-500/40 px-4 py-2 rounded-2xl text-center">
+                  <span className="text-xs text-amber-300 block font-bold">낮 트레킹 추천</span>
+                  <span className="text-lg font-black text-amber-400">{stat.count}개 조 지목!</span>
+                </div>
+              )}
+            </div>
+
+            {/* 7개 질문 중 주요 답변 4개 그리드 뷰 (시원한 대형 텍스트) */}
+            <div className="grid grid-cols-2 gap-4">
+              {MY_INFO_QUESTIONS.map((q, idx) => {
+                const val = info[q.id] || (idx === 0 ? currentP.truth1 : idx === 2 ? currentP.lie : idx === 4 ? currentP.truth2 : '');
+                return (
+                  <div key={q.id} className="bg-black/40 border border-white/8 rounded-2xl p-4 space-y-1">
+                    <span className="text-xs text-red-400 font-bold block">
+                      Q{idx + 1}. {q.title}
+                    </span>
+                    <p className="text-base font-bold text-white leading-snug">
+                      {val ? `"${val}"` : <span className="text-slate-600 italic font-normal">(미입력)</span>}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 낮 트레킹 추천 코멘트가 있을 때 */}
+            {stat && stat.reasons.length > 0 && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-1">
+                <span className="text-xs text-red-400 font-bold block">
+                  💬 낮 트레킹 동료들의 생생한 추천 코멘트:
+                </span>
+                {stat.reasons.map((r, i) => (
+                  <p key={i} className="text-sm text-slate-200 italic font-medium">
+                    • {r}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 하단 진행 컨트롤러 */}
+          <div className="flex justify-between items-center pt-4">
+            <button
+              onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentCardIndex === 0}
+              className="px-6 py-4 bg-[#1A2235] hover:bg-[#232D42] disabled:opacity-30 text-white font-bold text-base rounded-2xl border border-white/10"
+            >
+              ← 이전 참가자 (←)
+            </button>
+            <span className="text-slate-400 text-sm">
+              키보드 <strong>좌우 방향키</strong> 또는 <strong>Space(블라인드 토글)</strong> 키로 진행할 수 있습니다.
+            </span>
+            <button
+              onClick={() => setCurrentCardIndex(prev => Math.min(participants.length - 1, prev + 1))}
+              disabled={currentCardIndex === participants.length - 1}
+              className="px-6 py-4 bg-red-500 hover:bg-red-600 disabled:opacity-30 text-white font-bold text-base rounded-2xl shadow-lg"
+            >
+              다음 참가자 (→) →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[440px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
       {/* 헤더 */}
@@ -400,7 +554,7 @@ const AdminScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               ADMIN · <span className="text-red-500">CONTROL CENTER</span>
             </span>
-            <p className="text-[10px] text-slate-400">2026 CHRO Trekking 운영본부 & 퀴즈 센터</p>
+            <p className="text-[10px] text-slate-400">2026 CHRO Trekking 운영본부</p>
           </div>
           <button
             onClick={fetchData}
@@ -420,7 +574,7 @@ const AdminScreen: React.FC = () => {
           <span className="text-slate-500 ml-1">/ 50명</span>
         </div>
         <div>
-          <span>💡 7문항 답변: </span>
+          <span>💡 7문항 완료: </span>
           <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
         </div>
       </div>
@@ -475,10 +629,32 @@ const AdminScreen: React.FC = () => {
         {/* TAB 1: 저녁 퀴즈 마스터 모드 */}
         {activeTab === 'quizMaster' && (
           <div className="space-y-4">
-            <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-4 space-y-3 shadow-xl">
+            {/* 빔프로젝터 모드 실행 카드 */}
+            <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/40 rounded-2xl p-4 space-y-2.5 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[12px] font-bold text-red-400 flex items-center gap-1.5">
-                  🎤 저녁 퀴즈 출제 화면
+                <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
+                  📽️ 빔프로젝터 무대 퀴즈쇼 모드
+                </span>
+                <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
+                  16:9 풀스크린
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+                저녁 식사 무대 빔프로젝터에 띄우고 방향키와 스페이스바로 블라인드 퀴즈를 시원하게 진행할 수 있습니다.
+              </p>
+              <button
+                onClick={() => setIsStageMode(true)}
+                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[13.5px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
+              >
+                <span>📽️ 무대 퀴즈쇼 풀스크린 시작</span>
+              </button>
+            </div>
+
+            {/* 일반 모바일 플래시 카드 뷰 */}
+            <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold text-slate-300">
+                  모바일 프리뷰 화면
                 </span>
                 <button
                   onClick={() => setBlindMode(!blindMode)}
@@ -488,43 +664,40 @@ const AdminScreen: React.FC = () => {
                       : 'bg-green-500/20 text-green-300 border-green-500/40'
                   }`}
                 >
-                  {blindMode ? '🔒 블라인드 (이름 숨김)' : '🔓 정답 공개 모드'}
+                  {blindMode ? '🔒 블라인드 ON' : '🔓 정답 공개'}
                 </button>
               </div>
-              <p className="text-[12px] text-slate-300 leading-relaxed">
-                빔프로젝터에 띄우거나 MC가 읽어주며 <strong>"이 답변의 주인공은 누구일까요?"</strong> 퀴즈를 진행할 수 있습니다.
-              </p>
-            </div>
 
-            {/* 참가자 선택 셀렉터 */}
-            {participants.length > 0 && (
-              <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-3 flex items-center justify-between gap-2">
-                <span className="text-[12px] font-bold text-slate-300 whitespace-nowrap">참가자 선택:</span>
-                <select
-                  value={currentCardIndex}
-                  onChange={e => setCurrentCardIndex(Number(e.target.value))}
-                  className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-[12px] text-white focus:outline-none focus:border-red-500"
-                >
-                  {participants.map((p, idx) => (
-                    <option key={p.id} value={idx} style={{ background: '#1A2235', color: 'white' }}>
-                      #{idx + 1} {p.name || '미입력'} ({p.company || ''} · {p.teamName || p.teamId || ''}) {p.myInfo ? '✓' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+              {/* 참가자 선택 셀렉터 */}
+              {participants.length > 0 && (
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-[11px] font-bold text-slate-400 whitespace-nowrap">참가자:</span>
+                  <select
+                    value={currentCardIndex}
+                    onChange={e => setCurrentCardIndex(Number(e.target.value))}
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-[12px] text-white focus:outline-none focus:border-red-500"
+                  >
+                    {participants.map((p, idx) => (
+                      <option key={p.id} value={idx} style={{ background: '#1A2235', color: 'white' }}>
+                        #{idx + 1} {p.name || '미입력'} ({p.company || ''} · {p.teamName || p.teamId || ''}) {p.myInfo ? '✓' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
             {/* 플래시 카드 */}
             {participants.length === 0 ? (
               <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-6 text-center space-y-3">
                 <p className="text-slate-400 text-[13px]">
-                  아직 실시간 데이터베이스에 등록된 참가자 정보가 없습니다.
+                  아직 등록된 참가자 정보가 없습니다.
                 </p>
                 <button
                   onClick={handleGenerateSampleData}
-                  className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl shadow active:scale-98 transition-all"
+                  className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl shadow"
                 >
-                  🧪 퀴즈 테스트용 샘플 참가자 데이터 생성
+                  🧪 퀴즈 테스트용 샘플 참가자 데이터 3명 생성
                 </button>
               </div>
             ) : (
@@ -534,14 +707,13 @@ const AdminScreen: React.FC = () => {
                 const hasInfo = Object.keys(info).length > 0;
 
                 return (
-                  <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4 relative overflow-hidden">
-                    {/* 카드 헤더 */}
+                  <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4">
                     <div className="flex justify-between items-start border-b border-white/10 pb-3">
                       <div>
                         <span className="text-[11px] text-red-400 font-bold tracking-wider uppercase block">
                           QUIZ CARD #{currentCardIndex + 1} / {participants.length}
                         </span>
-                        <h2 className="text-[20px] font-extrabold text-white mt-0.5">
+                        <h2 className="text-[19px] font-extrabold text-white mt-0.5">
                           {blindMode ? '❓ 누구의 이야기일까요?' : `👑 ${currentP.name || '미등록'} 님`}
                         </h2>
                         <span className="text-[12px] text-slate-400">
@@ -639,7 +811,7 @@ const AdminScreen: React.FC = () => {
             <div className="bg-[#1A2235] border border-sky-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
               <div className="flex items-center justify-between">
                 <span className="text-[12px] font-bold text-sky-400 flex items-center gap-1.5">
-                  🧭 Discovery 현장 퀴즈 관리 & 풀이 센터
+                  🧭 Discovery 현장 퀴즈 관리 센터
                 </span>
                 <button
                   onClick={() => setShowAnswerDirectly(!showAnswerDirectly)}
@@ -649,7 +821,7 @@ const AdminScreen: React.FC = () => {
                 </button>
               </div>
               <p className="text-[12px] text-slate-300 leading-relaxed">
-                총 4개 문항(공통 2개 + 코스별 전용 1개, 조당 3문항 300pt)을 운영자가 직접 검토 및 테스트 풀이할 수 있습니다.
+                현장 비상 패스코드: <strong className="text-amber-400 font-mono text-sm bg-black/40 px-2 py-0.5 rounded">{EMERGENCY_GPS_BYPASS_CODE}</strong> (GPS 음영지역 안내용)
               </p>
               <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 space-y-1">
                 <p>📸 <strong>공통 단체사진 스팟:</strong> {ACTIVE_VENUE.photoSpot.name} (두 코스 모두 통과)</p>
@@ -681,7 +853,7 @@ const AdminScreen: React.FC = () => {
                       }`}>
                         문항 #{idx + 1} ({courseBadge})
                       </span>
-                      <span className="text-[10px] text-amber-400 font-bold">100pt</span>
+                      <span className="text-[10px] text-amber-400 font-bold">+{quiz.points}pt</span>
                     </div>
                     <h4 className="text-[13px] font-bold text-white truncate mt-1">
                       {quiz.title}
@@ -821,36 +993,6 @@ const AdminScreen: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* 실시간 참가자 풀이 현황 세부 */}
-                <div className="bg-black/30 border border-white/5 rounded-2xl p-3.5 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-300 block">
-                    📊 이 문항 실시간 참가자 풀이 내역
-                  </span>
-                  {(() => {
-                    const stat = discoveryStats[activeDiscoveryQuiz.id];
-                    if (!stat || stat.totalSolves === 0) {
-                      return <p className="text-[11px] text-slate-500 italic">아직 풀이를 완료한 참가자가 없습니다.</p>;
-                    }
-
-                    const accuracy = Math.round((stat.correctCount / stat.totalSolves) * 100);
-                    return (
-                      <div className="space-y-2 text-[12px]">
-                        <div className="flex justify-between items-center text-slate-300">
-                          <span>총 풀이 수: <strong className="text-white">{stat.totalSolves}명</strong></span>
-                          <span>정답률: <strong className="text-green-400">{accuracy}%</strong> ({stat.correctCount}명 성공)</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {Object.entries(stat.solvesByTeam).map(([team, count]) => (
-                            <span key={team} className="text-[10px] bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2 py-0.5 rounded-md">
-                              {team}: {count}명
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
               </div>
             )}
           </div>
@@ -916,7 +1058,7 @@ const AdminScreen: React.FC = () => {
                 💬 6개 조 People Quest 제출 상태
               </span>
               <p className="text-[11px] text-slate-400">
-                각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다.
+                각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다. (조당 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
               </p>
             </div>
 
