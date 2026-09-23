@@ -37,6 +37,7 @@ const PeopleQuestScreen: React.FC = () => {
     participantCompany,
     completeMission,
     updateTeamScore,
+    setPeopleQuestSubmitted,
   } = useAppStore();
 
   const [recommendation, setRecommendation] = useState<UnifiedRecommendation>({
@@ -159,46 +160,64 @@ const PeopleQuestScreen: React.FC = () => {
         submittedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
       };
 
-      // 1) People Quest 상태 저장
-      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
+      // 1) People Quest 상태 저장 (PUT)
+      const submitRes = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      // 2) 내 참가자 점수 동적 멱등 동기화
-      if (participantName && participantCompany) {
-        const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
-        const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
-        const existing = pRes.ok ? await pRes.json() : null;
-
-        // 퀴즈 점수 + People Quest 점수
-        let quizEarned = 0;
-        let quizCompletedCount = 0;
-        if (existing?.quizzes && typeof existing.quizzes === 'object') {
-          Object.values(existing.quizzes).forEach((q: any) => {
-            quizEarned += Number(q.pointsEarned || 0);
-            if (q.isCorrect) quizCompletedCount += 1;
-          });
-        }
-
-        const newScore = quizEarned + PEOPLE_QUEST_POINTS_PER_MEMBER;
-        const newMissions = quizCompletedCount + 1;
-
-        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            score: newScore,
-            missionsCompleted: newMissions,
-            peopleQuestCompleted: true,
-          }),
-        });
+      if (!submitRes.ok) {
+        throw new Error(`서버 응답 오류 (${submitRes.status})`);
       }
 
-      // 3) 로컬 Zustand 스토어 반영
-      completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
-      updateTeamScore(myTeam.id, (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER);
+      // 2) 내 참가자 점수 동적 멱등 동기화 (개별 에러 발생 시에도 메인 제출은 유지)
+      if (participantName && participantCompany) {
+        try {
+          const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+          const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
+          const existing = pRes.ok ? await pRes.json() : null;
+
+          let quizEarned = 0;
+          let quizCompletedCount = 0;
+          if (existing?.quizzes && typeof existing.quizzes === 'object') {
+            Object.values(existing.quizzes).forEach((q: any) => {
+              quizEarned += Number(q.pointsEarned || 0);
+              if (q.isCorrect) quizCompletedCount += 1;
+            });
+          }
+
+          const newScore = quizEarned + PEOPLE_QUEST_POINTS_PER_MEMBER;
+          const newMissions = quizCompletedCount + 1;
+
+          await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              score: newScore,
+              missionsCompleted: newMissions,
+              peopleQuestCompleted: true,
+            }),
+          });
+        } catch (syncErr) {
+          console.warn('참가자 점수 동기화 경고:', syncErr);
+        }
+      }
+
+      // 3) 로컬 Zustand 스토어 안전 반영
+      try {
+        if (typeof completeMission === 'function') {
+          completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
+        }
+        if (typeof updateTeamScore === 'function') {
+          updateTeamScore(myTeam.id, (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER);
+        }
+        if (typeof setPeopleQuestSubmitted === 'function') {
+          setPeopleQuestSubmitted(true);
+        }
+      } catch (storeErr) {
+        console.warn('스토어 갱신 경고:', storeErr);
+      }
 
       setIsSubmitted(true);
       setSubmittedData(payload);
@@ -206,8 +225,9 @@ const PeopleQuestScreen: React.FC = () => {
       // 축하 컨페티 효과 실행
       fireConfetti({ count: 80, spread: 85 });
       showToast(`🎉 조별 추천 미션 완료! (조원 전원 +${PEOPLE_QUEST_POINTS_PER_MEMBER}pt)`);
-    } catch (e) {
-      showToast('⚠️ 제출 중 오류가 발생했습니다.');
+    } catch (e: any) {
+      console.error('PeopleQuest 제출 에러:', e);
+      showToast(`⚠️ 제출 중 오류가 발생했습니다: ${e?.message || '네트워크 확인 필요'}`);
     } finally {
       setIsSaving(false);
     }

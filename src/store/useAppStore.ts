@@ -58,14 +58,16 @@ export const useAppStore = create<AppStore>()(
       isPeopleQuestSubmitted: false,
       setPeopleQuestDraft: (questionId, rec) =>
         set((s) => ({
-          peopleQuestDraft: { ...s.peopleQuestDraft, [questionId]: rec },
+          peopleQuestDraft: { ...(s.peopleQuestDraft || {}), [questionId]: rec },
         })),
       setPeopleQuestSubmitted: (submitted) => set({ isPeopleQuestSubmitted: submitted }),
 
       answeredQuizIds: [],
       addAnsweredQuiz: (quizId) =>
         set((s) => ({
-          answeredQuizIds: s.answeredQuizIds.includes(quizId) ? s.answeredQuizIds : [...s.answeredQuizIds, quizId],
+          answeredQuizIds: (s.answeredQuizIds || []).includes(quizId)
+            ? (s.answeredQuizIds || [])
+            : [...(s.answeredQuizIds || []), quizId],
         })),
 
       setCourse: (course) => set({ selectedCourse: course }),
@@ -83,7 +85,8 @@ export const useAppStore = create<AppStore>()(
       // ── 팀 선택: 해당 팀 정보를 myTeam으로 세팅 ──────────────
       selectTeam: (team, name?: string, company?: string, course?: CourseKey) =>
         set((s) => {
-          const activeCourse = course ?? s.selectedCourse;
+          const activeCourse = course ?? s.selectedCourse ?? DEFAULT_COURSE;
+          const currentTeams = s.teams || MOCK_TEAMS;
           return {
             myTeam:     team,
             selectedCourse: activeCourse,
@@ -91,8 +94,8 @@ export const useAppStore = create<AppStore>()(
             participantCompany: company ?? s.participantCompany,
             myLocation: null,
             missions:   [],
-            coreValues: MOCK_CORE_VALUES.map((cv) => ({ ...cv, found: false })),
-            teams: s.teams.map((t) =>
+            coreValues: (MOCK_CORE_VALUES || []).map((cv) => ({ ...cv, found: false })),
+            teams: currentTeams.map((t) =>
               t.id === team.id
                 ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
                 : t
@@ -102,80 +105,84 @@ export const useAppStore = create<AppStore>()(
 
       setMyLocation: (coord) => set({ myLocation: coord }),
 
-  // ── 미션 완료: 내 팀 점수 & teams 리더보드 동시 갱신 ─────
-  completeMission: (missionId, pointsEarned) =>
-    set((s) => {
-      const idx  = s.missions.findIndex((m) => m.id === missionId);
-      const next = s.missions[idx + 1];
+      // ── 미션 완료: 내 팀 점수 & teams 리더보드 동시 갱신 ─────
+      completeMission: (missionId, pointsEarned) =>
+        set((s) => {
+          const currentMissions = s.missions || [];
+          const currentTeams = s.teams || MOCK_TEAMS;
 
-      const missions = s.missions.map((m, i) => {
-        if (m.id === missionId)          return { ...m, status: 'completed' as const };
-        if (next && m.id === next.id)    return { ...m, status: 'active'    as const };
-        return m;
-      });
+          const idx  = currentMissions.findIndex((m) => m.id === missionId);
+          const next = idx >= 0 ? currentMissions[idx + 1] : undefined;
 
-      const newScore = (s.myTeam?.score ?? 0) + pointsEarned;
-      const newCompleted = (s.myTeam?.missionsCompleted ?? 0) + 1;
+          const missions = currentMissions.map((m, i) => {
+            if (m.id === missionId)          return { ...m, status: 'completed' as const };
+            if (next && m.id === next.id)    return { ...m, status: 'active'    as const };
+            return m;
+          });
 
-      // teams 리더보드도 실시간 갱신
-      const updatedTeams = s.teams
-        .map((t) => t.id === s.myTeam?.id
-          ? { ...t, score: newScore, missionsCompleted: newCompleted }
-          : t
-        )
-        .sort((a, b) => b.score - a.score)
-        .map((t, i) => ({ ...t, rank: i + 1 }));
+          const newScore = (s.myTeam?.score ?? 0) + pointsEarned;
+          const newCompleted = (s.myTeam?.missionsCompleted ?? 0) + 1;
 
-      return {
-        missions,
-        myTeam: s.myTeam
-          ? { ...s.myTeam, score: newScore, missionsCompleted: newCompleted }
-          : null,
-        teams: updatedTeams,
-      };
-    }),
+          // teams 리더보드도 실시간 갱신
+          const updatedTeams = currentTeams
+            .map((t) => t.id === s.myTeam?.id
+              ? { ...t, score: newScore, missionsCompleted: newCompleted }
+              : t
+            )
+            .sort((a, b) => b.score - a.score)
+            .map((t, i) => ({ ...t, rank: i + 1 }));
 
-  unlockMission: (missionId) =>
-    set((s) => ({
-      missions: s.missions.map((m) =>
-        m.id === missionId ? { ...m, status: 'active' as const } : m
-      ),
-    })),
+          return {
+            missions,
+            myTeam: s.myTeam
+              ? { ...s.myTeam, score: newScore, missionsCompleted: newCompleted }
+              : null,
+            teams: updatedTeams,
+          };
+        }),
 
-  addNotice: (notice) =>
-    set((s) => ({ notices: [notice, ...s.notices] })),
+      unlockMission: (missionId) =>
+        set((s) => ({
+          missions: (s.missions || []).map((m) =>
+            m.id === missionId ? { ...m, status: 'active' as const } : m
+          ),
+        })),
 
-  resolveAlert: (alertId) =>
-    set((s) => ({
-      alerts: s.alerts.map((a) =>
-        a.id === alertId ? { ...a, status: 'resolved' as const, resolvedAt: new Date() } : a
-      ),
-    })),
+      addNotice: (notice) =>
+        set((s) => ({ notices: [notice, ...(s.notices || [])] })),
 
-  markCoreValueFound: (key) =>
-    set((s) => ({
-      coreValues: s.coreValues.map((cv) =>
-        cv.key === key ? { ...cv, found: true } : cv
-      ),
-    })),
+      resolveAlert: (alertId) =>
+        set((s) => ({
+          alerts: (s.alerts || []).map((a) =>
+            a.id === alertId ? { ...a, status: 'resolved' as const, resolvedAt: new Date() } : a
+          ),
+        })),
 
-  updateTeamScore: (teamId, score) =>
-    set((s) => {
-      const updatedTeams = s.teams
-        .map((t) => (t.id === teamId ? { ...t, score } : t))
-        .sort((a, b) => b.score - a.score)
-        .map((t, i) => ({ ...t, rank: i + 1 }));
-      const myTeamRank = updatedTeams.find((t) => t.id === s.myTeam?.id)?.rank ?? s.myTeam?.rank ?? 1;
-      return {
-        myTeam: s.myTeam && s.myTeam.id === teamId ? { ...s.myTeam, score, rank: myTeamRank } : s.myTeam ? { ...s.myTeam, rank: myTeamRank } : null,
-        teams: updatedTeams,
-      };
-    }),
+      markCoreValueFound: (key) =>
+        set((s) => ({
+          coreValues: (s.coreValues || []).map((cv) =>
+            cv.key === key ? { ...cv, found: true } : cv
+          ),
+        })),
 
-  updateTeamStatus: (teamId, status) =>
-    set((s) => ({
-      teams: s.teams.map((t) => (t.id === teamId ? { ...t, status } : t)),
-    })),
+      updateTeamScore: (teamId, score) =>
+        set((s) => {
+          const currentTeams = s.teams || MOCK_TEAMS;
+          const updatedTeams = currentTeams
+            .map((t) => (t.id === teamId ? { ...t, score } : t))
+            .sort((a, b) => b.score - a.score)
+            .map((t, i) => ({ ...t, rank: i + 1 }));
+          const myTeamRank = updatedTeams.find((t) => t.id === s.myTeam?.id)?.rank ?? s.myTeam?.rank ?? 1;
+          return {
+            myTeam: s.myTeam && s.myTeam.id === teamId ? { ...s.myTeam, score, rank: myTeamRank } : s.myTeam ? { ...s.myTeam, rank: myTeamRank } : null,
+            teams: updatedTeams,
+          };
+        }),
+
+      updateTeamStatus: (teamId, status) =>
+        set((s) => ({
+          teams: (s.teams || MOCK_TEAMS).map((t) => (t.id === teamId ? { ...t, status } : t)),
+        })),
     }),
     {
       name: 'mission_connect_session',
