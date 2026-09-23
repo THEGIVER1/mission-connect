@@ -8,6 +8,9 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   EMERGENCY_GPS_BYPASS_CODE,
 } from '../../config/workshopConfig';
+import { calculateLeaderboardData } from '../../utils/scoreCalculator';
+import { onValue, ref } from 'firebase/database';
+import { rtdb } from '../../lib/firebase';
 import { fireConfetti } from '../../lib/confetti';
 
 interface ParticipantRecord {
@@ -61,7 +64,7 @@ type AdminTab = 'quizMaster' | 'discoveryQuizzes' | 'broadcast' | 'teams' | 'myI
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>('quizMaster');
-  const [participants, setParticipants] = useState<ParticipantRecord[]>([]);
+  const [rawParticipantsMap, setRawParticipantsMap] = useState<Record<string, any>>({});
   const [peopleQuests, setPeopleQuests] = useState<Record<string, PeopleQuestRecord>>({});
   const [currentBroadcast, setCurrentBroadcast] = useState<BroadcastNoticeData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -94,53 +97,113 @@ const AdminScreen: React.FC = () => {
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const processAdminData = useCallback((data: any) => {
+    if (!data || typeof data !== 'object') return;
+    if (data.participants && typeof data.participants === 'object') {
+      setRawParticipantsMap(data.participants);
+    } else {
+      setRawParticipantsMap({});
+    }
+    if (data.peopleQuest && typeof data.peopleQuest === 'object') {
+      setPeopleQuests(data.peopleQuest);
+    } else {
+      setPeopleQuests({});
+    }
+    if (data.broadcastNotice && data.broadcastNotice.active) {
+      setCurrentBroadcast(data.broadcastNotice);
+    } else {
+      setCurrentBroadcast(null);
+    }
+  }, []);
+
+  const fetchData = useCallback(async () => {
     try {
-      // 1. 참가자 전체 목록 (quizzes 포함)
-      const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants.json`);
-      if (pRes.ok) {
-        const pData = await pRes.json();
-        if (pData) {
-          const list: ParticipantRecord[] = Object.entries(pData).map(([id, val]: [string, any]) => ({
-            id,
-            ...val,
-          }));
-          setParticipants(list);
-        } else {
-          setParticipants([]);
-        }
-      }
-
-      // 2. People Quest 조별 제출 현황
-      const pqRes = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest.json`);
-      if (pqRes.ok) {
-        const pqData = await pqRes.json();
-        if (pqData) {
-          setPeopleQuests(pqData);
-        }
-      }
-
-      // 3. 실시간 긴급 공지 현황
-      const bcRes = await fetch(`${dbUrl}/sessions/trekking2026/broadcastNotice.json`);
-      if (bcRes.ok) {
-        const bcData = await bcRes.json();
-        if (bcData && bcData.active) {
-          setCurrentBroadcast(bcData);
-        } else {
-          setCurrentBroadcast(null);
-        }
+      const res = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        processAdminData(data);
       }
     } catch (e) {
       console.warn('Admin 데이터 로드 실패:', e);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dbUrl, processAdminData]);
 
+  // Dual-Channel 실시간 동기화 (WebSocket 리스너 + 2.5s REST 폴링)
   useEffect(() => {
     fetchData();
-  }, [dbUrl]);
+
+    const pollInterval = setInterval(fetchData, 2500);
+
+    let unsubscribe = () => {};
+    try {
+      const sessionRef = ref(rtdb, 'sessions/trekking2026');
+      unsubscribe = onValue(
+        sessionRef,
+        (snapshot) => {
+          if (!snapshot.exists()) return;
+          const data = snapshot.val();
+          processAdminData(data);
+        },
+        (error) => {
+          console.warn('어드민 실시간 동기화 경고:', error);
+        }
+      );
+    } catch (e) {
+      console.warn('어드민 Firebase 리스너 등록 경고:', e);
+    }
+
+    return () => {
+      clearInterval(pollInterval);
+      unsubscribe();
+    };
+  }, [fetchData]);
+
+  // 1. 실시간 랭킹 및 통합 점수 계산 (대시보드·리더보드와 100% 동일한 점수 계산기 연동)
+  const { individuals, teams: calculatedTeams } = useMemo(() => {
+    return calculateLeaderboardData(rawParticipantsMap, peopleQuests);
+  }, [rawParticipantsMap, peopleQuests]);
+
+  // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
+  const participants: ParticipantRecord[] = useMemo(() => {
+    return individuals.map(ind => {
+      const raw = rawParticipantsMap[ind.id] ||
+        rawParticipantsMap[`${ind.name}_${ind.company}`.replace(/\s/g, '_')] ||
+        Object.values(rawParticipantsMap).find((p: any) => (p?.name || '').trim() === ind.name.trim()) ||
+        {};
+
+      return {
+        id: ind.id,
+        name: ind.name,
+        company: ind.company,
+        teamId: ind.teamId,
+        teamName: ind.team,
+        course: raw.course || (WORKSHOP_TEAMS.find(t => t.id === ind.teamId)?.assignedCourse ?? 'lake'),
+        score: ind.pts,
+        missionsCompleted: ind.missions,
+        myInfo: raw.myInfo || {},
+        quizzes: raw.quizzes || {},
+        truth1: raw.truth1,
+        truth2: raw.truth2,
+        lie: raw.lie,
+        joinedAt: raw.joinedAt,
+      };
+    });
+  }, [individuals, rawParticipantsMap]);
+
+  // 3. 실시간 조별 순위 및 팀원 목록 (개인 점수 합산 100% 일치)
+  const rankedTeams = useMemo(() => {
+    return calculatedTeams.map(team => {
+      const members = participants.filter(p => p.teamId === team.id);
+      return {
+        ...team,
+        members,
+        totalScore: team.score,
+        completedCount: team.missionsCompleted,
+      };
+    });
+  }, [calculatedTeams, participants]);
 
   // 필터링된 참가자 목록
   const filteredParticipants = useMemo(() => {
@@ -200,21 +263,6 @@ const AdminScreen: React.FC = () => {
   // 7개 문항 답변을 작성한 참가자 수
   const answeredParticipants = useMemo(() => {
     return participants.filter(p => p.myInfo && Object.keys(p.myInfo).length > 0);
-  }, [participants]);
-
-  // 실시간 조별 점수 랭킹 계산 (6개 조)
-  const rankedTeams = useMemo(() => {
-    return WORKSHOP_TEAMS.map(team => {
-      const members = participants.filter(p => p.teamId === team.id);
-      const totalScore = members.reduce((acc, cur) => acc + (cur.score ?? 0), 0);
-      const completedCount = members.reduce((acc, cur) => acc + (cur.missionsCompleted ?? 0), 0);
-      return {
-        ...team,
-        members,
-        totalScore,
-        completedCount,
-      };
-    }).sort((a, b) => b.totalScore - a.totalScore);
   }, [participants]);
 
   // 키보드 단축키 핸들러 (무대 퀴즈쇼 모드 및 시상식 모드)
@@ -465,6 +513,40 @@ const AdminScreen: React.FC = () => {
       alert('공지 종료 중 오류가 발생했습니다.');
     } finally {
       setIsSendingBroadcast(false);
+    }
+  };
+
+  // 6. 파일럿 테스트용 전체 세션 데이터 초기화 (참가자, 퀴즈 기록, 추천 내역 등)
+  const handleResetSessionData = async () => {
+    if (!window.confirm('⚠️ 주의: 현재 등록된 모든 참가자 데이터, 퀴즈 풀이 내역, People Quest 추천 내역이 영구 초기화됩니다.\n\n새로운 파일럿 테스트를 위해 데이터를 초기화하시겠습니까?')) {
+      return;
+    }
+    const confirmCode = window.prompt('초기화를 확정하려면 "초기화"라고 입력해주세요.');
+    if (confirmCode !== '초기화') {
+      alert('초기화가 취소되었습니다.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await fetch(`${dbUrl}/sessions/trekking2026.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participants: {},
+          peopleQuest: {},
+          broadcastNotice: { active: false, message: '', timestamp: new Date().toISOString() },
+        }),
+      });
+      setRawParticipantsMap({});
+      setPeopleQuests({});
+      setCurrentBroadcast(null);
+      alert('✅ 파일럿 테스트 데이터가 성공적으로 초기화되었습니다.');
+    } catch (e) {
+      console.error('초기화 실패:', e);
+      alert('데이터 초기화 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1036,15 +1118,22 @@ const AdminScreen: React.FC = () => {
 
       {/* 종합 현황 인포 바 */}
       <div className="bg-[#101626] border-b border-white/8 px-4 py-2 flex items-center justify-between text-[11px] text-slate-300">
-        <div>
-          <span>👥 등록 참가자: </span>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="실시간 동기화 작동 중" />
+          <span>👥 참여: </span>
           <strong className="text-amber-400 font-bold">{participants.length}명</strong>
-          <span className="text-slate-500 ml-1">/ 50명</span>
         </div>
         <div>
-          <span>💡 7문항 작성: </span>
+          <span>💡 7문항: </span>
           <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
         </div>
+        <button
+          onClick={handleResetSessionData}
+          className="px-2 py-0.5 rounded bg-red-900/40 text-red-300 border border-red-500/30 text-[10px] font-bold hover:bg-red-800/60 transition-all flex items-center gap-1"
+          title="파일럿 테스트용 세션 전체 초기화"
+        >
+          🧹 데이터 리셋
+        </button>
       </div>
 
       {/* 6개 탭 네비게이션 */}
