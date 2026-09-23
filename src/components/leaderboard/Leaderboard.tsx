@@ -492,21 +492,20 @@ const Leaderboard: React.FC = () => {
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+    const sessionRef = ref(rtdb, 'sessions/trekking2026');
 
-    // 전체 데이터 Fetch & 실시간 집계
-    const fetchAndAggregate = async () => {
-      try {
-        const [pRes, qRes] = await Promise.all([
-          fetch(`${dbUrl}/sessions/trekking2026/participants.json`),
-          fetch(`${dbUrl}/sessions/trekking2026/peopleQuest.json`),
-        ]);
+    const unsubscribe = onValue(
+      sessionRef,
+      (snapshot) => {
+        if (!snapshot.exists()) return;
+        const data = snapshot.val();
+        if (!data) return;
 
-        const participants: Record<string, any> | null = pRes.ok ? await pRes.json() : null;
-        const quests: Record<string, any> | null = qRes.ok ? await qRes.json() : null;
+        const participants: Record<string, any> = data.participants || {};
+        const quests: Record<string, any> = data.peopleQuest || {};
 
-        if (participants) setParticipantsData(participants);
-        if (quests) setPeopleQuestsData(quests);
+        setParticipantsData(participants);
+        setPeopleQuestsData(quests);
 
         const aggregated = new Map<string, Team>();
         WORKSHOP_TEAMS.forEach((team) => {
@@ -525,61 +524,53 @@ const Leaderboard: React.FC = () => {
           });
         });
 
-        // 1) 조별 People Quest 완료 여부에 따른 기본 미션 카운트 반영
-        if (quests && typeof quests === 'object') {
-          Object.entries(quests).forEach(([teamId, questData]: [string, any]) => {
-            const current = aggregated.get(teamId);
-            if (current && questData?.status === 'submitted') {
-              current.missionsCompleted += 1;
-            }
-          });
-        }
+        // 1) 조별 People Quest 완료 여부
+        Object.entries(quests).forEach(([teamId, questData]: [string, any]) => {
+          const current = aggregated.get(teamId);
+          if (current && questData?.status === 'submitted') {
+            current.missionsCompleted += 1;
+          }
+        });
 
-        // 2) 참가자별 실시간 점수 & 미션 합산
-        if (participants && typeof participants === 'object') {
-          Object.values(participants).forEach((participant: any) => {
-            if (!participant?.teamId) return;
-            const teamId = participant.teamId;
-            const current = aggregated.get(teamId);
+        // 2) 참가자별 실시간 점수 합산
+        Object.values(participants).forEach((participant: any) => {
+          if (!participant?.teamId) return;
+          const teamId = participant.teamId;
+          const current = aggregated.get(teamId);
+          if (current) {
+            current.memberCount += 1;
 
-            // 퀴즈 점수 + People Quest 점수
-            let pScore = Number(participant.score ?? 0);
-            if (quests && quests[teamId]?.status === 'submitted' && !participant.peopleQuestCompleted) {
-              pScore += PEOPLE_QUEST_POINTS_PER_MEMBER;
+            let userPts = 0;
+            if (participant.quizzes && typeof participant.quizzes === 'object') {
+              Object.values(participant.quizzes).forEach((q: any) => {
+                userPts += Number(q.pointsEarned || 0);
+                if (q.isCorrect || q.pointsEarned !== undefined) {
+                  current.missionsCompleted += 1;
+                }
+              });
             }
 
-            if (current) {
-              current.memberCount += 1;
-              current.score += pScore;
+            if (quests[teamId]?.status === 'submitted') {
+              userPts += PEOPLE_QUEST_POINTS_PER_MEMBER;
             }
-          });
-        }
+
+            current.score += userPts;
+          }
+        });
 
         const rankedTeams = Array.from(aggregated.values())
           .sort((a, b) => b.score - a.score)
           .map((team, i) => ({ ...team, rank: i + 1 }));
 
         setRealtimeTeams(rankedTeams);
-      } catch (err) {
-        console.warn('리더보드 집계 실패:', err);
+      },
+      (error) => {
+        console.warn('리더보드 실시간 동기화 경고:', error);
       }
-    };
+    );
 
-    fetchAndAggregate();
-    const interval = setInterval(fetchAndAggregate, 3000); // 3초마다 실시간 최신화
-
-    // Firebase listener
-    const pRef = ref(rtdb, 'sessions/trekking2026/participants');
-    const qRef = ref(rtdb, 'sessions/trekking2026/peopleQuest');
-    const unsubP = onValue(pRef, () => fetchAndAggregate());
-    const unsubQ = onValue(qRef, () => fetchAndAggregate());
-
-    return () => {
-      clearInterval(interval);
-      unsubP();
-      unsubQ();
-    };
-  }, [teamsFromStore]);
+    return () => unsubscribe();
+  }, []);
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'team',       label: '팀 순위'   },
