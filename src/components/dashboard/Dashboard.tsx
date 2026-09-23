@@ -11,6 +11,7 @@ import {
   getCourseTotalMaxPoints,
   DISCOVERY_QUIZZES,
 } from '../../config/workshopConfig';
+import { calculateLeaderboardData } from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
@@ -299,102 +300,54 @@ const Dashboard: React.FC = () => {
     const isTeamPqSubmitted = quests[teamId]?.status === 'submitted' || isPeopleQuestSubmitted;
     setPqSubmitted(isTeamPqSubmitted);
 
-    // 2) 내 개인 점수 및 푼 퀴즈 수 실시간 계산 (다중 매칭 방어)
+    // 2) 통합 점수 계산기 실행 (전체 50명 & 6개 조 실시간 연동)
+    const { individuals, teams } = calculateLeaderboardData(
+      participants,
+      quests,
+      {
+        name: participantName,
+        company: participantCompany,
+        teamId,
+        answeredQuizIds,
+        isPeopleQuestSubmitted,
+      }
+    );
+
+    // 3) 내 개인 점수 및 푼 퀴즈 수 실시간 바인딩
     let myP = participants[participantId];
     if (!myP && participantName) {
       const trimmedName = participantName.trim();
       myP = Object.values(participants).find((p: any) => (p?.name || '').trim() === trimmedName);
     }
 
-    let pQuizPts = 0;
-    let pQuizCount = 0;
     const answeredIds: string[] = [];
-
-    if (myP) {
-      if (myP.quizzes && typeof myP.quizzes === 'object') {
-        Object.entries(myP.quizzes).forEach(([qId, q]: [string, any]) => {
-          pQuizPts += Number(q.pointsEarned || 0);
-          if (q.isCorrect || q.pointsEarned !== undefined) {
-            pQuizCount += 1;
-            answeredIds.push(qId);
-          }
-        });
-      }
+    let pQuizCount = 0;
+    if (myP?.quizzes && typeof myP.quizzes === 'object') {
+      Object.entries(myP.quizzes).forEach(([qId, q]: [string, any]) => {
+        if (q.isCorrect || q.pointsEarned !== undefined) {
+          pQuizCount += 1;
+          answeredIds.push(qId);
+        }
+      });
     }
 
-    const localQuizPts = (answeredQuizIds || []).length * 100;
-    const localPqPts = isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-    const computedLocalPersonal = localQuizPts + localPqPts;
+    const myInd = individuals.find(ind => ind.name.trim() === (participantName || '').trim());
+    const personalTotal = myInd ? myInd.pts : (answeredQuizIds?.length ?? 0) * 100 + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
 
-    const personalTotal = Math.max(pQuizPts + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0), computedLocalPersonal);
     setLivePersonalScore(personalTotal);
     setAnsweredQuizCount(Math.max(pQuizCount, answeredQuizIds?.length ?? 0));
 
-    // 3) 전체 6개 조 실시간 점수 & 순위 집계
-    const teamScoreMap: Record<string, number> = {
-      team1: 0, team2: 0, team3: 0, team4: 0, team5: 0, team6: 0
-    };
-
-    const teamMissionsMap: Record<string, number> = {
-      team1: 0, team2: 0, team3: 0, team4: 0, team5: 0, team6: 0
-    };
-
-    // 조별 People Quest 완료 여부
-    Object.entries(quests).forEach(([tId, qData]: [string, any]) => {
-      if (qData?.status === 'submitted' && teamMissionsMap[tId] !== undefined) {
-        teamMissionsMap[tId] += 1;
-      }
-    });
-
-    Object.values(participants).forEach((p: any) => {
-      if (p && p.teamId && teamScoreMap[p.teamId] !== undefined) {
-        let userPts = 0;
-        if (p.quizzes && typeof p.quizzes === 'object') {
-          Object.values(p.quizzes).forEach((q: any) => {
-            userPts += Number(q.pointsEarned || 0);
-            if (q.isCorrect || q.pointsEarned !== undefined) {
-              teamMissionsMap[p.teamId] = (teamMissionsMap[p.teamId] || 0) + 1;
-            }
-          });
-        }
-        if (quests[p.teamId]?.status === 'submitted') {
-          userPts += PEOPLE_QUEST_POINTS_PER_MEMBER;
-        }
-        teamScoreMap[p.teamId] += userPts;
-      }
-    });
-
-    // 내 팀의 로컬 점수 낙관적 보정
-    if (myTeam?.id && teamScoreMap[myTeam.id] < (myTeam.score ?? 0)) {
-      teamScoreMap[myTeam.id] = myTeam.score ?? 0;
-    }
-
-    const ranked = WORKSHOP_TEAMS.map(t => ({
-      id: t.id,
-      name: t.name,
-      shortCode: t.shortCode,
-      color: t.color,
-      score: teamScoreMap[t.id] || 0,
-      missionsCompleted: teamMissionsMap[t.id] || 0,
-      memberCount: 1,
-      totalMissions: 2,
-      lastActivity: new Date(),
-      status: 'active' as const,
-    })).sort((a, b) => b.score - a.score).map((t, idx) => ({
-      ...t,
-      rank: idx + 1,
-    }));
-
-    const highest = Math.max(...ranked.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
+    // 4) 내 조 실시간 점수 & 순위 바인딩
+    const highest = Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
     setMaxScore(highest);
 
-    const myRankObj = ranked.find(r => r.id === teamId);
+    const myRankObj = teams.find(r => r.id === teamId);
     if (myRankObj) {
       setLiveTeamScore(myRankObj.score);
       setLiveTeamRank(myRankObj.rank);
       updateTeamScore(teamId, myRankObj.score);
       syncSessionData({
-        teams: ranked,
+        teams,
         myTeamScore: myRankObj.score,
         myTeamRank: myRankObj.rank,
         myTeamMissionsCompleted: myRankObj.missionsCompleted,

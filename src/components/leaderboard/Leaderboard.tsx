@@ -9,9 +9,8 @@ import {
   WORKSHOP_TEAMS,
   DISCOVERY_QUIZZES,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
-  PRE_REGISTERED_PARTICIPANTS,
-  getCourseTotalMaxPoints,
 } from '../../config/workshopConfig';
+import { calculateLeaderboardData, IndividualItem } from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
 type TabKey = 'team' | 'mission' | 'individual';
@@ -403,117 +402,10 @@ const MissionTab: React.FC<{
   );
 };
 
-// ─────────────────────────────────────────────────────────────────
-// 탭 3: 개인 기여 순위 (50명 참가자 실시간 멱등 순위표)
-// ─────────────────────────────────────────────────────────────────
 const IndividualTab: React.FC<{
-  participants: Record<string, any>;
-  peopleQuests: Record<string, any>;
-}> = ({ participants, peopleQuests }) => {
-  const participantName = useAppStore((s) => s.participantName);
-  const participantCompany = useAppStore((s) => s.participantCompany);
-  const myTeam = useAppStore((s) => s.myTeam);
-  const answeredQuizIds = useAppStore((s) => s.answeredQuizIds || []);
-  const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
-  const EMOJIS = ['🔥', '💡', '🤝', '⚖️', '🏆', '🌟', '💪', '🎯'];
-
-  const individuals = useMemo(() => {
-    const listMap = new Map<string, any>();
-
-    // 1) 50명 사전 등록 명단을 기본 베이스로 초기화
-    PRE_REGISTERED_PARTICIPANTS.forEach((p, i) => {
-      listMap.set(p.name.trim(), {
-        id: p.id,
-        name: p.name.trim(),
-        team: p.teamName,
-        teamId: p.teamId,
-        company: p.company,
-        pts: 0,
-        missions: 0,
-        emoji: EMOJIS[i % EMOJIS.length],
-      });
-    });
-
-    // 2) RTDB에 저장된 참가자 실시간 퀴즈 및 퀘스트 점수 병합
-    Object.values(participants).forEach((p: any) => {
-      if (!p?.name) return;
-      const trimmedName = p.name.trim();
-      const existing = listMap.get(trimmedName) || {
-        id: p.id || trimmedName,
-        name: trimmedName,
-        team: p.teamName || '1조',
-        teamId: p.teamId || 'team1',
-        company: p.company || '',
-        pts: 0,
-        missions: 0,
-        emoji: '🌟',
-      };
-
-      // 퀴즈 푼 점수 계산
-      let quizPoints = 0;
-      let quizMissions = 0;
-      if (p.quizzes && typeof p.quizzes === 'object') {
-        Object.values(p.quizzes).forEach((q: any) => {
-          if (q.pointsEarned) quizPoints += Number(q.pointsEarned);
-          if (q.isCorrect || q.pointsEarned !== undefined) quizMissions += 1;
-        });
-      }
-
-      // 조별 People Quest 완료 여부
-      const targetTeamId = p.teamId || existing.teamId;
-      const isTeamPqDone = peopleQuests[targetTeamId]?.status === 'submitted' || p.peopleQuestCompleted;
-      const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const pqMissions = isTeamPqDone ? 1 : 0;
-
-      const totalPts = Math.max(Number(p.score ?? 0), quizPoints + pqPoints);
-      const totalMissions = Math.max(Number(p.missionsCompleted ?? 0), quizMissions + pqMissions);
-
-      listMap.set(trimmedName, {
-        ...existing,
-        team: p.teamName || existing.team,
-        teamId: targetTeamId,
-        company: p.company || existing.company,
-        pts: totalPts,
-        missions: totalMissions,
-      });
-    });
-
-    // 3) 현재 로그인된 내 계정 낙관적(Optimistic) 로컬 점수 즉시 보정
-    if (participantName) {
-      const myTrimmedName = participantName.trim();
-      const myExisting = listMap.get(myTrimmedName) || {
-        id: myTrimmedName,
-        name: myTrimmedName,
-        team: myTeam?.name ?? '1조',
-        teamId: myTeam?.id ?? 'team1',
-        company: participantCompany ?? '',
-        pts: 0,
-        missions: 0,
-        emoji: '🔥',
-      };
-
-      const isMyTeamPqDone = (myTeam?.id && peopleQuests[myTeam.id]?.status === 'submitted') || isPeopleQuestSubmitted;
-      const myLocalQuizPts = answeredQuizIds.length * 100;
-      const myLocalPqPts = isMyTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const myCalculatedTotal = myLocalQuizPts + myLocalPqPts;
-      const myCalculatedMissions = answeredQuizIds.length + (isMyTeamPqDone ? 1 : 0);
-
-      listMap.set(myTrimmedName, {
-        ...myExisting,
-        team: myTeam?.name ?? myExisting.team,
-        teamId: myTeam?.id ?? myExisting.teamId,
-        company: participantCompany ?? myExisting.company,
-        pts: Math.max(myExisting.pts, myCalculatedTotal),
-        missions: Math.max(myExisting.missions, myCalculatedMissions),
-      });
-    }
-
-    const arr = Array.from(listMap.values());
-    return arr
-      .sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name))
-      .map((p, i) => ({ ...p, rank: i + 1 }));
-  }, [participants, peopleQuests, participantName, participantCompany, myTeam, answeredQuizIds, isPeopleQuestSubmitted]);
-
+  individuals: IndividualItem[];
+  participantName: string | null;
+}> = ({ individuals, participantName }) => {
   return (
     <div className="px-4 pb-28 space-y-2 pt-2">
       <div className="bg-[#1A2235] border border-white/8 rounded-xl p-3 text-center mb-2">
@@ -584,100 +476,56 @@ const Leaderboard: React.FC = () => {
   const [tab, setTab] = useState<TabKey>('team');
   const teamsFromStore = useAppStore((s) => s.teams);
   const myTeam = useAppStore((s) => s.myTeam);
+  const participantName = useAppStore((s) => s.participantName);
+  const participantCompany = useAppStore((s) => s.participantCompany);
+  const answeredQuizIds = useAppStore((s) => s.answeredQuizIds || []);
   const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
   const syncSessionData = useAppStore((s) => s.syncSessionData);
   const myTeamId = myTeam?.id ?? '';
 
-  const [realtimeTeams, setRealtimeTeams] = useState<Team[]>(teamsFromStore || []);
   const [participantsData, setParticipantsData] = useState<Record<string, any>>({});
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  const processLeaderboardData = (data: any) => {
-    if (!data || typeof data !== 'object') return;
-
-    const participants: Record<string, any> = data.participants || {};
-    const quests: Record<string, any> = data.peopleQuest || {};
-
-    setParticipantsData(participants);
-    setPeopleQuestsData(quests);
-
-    const aggregated = new Map<string, Team>();
-    WORKSHOP_TEAMS.forEach((team) => {
-      const existingInStore = teamsFromStore?.find(t => t.id === team.id);
-      aggregated.set(team.id, {
-        id: team.id,
-        name: team.name,
-        shortCode: team.shortCode,
-        color: team.color,
-        score: 0,
-        memberCount: 0,
-        rank: existingInStore?.rank || 1,
-        missionsCompleted: 0,
-        totalMissions: 2,
-        lastActivity: new Date(),
-        status: 'active',
-      });
-    });
-
-    // 1) 조별 People Quest 완료 여부
-    Object.entries(quests).forEach(([teamId, questData]: [string, any]) => {
-      const current = aggregated.get(teamId);
-      if (current && (questData?.status === 'submitted' || (teamId === myTeamId && isPeopleQuestSubmitted))) {
-        current.missionsCompleted += 1;
+  // 1. 실시간 개인 순위표(50명) 및 6개 조 랭킹 통합 계산
+  const { individuals, teams: computedTeams } = useMemo(() => {
+    return calculateLeaderboardData(
+      participantsData,
+      peopleQuestsData,
+      {
+        name: participantName,
+        company: participantCompany,
+        teamId: myTeamId || null,
+        answeredQuizIds,
+        isPeopleQuestSubmitted,
       }
-    });
+    );
+  }, [
+    participantsData,
+    peopleQuestsData,
+    participantName,
+    participantCompany,
+    myTeamId,
+    answeredQuizIds,
+    isPeopleQuestSubmitted,
+  ]);
 
-    // 2) 참가자별 실시간 점수 합산
-    Object.values(participants).forEach((participant: any) => {
-      if (!participant?.teamId) return;
-      const teamId = participant.teamId;
-      const current = aggregated.get(teamId);
-      if (current) {
-        current.memberCount += 1;
-
-        let userPts = 0;
-        if (participant.quizzes && typeof participant.quizzes === 'object') {
-          Object.values(participant.quizzes).forEach((q: any) => {
-            userPts += Number(q.pointsEarned || 0);
-            if (q.isCorrect || q.pointsEarned !== undefined) {
-              current.missionsCompleted += 1;
-            }
-          });
-        }
-
-        if (quests[teamId]?.status === 'submitted' || (teamId === myTeamId && isPeopleQuestSubmitted)) {
-          userPts += PEOPLE_QUEST_POINTS_PER_MEMBER;
-        }
-
-        current.score += userPts;
-      }
-    });
-
-    // 내 팀의 로컬 점수 낙관적 보정
-    if (myTeamId) {
-      const myAgg = aggregated.get(myTeamId);
-      if (myAgg && myTeam?.score && myAgg.score < myTeam.score) {
-        myAgg.score = myTeam.score;
-      }
-    }
-
-    const rankedTeams = Array.from(aggregated.values())
-      .sort((a, b) => b.score - a.score)
-      .map((team, i) => ({ ...team, rank: i + 1 }));
-
-    setRealtimeTeams(rankedTeams);
-    syncSessionData({ teams: rankedTeams });
-  };
-
+  // Zustand 스토어 동기화
   useEffect(() => {
-    // 1) REST 즉시 조회
+    syncSessionData({ teams: computedTeams });
+  }, [computedTeams, syncSessionData]);
+
+  // 3. Dual-Channel 실시간 데이터 로드 (REST 2.5s Polling + WebSocket)
+  useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         const res = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          processLeaderboardData(data);
+          if (data && typeof data === 'object') {
+            setParticipantsData(data.participants || {});
+            setPeopleQuestsData(data.peopleQuest || {});
+          }
         }
       } catch (err) {
         console.warn('리더보드 REST 조회 경고:', err);
@@ -685,10 +533,8 @@ const Leaderboard: React.FC = () => {
     };
     fetchLeaderboard();
 
-    // 2) 2.5초 주기 REST 폴링
     const pollInterval = setInterval(fetchLeaderboard, 2500);
 
-    // 3) WebSocket 실시간 리스너
     let unsubscribe = () => {};
     try {
       const sessionRef = ref(rtdb, 'sessions/trekking2026');
@@ -697,7 +543,10 @@ const Leaderboard: React.FC = () => {
         (snapshot) => {
           if (!snapshot.exists()) return;
           const data = snapshot.val();
-          processLeaderboardData(data);
+          if (data && typeof data === 'object') {
+            setParticipantsData(data.participants || {});
+            setPeopleQuestsData(data.peopleQuest || {});
+          }
         },
         (error) => {
           console.warn('리더보드 실시간 동기화 경고:', error);
@@ -711,7 +560,7 @@ const Leaderboard: React.FC = () => {
       clearInterval(pollInterval);
       unsubscribe();
     };
-  }, [dbUrl, myTeamId, isPeopleQuestSubmitted]);
+  }, [dbUrl]);
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'team',       label: '팀 순위'   },
@@ -759,15 +608,15 @@ const Leaderboard: React.FC = () => {
 
       {/* 통계 & 실시간 타이머 바 */}
       <div className="flex-shrink-0">
-        <StatsRow teams={realtimeTeams} />
+        <StatsRow teams={computedTeams} />
         <SessionProgressBar />
       </div>
 
       {/* 탭 본문 콘텐츠 */}
       <div className="flex-1 overflow-y-auto">
-        {tab === 'team'       && <TeamTab teams={realtimeTeams} myTeamId={myTeamId} />}
+        {tab === 'team'       && <TeamTab teams={computedTeams} myTeamId={myTeamId} />}
         {tab === 'mission'    && <MissionTab peopleQuests={peopleQuestsData} participants={participantsData} />}
-        {tab === 'individual' && <IndividualTab participants={participantsData} peopleQuests={peopleQuestsData} />}
+        {tab === 'individual' && <IndividualTab individuals={individuals} participantName={participantName} />}
       </div>
 
       <BottomNav active="/leaderboard" />
