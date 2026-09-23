@@ -722,9 +722,61 @@ const AdminScreen: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────
   // VIEW 2: 빔프로젝터 무대 퀴즈쇼 풀스크린 뷰 (3단계 점진적 힌트 오픈)
   // ─────────────────────────────────────────────────────────────────
-  if (isStageMode && currentP) {
+  if (isStageMode) {
     const info = currentP?.myInfo || {};
     const stat = currentP ? nominationStats[currentP.name] : null;
+
+    if (!currentP || participants.length === 0) {
+      return (
+        <div className="fixed inset-0 z-[9999] bg-gradient-to-b from-[#0A0D18] via-[#0E1528] to-[#070A12] text-slate-100 flex flex-col font-['Noto_Sans_KR'] select-none p-6 md:p-10 overflow-hidden">
+          {/* 상단 무대 헤더 바 */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <span style={{ color: '#005EB8', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
+                DOOSAN
+              </span>
+              <div className="h-6 w-0.5 bg-white/20" />
+              <span className="text-lg font-bold text-white tracking-widest uppercase">
+                2026 CHRO TREKKING · 저녁 퀴즈쇼
+              </span>
+            </div>
+            <button
+              onClick={() => setIsStageMode(false)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-sm font-bold"
+            >
+              ✕ 일반 모드로 복귀 (ESC)
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center space-y-5 bg-[#131B2C] border-2 border-white/15 rounded-3xl p-10 max-w-xl shadow-2xl">
+              <div className="text-6xl animate-pulse">🕵️‍♂️</div>
+              <h2 className="text-2xl md:text-3xl font-black text-white">
+                아직 등록된 참가자 정보가 없습니다
+              </h2>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                참가자들이 모바일 웹앱에서 <strong>팀 선택 및 나의 정보 7문항</strong>을 입력하면<br />
+                실시간으로 저녁 퀴즈 카드가 자동으로 생성됩니다.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <button
+                  onClick={fetchData}
+                  className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-sm rounded-xl shadow active:scale-95"
+                >
+                  🔄 실시간 데이터 새로고침
+                </button>
+                <button
+                  onClick={() => setIsStageMode(false)}
+                  className="px-5 py-2.5 bg-[#1A2235] hover:bg-[#232D42] text-slate-300 font-bold text-sm rounded-xl border border-white/10"
+                >
+                  일반 모드로 돌아가기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="fixed inset-0 z-[9999] bg-[#0A0E17] text-slate-100 flex flex-col font-['Noto_Sans_KR'] select-none p-6 md:p-10 overflow-hidden">
