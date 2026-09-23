@@ -10,6 +10,8 @@ import {
 } from '../../config/workshopConfig';
 import { DiscoveryQuizItem } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
+import { ref, get, set, update } from 'firebase/database';
+import { rtdb } from '../../lib/firebase';
 
 function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -208,29 +210,23 @@ const DiscoveryQuizScreen: React.FC = () => {
       fireConfetti({ count: 70, spread: 75 });
     }
 
-    // Firebase RTDB 동적 멱등 저장
+    // Firebase RTDB 동적 멱등 저장 (Firebase SDK)
     try {
-      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/quizzes/${currentQuiz.id}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newResult),
-      });
+      const qRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}/quizzes/${currentQuiz.id}`);
+      await set(qRef, newResult);
 
       // 참가자 점수 동적 멱등 재계산
-      const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
-      const existing = pRes.ok ? await pRes.json() : null;
+      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+      const pSnap = await get(pRef);
+      const existing = pSnap.exists() ? pSnap.val() : null;
 
       // 퀴즈 획득 점수 전체 재합산
       const totalQuizEarned = Object.values(updatedResults).reduce((sum, r) => sum + (r.pointsEarned || 0), 0);
       const isPqDone = existing?.peopleQuestCompleted;
       const totalScore = totalQuizEarned + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
 
-      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          score: totalScore,
-        }),
+      await update(pRef, {
+        score: totalScore,
       });
 
       if (myTeam?.id && pointsEarned > 0) {

@@ -86,8 +86,9 @@ const TeamSelect: React.FC = () => {
     const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
 
     try {
-      const checkRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
-      const existing = checkRes.ok ? await checkRes.json() : null;
+      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+      const checkSnap = await get(pRef);
+      const existing = checkSnap.exists() ? checkSnap.val() : null;
       const initialScore = Number(existing?.score ?? 0);
       const initialCompleted = Number(existing?.missionsCompleted ?? 0);
 
@@ -109,11 +110,7 @@ const TeamSelect: React.FC = () => {
         status: 'active',
       };
 
-      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await update(pRef, payload);
 
       selectTeam({
         id: selectedTeam.id,

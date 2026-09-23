@@ -10,6 +10,8 @@ import {
 } from '../../config/workshopConfig';
 import { PreRegisteredPerson } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
+import { ref, set, get, update, onValue } from 'firebase/database';
+import { rtdb } from '../../lib/firebase';
 
 interface UnifiedRecommendation {
   recommendedPersonId: string;
@@ -59,41 +61,47 @@ const PeopleQuestScreen: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const teamId = myTeam?.id ?? 'team1';
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 불러오기
+  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 실시간 불러오기 (Firebase SDK)
   useEffect(() => {
-    if (!myTeam) return;
+    if (!myTeam?.id) {
+      setIsLoading(false);
+      return;
+    }
 
-    const fetchTeamPeopleQuest = async () => {
-      try {
-        const res = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`);
-        if (res.ok) {
-          const data = await res.json();
+    const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+    const unsubscribe = onValue(
+      pqRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
           if (data) {
             if (data.status === 'submitted') {
               setIsSubmitted(true);
               setSubmittedData(data);
+            } else {
+              setIsSubmitted(false);
             }
             if (data.recommendation) {
               setRecommendation(data.recommendation);
             }
           }
         }
-      } catch (err) {
-        console.warn('PeopleQuest 불러오기 실패:', err);
-      } finally {
+        setIsLoading(false);
+      },
+      (error) => {
+        console.warn('PeopleQuest 불러오기 실패:', error);
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchTeamPeopleQuest();
-  }, [myTeam, dbUrl]);
+    return () => unsubscribe();
+  }, [myTeam?.id]);
 
   // 2. 추천 대상자 검색 및 필터링 (본인 제외)
   const availablePeople = useMemo(() => {
@@ -119,34 +127,32 @@ const PeopleQuestScreen: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  // 4. 임시 저장
+  // 4. 임시 저장 (Firebase SDK)
   const handleDraftSave = async () => {
-    if (!myTeam) return;
+    if (!myTeam?.id) return;
     setIsSaving(true);
     try {
-      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teamId: myTeam.id,
-          teamName: myTeam.name,
-          recommendation,
-          status: 'draft',
-          updatedAt: new Date().toISOString(),
-          updatedBy: `${participantName}(${participantCompany})`,
-        }),
+      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+      await set(pqRef, {
+        teamId: myTeam.id,
+        teamName: myTeam.name,
+        recommendation,
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+        updatedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
       });
       showToast('💾 임시 저장이 완료되었습니다.');
-    } catch (e) {
+    } catch (e: any) {
+      console.warn('임시 저장 실패:', e);
       showToast('⚠️ 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 5. 최종 제출 실행 (동적 배점 & 축하 컨페티)
+  // 5. 최종 제출 실행 (Firebase SDK ref & set)
   const executeSubmit = async () => {
-    if (!myTeam) return;
+    if (!myTeam?.id) return;
     setIsSaving(true);
     setIsConfirmModalOpen(false);
 
@@ -160,23 +166,17 @@ const PeopleQuestScreen: React.FC = () => {
         submittedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
       };
 
-      // 1) People Quest 상태 저장 (PUT)
-      const submitRes = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      // 1) People Quest 상태 저장 (Firebase SDK set)
+      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+      await set(pqRef, payload);
 
-      if (!submitRes.ok) {
-        throw new Error(`서버 응답 오류 (${submitRes.status})`);
-      }
-
-      // 2) 내 참가자 점수 동적 멱등 동기화 (개별 에러 발생 시에도 메인 제출은 유지)
+      // 2) 내 참가자 점수 동적 멱등 동기화 (Firebase SDK get & update)
       if (participantName && participantCompany) {
         try {
           const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
-          const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
-          const existing = pRes.ok ? await pRes.json() : null;
+          const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+          const pSnap = await get(pRef);
+          const existing = pSnap.exists() ? pSnap.val() : null;
 
           let quizEarned = 0;
           let quizCompletedCount = 0;
@@ -190,21 +190,17 @@ const PeopleQuestScreen: React.FC = () => {
           const newScore = quizEarned + PEOPLE_QUEST_POINTS_PER_MEMBER;
           const newMissions = quizCompletedCount + 1;
 
-          await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              score: newScore,
-              missionsCompleted: newMissions,
-              peopleQuestCompleted: true,
-            }),
+          await update(pRef, {
+            score: newScore,
+            missionsCompleted: newMissions,
+            peopleQuestCompleted: true,
           });
         } catch (syncErr) {
           console.warn('참가자 점수 동기화 경고:', syncErr);
         }
       }
 
-      // 3) 로컬 Zustand 스토어 안전 반영
+      // 3) 로컬 Zustand 스토어 반영
       try {
         if (typeof completeMission === 'function') {
           completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
