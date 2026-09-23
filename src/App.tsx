@@ -11,6 +11,8 @@ const AdminScreen = lazy(() => import('./components/admin/AdminScreen'));
 const PeopleQuestScreen = lazy(() => import('./components/peopleQuest/PeopleQuestScreen'));
 const DiscoveryQuizScreen = lazy(() => import('./components/discoveryQuiz/DiscoveryQuizScreen'));
 
+import GlobalNoticeBanner from './components/common/GlobalNoticeBanner';
+
 const LoadingSpinner: React.FC = () => (
   <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex items-center justify-center">
     <div className="flex flex-col items-center gap-4">
@@ -29,6 +31,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const App: React.FC = () => (
   <BrowserRouter>
+    {/* 실시간 관리자 긴급 공지 글로벌 팝업 배너 */}
+    <GlobalNoticeBanner />
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         {/* 팀 선택 화면 */}

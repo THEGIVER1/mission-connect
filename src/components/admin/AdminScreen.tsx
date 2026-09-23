@@ -47,13 +47,23 @@ interface PeopleQuestRecord {
   submittedBy?: string;
 }
 
-type AdminTab = 'quizMaster' | 'discoveryQuizzes' | 'myInfoList' | 'peopleQuest' | 'teams';
+interface BroadcastNoticeData {
+  id: string;
+  title?: string;
+  message: string;
+  type?: 'info' | 'urgent' | 'photo' | 'dinner';
+  active: boolean;
+  timestamp: string;
+}
+
+type AdminTab = 'quizMaster' | 'discoveryQuizzes' | 'broadcast' | 'teams' | 'myInfoList' | 'peopleQuest';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>('quizMaster');
   const [participants, setParticipants] = useState<ParticipantRecord[]>([]);
   const [peopleQuests, setPeopleQuests] = useState<Record<string, PeopleQuestRecord>>({});
+  const [currentBroadcast, setCurrentBroadcast] = useState<BroadcastNoticeData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<'all' | '㈜두산' | '두산경영연구원'>('all');
@@ -62,8 +72,19 @@ const AdminScreen: React.FC = () => {
   const [blindMode, setBlindMode] = useState<boolean>(false);
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
 
-  // 빔프로젝터 무대 퀴즈쇼 풀스크린 모드 상태
+  // 빔프로젝터 무대 퀴즈쇼 풀스크린 모드 상태 (3단계 점진적 힌트 오픈: 0=신비주의, 1=취미/여가, 2=버킷리스트/의외의사실, 3=정답 공개)
   const [isStageMode, setIsStageMode] = useState<boolean>(false);
+  const [stageStep, setStageStep] = useState<number>(0);
+
+  // 최종 시상식 모드 상태 (7: 대기, 6->5->4->3->2->1: 순차 발표, 0: 전체 결과표 요약)
+  const [isAwardMode, setIsAwardMode] = useState<boolean>(false);
+  const [revealedAwardRank, setRevealedAwardRank] = useState<number>(7);
+
+  // 실시간 공지 발송 폼 상태
+  const [broadcastTitle, setBroadcastTitle] = useState<string>('');
+  const [broadcastMessage, setBroadcastMessage] = useState<string>('');
+  const [broadcastType, setBroadcastType] = useState<'info' | 'urgent' | 'photo' | 'dinner'>('info');
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState<boolean>(false);
 
   // Discovery 퀴즈 관리/테스트 상태
   const [adminSelectedQuizId, setAdminSelectedQuizId] = useState<string>(DISCOVERY_QUIZZES[0].id);
@@ -97,6 +118,17 @@ const AdminScreen: React.FC = () => {
         const pqData = await pqRes.json();
         if (pqData) {
           setPeopleQuests(pqData);
+        }
+      }
+
+      // 3. 실시간 긴급 공지 현황
+      const bcRes = await fetch(`${dbUrl}/sessions/trekking2026/broadcastNotice.json`);
+      if (bcRes.ok) {
+        const bcData = await bcRes.json();
+        if (bcData && bcData.active) {
+          setCurrentBroadcast(bcData);
+        } else {
+          setCurrentBroadcast(null);
         }
       }
     } catch (e) {
@@ -170,22 +202,89 @@ const AdminScreen: React.FC = () => {
     return participants.filter(p => p.myInfo && Object.keys(p.myInfo).length > 0);
   }, [participants]);
 
-  // 키보드 단축키 핸들러 (무대 모드 전용)
+  // 실시간 조별 점수 랭킹 계산 (6개 조)
+  const rankedTeams = useMemo(() => {
+    return WORKSHOP_TEAMS.map(team => {
+      const members = participants.filter(p => p.teamId === team.id);
+      const totalScore = members.reduce((acc, cur) => acc + (cur.score ?? 0), 0);
+      const completedCount = members.reduce((acc, cur) => acc + (cur.missionsCompleted ?? 0), 0);
+      return {
+        ...team,
+        members,
+        totalScore,
+        completedCount,
+      };
+    }).sort((a, b) => b.totalScore - a.totalScore);
+  }, [participants]);
+
+  // 키보드 단축키 핸들러 (무대 퀴즈쇼 모드 및 시상식 모드)
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // 1. 시상식 모드 키보드 컨트롤
+    if (isAwardMode) {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        setRevealedAwardRank(prev => {
+          if (prev === 7) return 6;
+          if (prev > 1) {
+            const next = prev - 1;
+            if (next <= 3) fireConfetti({ count: next === 1 ? 130 : 70 });
+            return next;
+          }
+          if (prev === 1) return 0; // 전체 결과표
+          return 0;
+        });
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        setRevealedAwardRank(prev => (prev < 7 ? (prev === 0 ? 1 : prev + 1) : 7));
+      } else if (e.key === 'c' || e.key === 'C') {
+        fireConfetti({ count: 90 });
+      } else if (e.key === 'Escape') {
+        setIsAwardMode(false);
+      }
+      return;
+    }
+
+    // 2. 무대 퀴즈쇼 모드 키보드 컨트롤 (3단계 점진적 힌트 오픈)
     if (!isStageMode) return;
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-      setCurrentCardIndex(prev => Math.min(participants.length - 1, prev + 1));
-    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-      setCurrentCardIndex(prev => Math.max(0, prev - 1));
-    } else if (e.key === ' ' || e.key === 'b' || e.key === 'B') {
+
+    if (e.key === 'ArrowRight' || e.key === ' ') {
       e.preventDefault();
-      setBlindMode(prev => !prev);
+      // 0 -> 1 -> 2 -> 3 (정답 공개 시 폭죽) -> 다음 참가자(0)
+      if (stageStep < 3) {
+        const nextStep = stageStep + 1;
+        setStageStep(nextStep);
+        if (nextStep === 3) fireConfetti({ count: 90 });
+      } else {
+        if (currentCardIndex < participants.length - 1) {
+          setCurrentCardIndex(prev => prev + 1);
+          setStageStep(0);
+        }
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (stageStep > 0) {
+        setStageStep(prev => prev - 1);
+      } else {
+        if (currentCardIndex > 0) {
+          setCurrentCardIndex(prev => prev - 1);
+          setStageStep(3);
+        }
+      }
+    } else if (e.key === '0') {
+      setStageStep(0);
+    } else if (e.key === '1') {
+      setStageStep(1);
+    } else if (e.key === '2') {
+      setStageStep(2);
+    } else if (e.key === '3') {
+      setStageStep(3);
+      fireConfetti({ count: 90 });
     } else if (e.key === 'c' || e.key === 'C') {
-      fireConfetti({ count: 80 });
+      fireConfetti({ count: 90 });
     } else if (e.key === 'Escape') {
       setIsStageMode(false);
     }
-  }, [isStageMode, participants.length]);
+  }, [isStageMode, isAwardMode, stageStep, currentCardIndex, participants.length]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -291,106 +390,7 @@ const AdminScreen: React.FC = () => {
     downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 3. 테스트용 샘플 데이터 생성
-  const handleGenerateSampleData = async () => {
-    if (!window.confirm('저녁 퀴즈 및 Discovery 퀴즈 테스트를 위해 샘플 참가자 3명(김민준, 이서연, 손우진)의 데이터를 생성하시겠습니까?')) return;
-    setIsLoading(true);
-    try {
-      const samples = [
-        {
-          name: '김민준',
-          company: '㈜두산',
-          teamId: 'team1',
-          teamName: '1조',
-          course: 'forest',
-          score: 300,
-          missionsCompleted: 2,
-          joinedAt: new Date().toISOString(),
-          status: 'active',
-          myInfo: {
-            q1_passion: '주말 10km 한강 러닝과 마라톤 풀코스 준비',
-            q2_vacation: '스위스 인터라켄으로 떠나 대자연 트레킹하기',
-            q3_dreamJob: '골목길 작은 심야식당 오너 셰프',
-            q4_bucketList: '보스턴 마라톤 대회 완주 메달 획득하기',
-            q5_unexpectedFact: '대학 시절 록밴드 드럼 연주자 출신',
-            q6_growthExperience: '입사 후 첫 신사업 프로젝트 PM으로 3개 부서 협업 리딩',
-            q7_careerChallenge: '글로벌 HR 데이터 분석 및 조직문화 신규 모델 구축',
-          },
-          quizzes: {
-            dq_elephant: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-            dq_museum: { selectedIdx: 1, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-            dq_zoo: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-          },
-        },
-        {
-          name: '이서연',
-          company: '두산경영연구원',
-          teamId: 'team1',
-          teamName: '1조',
-          course: 'forest',
-          score: 200,
-          missionsCompleted: 1,
-          joinedAt: new Date().toISOString(),
-          status: 'active',
-          myInfo: {
-            q1_passion: '프랑스 제과 제빵 베이킹 클래스 수강',
-            q2_vacation: '제주도 조용한 바닷가 북스테이에서 5일간 독서하기',
-            q3_dreamJob: '어린이 동화 작가 겸 일러스트레이터',
-            q4_bucketList: '나만의 홈베이킹 레시피북 독립출판하기',
-            q5_unexpectedFact: '바리스타 1급 자격증 보유 & 20개국 배낭여행',
-            q6_growthExperience: '어려웠던 전략 과제 분석 실패 후 재도전하여 CEO 보고 성공',
-            q7_careerChallenge: '생성형 AI를 활용한 경영진 리더십 진단 툴 개발',
-          },
-          quizzes: {
-            dq_elephant: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-            dq_museum: { selectedIdx: 1, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-          },
-        },
-        {
-          name: '손우진',
-          company: '㈜두산',
-          teamId: 'team4',
-          teamName: '4조',
-          course: 'lake',
-          score: 200,
-          missionsCompleted: 1,
-          joinedAt: new Date().toISOString(),
-          status: 'active',
-          myInfo: {
-            q1_passion: '골프 숏게임 연습 및 주말 스크린 골프 대회',
-            q2_vacation: '가족들과 함께 하와이 휴양지에서 온전한 휴식',
-            q3_dreamJob: '세계 여행 전문 여행 다큐멘터리 PD',
-            q4_bucketList: '골프 싱글 타수 달성 & 가족 해외여행 3회',
-            q5_unexpectedFact: '스킨스쿠버 다이빙 마스터 자격증 보유',
-            q6_growthExperience: '새로운 직무로 부서 이동 후 6개월 만에 최우수 조직원 선정',
-            q7_careerChallenge: '타 계열사와의 전략적 인재 교류 프로그램 기획',
-          },
-          quizzes: {
-            dq_elephant: { selectedIdx: 0, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-            dq_lake: { selectedIdx: 1, isCorrect: true, pointsEarned: 100, answeredAt: new Date().toISOString() },
-          },
-        },
-      ];
-
-      for (const s of samples) {
-        const pId = `${s.name}_${s.company}`.replace(/\s/g, '_');
-        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(s),
-        });
-      }
-
-      await fetchData();
-      alert('샘플 참가자 데이터 3명이 성공적으로 등록되었습니다!');
-    } catch (e) {
-      alert('샘플 데이터 생성 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 4. 조별 People Quest 제출 해제
+  // 3. 조별 People Quest 제출 해제
   const handleResetPeopleQuest = async (teamId: string) => {
     if (!window.confirm(`[${teamId}]의 People Quest 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
       return;
@@ -408,11 +408,319 @@ const AdminScreen: React.FC = () => {
     }
   };
 
+  // 4. 실시간 긴급 공지 전송
+  const handleSendBroadcast = async (customPayload?: { title: string; message: string; type: 'info' | 'urgent' | 'photo' | 'dinner' }) => {
+    const titleToSend = customPayload ? customPayload.title : broadcastTitle.trim();
+    const messageToSend = customPayload ? customPayload.message : broadcastMessage.trim();
+    const typeToSend = customPayload ? customPayload.type : broadcastType;
+
+    if (!messageToSend) {
+      alert('공지 내용을 입력해주세요.');
+      return;
+    }
+
+    setIsSendingBroadcast(true);
+    try {
+      const newNotice: BroadcastNoticeData = {
+        id: `notice_${Date.now()}`,
+        title: titleToSend || undefined,
+        message: messageToSend,
+        type: typeToSend,
+        active: true,
+        timestamp: new Date().toISOString(),
+      };
+
+      await fetch(`${dbUrl}/sessions/trekking2026/broadcastNotice.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newNotice),
+      });
+
+      setCurrentBroadcast(newNotice);
+      if (!customPayload) {
+        setBroadcastTitle('');
+        setBroadcastMessage('');
+      }
+      alert('전체 참가자에게 실시간 공지가 발송되었습니다!');
+    } catch (e) {
+      alert('공지 발송 중 오류가 발생했습니다.');
+    } finally {
+      setIsSendingBroadcast(false);
+    }
+  };
+
+  // 5. 현재 활성 공지 내리기/삭제
+  const handleClearBroadcast = async () => {
+    if (!window.confirm('현재 전체 참가자 화면에 표시 중인 공지를 내리시겠습니까?')) return;
+    setIsSendingBroadcast(true);
+    try {
+      await fetch(`${dbUrl}/sessions/trekking2026/broadcastNotice.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: false, message: '', timestamp: new Date().toISOString() }),
+      });
+      setCurrentBroadcast(null);
+      alert('공지가 안전하게 종료되었습니다.');
+    } catch (e) {
+      alert('공지 종료 중 오류가 발생했습니다.');
+    } finally {
+      setIsSendingBroadcast(false);
+    }
+  };
+
   const currentP = participants[currentCardIndex] || participants[0];
   const activeDiscoveryQuiz = DISCOVERY_QUIZZES.find(q => q.id === adminSelectedQuizId) || DISCOVERY_QUIZZES[0];
 
   // ─────────────────────────────────────────────────────────────────
-  // 빔프로젝터 무대 퀴즈쇼 풀스크린 뷰
+  // VIEW 1: 빔프로젝터 최종 시상식 모드 (16:9 와이드 풀스크린)
+  // ─────────────────────────────────────────────────────────────────
+  if (isAwardMode) {
+    const currentAwardTeam = revealedAwardRank >= 1 && revealedAwardRank <= 6
+      ? rankedTeams[revealedAwardRank - 1]
+      : null;
+
+    return (
+      <div className="fixed inset-0 z-[9999] bg-gradient-to-b from-[#0A0D18] via-[#0E1528] to-[#070A12] text-slate-100 flex flex-col font-['Noto_Sans_KR'] select-none p-6 md:p-10 overflow-hidden">
+        {/* 상단 시상식 헤더 바 */}
+        <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+          <div className="flex items-center gap-3">
+            <span style={{ color: '#005EB8', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
+              DOOSAN
+            </span>
+            <div className="h-6 w-0.5 bg-amber-500/30" />
+            <span className="text-xl font-extrabold text-amber-400 tracking-widest uppercase flex items-center gap-2">
+              🏆 2026 CHRO TREKKING · 영예의 최종 시상식
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => fireConfetti({ count: 110 })}
+              className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-sm font-bold active:scale-95 transition-all flex items-center gap-1.5 shadow"
+            >
+              🎉 축하 팡파레 (C)
+            </button>
+            <button
+              onClick={() => setIsAwardMode(false)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-sm font-bold"
+            >
+              ✕ 시상식 종료 (ESC)
+            </button>
+          </div>
+        </div>
+
+        {/* 메인 무대 컨텐츠 영역 */}
+        <div className="flex-1 flex flex-col justify-between py-6 max-w-5xl mx-auto w-full">
+          {/* STEP 7: 시상식 발표 대기 오프닝 */}
+          {revealedAwardRank === 7 && (
+            <div className="my-auto text-center space-y-6 bg-gradient-to-br from-[#141C30] to-[#0B1020] border-2 border-amber-500/30 rounded-3xl p-12 shadow-2xl">
+              <div className="text-7xl animate-bounce">🏆</div>
+              <h1 className="text-4xl md:text-5xl font-black text-white leading-tight">
+                2026 CHRO 한마음 트레킹<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500">
+                  영예의 최종 순위 발표
+                </span>
+              </h1>
+              <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+                6개 조의 열정적인 현장 퀴즈 풀이와 People Quest 미션 점수가 모두 집계되었습니다.<br />
+                지금부터 <strong>6위부터 영광의 1위 우승팀</strong>까지 순차적으로 공개합니다!
+              </p>
+              <div className="pt-4">
+                <button
+                  onClick={() => setRevealedAwardRank(6)}
+                  className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xl rounded-2xl shadow-2xl active:scale-98 transition-all"
+                >
+                  ▶️ 6위부터 순차 발표 시작 (Space / →)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 6 ~ 1: 개별 순위 발표 카드 */}
+          {revealedAwardRank >= 1 && revealedAwardRank <= 6 && currentAwardTeam && (
+            <div className="my-auto space-y-6">
+              <div
+                className={`border-2 rounded-3xl p-8 md:p-12 shadow-2xl transition-all relative overflow-hidden ${
+                  revealedAwardRank === 1
+                    ? 'bg-gradient-to-br from-[#2D2006] via-[#1B170B] to-[#0D111E] border-amber-400 shadow-amber-500/30 ring-4 ring-amber-400/30 animate-scale-up'
+                    : revealedAwardRank === 2
+                    ? 'bg-gradient-to-br from-[#1C2438] via-[#131B2D] to-[#0D111E] border-slate-300 shadow-slate-400/20'
+                    : revealedAwardRank === 3
+                    ? 'bg-gradient-to-br from-[#261810] via-[#1A1412] to-[#0D111E] border-amber-700 shadow-amber-700/20'
+                    : 'bg-gradient-to-br from-[#131B2C] to-[#0E1524] border-white/15'
+                }`}
+              >
+                {/* 1위 우승팀 골든 후광 효과 */}
+                {revealedAwardRank === 1 && (
+                  <div className="absolute -top-24 -right-24 w-72 h-72 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+                )}
+
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-white/10 pb-6">
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                      <span className={`px-4 py-1.5 rounded-full text-base font-black uppercase tracking-wider ${
+                        revealedAwardRank === 1
+                          ? 'bg-amber-400 text-slate-950 shadow-lg'
+                          : revealedAwardRank === 2
+                          ? 'bg-slate-200 text-slate-950'
+                          : revealedAwardRank === 3
+                          ? 'bg-amber-700 text-white'
+                          : 'bg-white/10 text-slate-300'
+                      }`}>
+                        {revealedAwardRank === 1 ? '🥇 최종 1위 우승 (CHAMPION)' : revealedAwardRank === 2 ? '🥈 2위 (준우승)' : revealedAwardRank === 3 ? '🥉 3위' : `제 ${revealedAwardRank}위`}
+                      </span>
+                    </div>
+                    <h2 className="text-4xl md:text-6xl font-black text-white flex items-center gap-3">
+                      <span>{currentAwardTeam.emoji}</span>
+                      <span>{currentAwardTeam.name}</span>
+                    </h2>
+                  </div>
+
+                  <div className="text-center md:text-right bg-black/40 border border-white/10 px-8 py-5 rounded-3xl">
+                    <span className="text-xs text-slate-400 font-bold block uppercase tracking-widest mb-1">
+                      TEAM FINAL SCORE
+                    </span>
+                    <span className={`text-4xl md:text-5xl font-black font-bebas tracking-wider ${
+                      revealedAwardRank === 1 ? 'text-amber-400' : 'text-white'
+                    }`}>
+                      {currentAwardTeam.totalScore.toLocaleString()} <span className="text-2xl font-normal text-slate-400">PT</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* 팀원 명단 및 세부 활약상 */}
+                <div className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-300">
+                      👥 영광의 주인공 팀원 ({currentAwardTeam.members.length}명)
+                    </span>
+                    <span className="text-xs text-green-400 font-semibold bg-green-500/15 px-3 py-1 rounded-full">
+                      ✓ 완료 미션: {currentAwardTeam.completedCount}건
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {currentAwardTeam.members.map(m => (
+                      <div key={m.id} className="bg-black/40 border border-white/10 rounded-2xl p-4 text-center space-y-1">
+                        <strong className="text-lg font-bold text-white block">{m.name || '미등록'}</strong>
+                        <span className="text-xs text-slate-400 block">{m.company}</span>
+                        <span className="text-xs text-amber-400 font-mono font-bold">{m.score ?? 0} pt</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 0: 6개 조 전체 순위 종합 결과표 */}
+          {revealedAwardRank === 0 && (
+            <div className="my-auto space-y-4 bg-[#111728] border-2 border-white/15 rounded-3xl p-6 md:p-8 shadow-2xl">
+              <div className="text-center pb-2">
+                <h2 className="text-3xl font-black text-white">
+                  👑 2026 CHRO TREKKING · 종합 최종 순위표
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">모든 조원들의 열정과 화합에 감사드립니다!</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                {rankedTeams.map((team, idx) => (
+                  <div
+                    key={team.id}
+                    className={`p-4 rounded-2xl border flex items-center justify-between ${
+                      idx === 0
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                        : idx === 1
+                        ? 'bg-slate-300/15 border-slate-300 text-slate-200'
+                        : idx === 2
+                        ? 'bg-amber-800/20 border-amber-700 text-amber-200'
+                        : 'bg-black/30 border-white/10 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center font-black text-base">
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}
+                      </span>
+                      <div>
+                        <strong className="text-base text-white">{team.emoji} {team.name}</strong>
+                        <span className="text-xs text-slate-400 ml-2">({team.members.length}명)</span>
+                      </div>
+                    </div>
+                    <span className="text-xl font-black font-bebas text-amber-400">
+                      {team.totalScore.toLocaleString()} pt
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 하단 시상식 진행 컨트롤러 */}
+          <div className="flex justify-between items-center pt-4 border-t border-white/10">
+            <button
+              onClick={() => setRevealedAwardRank(prev => (prev < 7 ? (prev === 0 ? 1 : prev + 1) : 7))}
+              disabled={revealedAwardRank === 7}
+              className="px-6 py-3.5 bg-[#1A2235] hover:bg-[#232D42] disabled:opacity-30 text-white font-bold text-base rounded-2xl border border-white/10"
+            >
+              ← 이전 순위
+            </button>
+
+            {/* 순위 발표 단계 인디케이터 */}
+            <div className="flex items-center gap-2">
+              {[6, 5, 4, 3, 2, 1, 0].map(rank => {
+                const isCurrent = revealedAwardRank === rank;
+                const isPassed = revealedAwardRank < rank && revealedAwardRank !== 7;
+                return (
+                  <button
+                    key={rank}
+                    onClick={() => {
+                      setRevealedAwardRank(rank);
+                      if (rank <= 3 && rank >= 1) fireConfetti({ count: 80 });
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isCurrent
+                        ? 'bg-amber-400 text-slate-950 scale-110 shadow-lg'
+                        : isPassed
+                        ? 'bg-white/20 text-white'
+                        : 'bg-black/40 text-slate-500'
+                    }`}
+                  >
+                    {rank === 0 ? '종합' : `${rank}위`}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => {
+                setRevealedAwardRank(prev => {
+                  if (prev === 7) return 6;
+                  if (prev > 1) {
+                    const next = prev - 1;
+                    if (next <= 3) fireConfetti({ count: next === 1 ? 130 : 70 });
+                    return next;
+                  }
+                  if (prev === 1) return 0;
+                  return 0;
+                });
+              }}
+              disabled={revealedAwardRank === 0}
+              className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-30 text-slate-950 font-black text-base rounded-2xl shadow-lg"
+            >
+              {revealedAwardRank === 7
+                ? '6위 발표 시작 →'
+                : revealedAwardRank === 1
+                ? '종합 결과표 보기 →'
+                : `${revealedAwardRank - 1}위 발표 →`}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // VIEW 2: 빔프로젝터 무대 퀴즈쇼 풀스크린 뷰 (3단계 점진적 힌트 오픈)
   // ─────────────────────────────────────────────────────────────────
   if (isStageMode && currentP) {
     const info = currentP?.myInfo || {};
@@ -432,28 +740,62 @@ const AdminScreen: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* 3단계 힌트 오픈 인디케이터 컨트롤러 */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setBlindMode(!blindMode)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
-                blindMode
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-lg'
-                  : 'bg-green-500/20 text-green-300 border-green-500/40'
+              onClick={() => setStageStep(0)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                stageStep === 0
+                  ? 'bg-slate-700 text-white border-white/40 shadow-lg'
+                  : 'bg-black/30 text-slate-400 border-white/10'
               }`}
             >
-              {blindMode ? '🔒 블라인드 모드 ON (Space)' : '🔓 정답 공개 모드 (Space)'}
+              0단계: ❓ 비밀
             </button>
             <button
-              onClick={() => fireConfetti({ count: 90 })}
-              className="px-3 py-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-sm font-bold active:scale-95"
+              onClick={() => setStageStep(1)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                stageStep === 1
+                  ? 'bg-sky-500/30 text-sky-300 border-sky-400 shadow-lg'
+                  : 'bg-black/30 text-slate-400 border-white/10'
+              }`}
             >
-              🎉 축하 폭죽 (C)
+              1단계: 🎯 취미·여가
+            </button>
+            <button
+              onClick={() => setStageStep(2)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                stageStep === 2
+                  ? 'bg-amber-500/30 text-amber-300 border-amber-400 shadow-lg'
+                  : 'bg-black/30 text-slate-400 border-white/10'
+              }`}
+            >
+              2단계: ⭐ 버킷리스트·비밀
+            </button>
+            <button
+              onClick={() => {
+                setStageStep(3);
+                fireConfetti({ count: 90 });
+              }}
+              className={`px-4 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                stageStep === 3
+                  ? 'bg-red-500 text-white border-red-400 shadow-lg shadow-red-500/30'
+                  : 'bg-black/30 text-slate-400 border-white/10'
+              }`}
+            >
+              3단계: 👑 정답 공개!
+            </button>
+            <button
+              onClick={() => fireConfetti({ count: 80 })}
+              className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold active:scale-95 ml-2"
+            >
+              🎉 폭죽 (C)
             </button>
             <button
               onClick={() => setIsStageMode(false)}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-sm font-bold"
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-bold ml-1"
             >
-              ✕ 일반 모드로 복귀 (ESC)
+              ✕ 일반 모드 (ESC)
             </button>
           </div>
         </div>
@@ -467,40 +809,95 @@ const AdminScreen: React.FC = () => {
                   STAGE QUIZ #{currentCardIndex + 1} / {participants.length}
                 </span>
                 <h1 className="text-3xl md:text-4xl font-black text-white">
-                  {blindMode ? '❓ 과연 이 답변의 주인공은 누구일까요?' : `👑 ${currentP.name || '미등록'} 님`}
+                  {stageStep < 3 ? '❓ 과연 이 답변의 주인공은 누구일까요?' : `👑 ${currentP.name || '미등록'} 님`}
                 </h1>
                 <p className="text-base text-slate-400 mt-1">
-                  {blindMode ? `소속: ${currentP.company} · ${currentP.teamName}` : `${currentP.company} · ${currentP.teamName}`}
+                  {stageStep < 3
+                    ? (stageStep >= 1 ? '힌트가 순차적으로 공개됩니다.' : '잠시 후 힌트가 공개됩니다.')
+                    : `${currentP.company} · ${currentP.teamName || currentP.teamId}`}
                 </p>
               </div>
-              {stat && stat.count > 0 && (
-                <div className="bg-amber-500/20 border border-amber-500/40 px-4 py-2 rounded-2xl text-center">
+
+              {stat && stat.count > 0 && stageStep >= 2 && (
+                <div className="bg-amber-500/20 border border-amber-500/40 px-4 py-2 rounded-2xl text-center animate-fade-in">
                   <span className="text-xs text-amber-300 block font-bold">낮 트레킹 추천</span>
                   <span className="text-lg font-black text-amber-400">{stat.count}개 조 지목!</span>
                 </div>
               )}
             </div>
 
-            {/* 7개 질문 중 주요 답변 4개 그리드 뷰 (시원한 대형 텍스트) */}
-            <div className="grid grid-cols-2 gap-4">
-              {MY_INFO_QUESTIONS.map((q, idx) => {
-                const val = info[q.id] || (idx === 0 ? currentP.truth1 : idx === 2 ? currentP.lie : idx === 4 ? currentP.truth2 : '');
-                return (
-                  <div key={q.id} className="bg-black/40 border border-white/8 rounded-2xl p-4 space-y-1">
-                    <span className="text-xs text-red-400 font-bold block">
-                      Q{idx + 1}. {q.title}
-                    </span>
-                    <p className="text-base font-bold text-white leading-snug">
-                      {val ? `"${val}"` : <span className="text-slate-600 italic font-normal">(미입력)</span>}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+            {/* 0단계: 신비주의 (아무 힌트도 안 열렸을 때) */}
+            {stageStep === 0 && (
+              <div className="py-12 text-center space-y-4 bg-black/30 border border-white/5 rounded-2xl">
+                <div className="text-6xl animate-pulse">🕵️‍♂️</div>
+                <h3 className="text-2xl font-bold text-slate-200">
+                  아직 힌트가 열리지 않았습니다.
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  스페이스바(Space) 또는 우측 화살표(→)를 누르면 <strong>1단계 힌트(취미/여가생활)</strong>가 열립니다!
+                </p>
+              </div>
+            )}
 
-            {/* 낮 트레킹 추천 코멘트가 있을 때 */}
-            {stat && stat.reasons.length > 0 && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-1">
+            {/* 1단계 이상: 힌트 카드 그리드 뷰 */}
+            {stageStep >= 1 && (
+              <div className="grid grid-cols-2 gap-4">
+                {/* 1단계 공개 문항 (Q1, Q2) */}
+                <div className="bg-black/50 border border-sky-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg">
+                  <span className="text-xs text-sky-400 font-bold block">
+                    Q1. 요즘 가장 푹 빠져 있는 취미나 관심사
+                  </span>
+                  <p className="text-lg font-bold text-white leading-snug">
+                    "{info['q1_passion'] || currentP.truth1 || '미입력'}"
+                  </p>
+                </div>
+
+                <div className="bg-black/50 border border-sky-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg">
+                  <span className="text-xs text-sky-400 font-bold block">
+                    Q2. 5일의 완전한 자유 시간이 주어진다면?
+                  </span>
+                  <p className="text-lg font-bold text-white leading-snug">
+                    "{info['q2_vacation'] || '미입력'}"
+                  </p>
+                </div>
+
+                {/* 2단계 이상 공개 문항 (Q3, Q4, Q5) */}
+                {stageStep >= 2 && (
+                  <>
+                    <div className="bg-black/50 border border-amber-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg animate-fade-in">
+                      <span className="text-xs text-amber-400 font-bold block">
+                        Q3. 한 번쯤 해보고 싶은 다른 직업
+                      </span>
+                      <p className="text-lg font-bold text-white leading-snug">
+                        "{info['q3_dreamJob'] || currentP.lie || '미입력'}"
+                      </p>
+                    </div>
+
+                    <div className="bg-black/50 border border-amber-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg animate-fade-in">
+                      <span className="text-xs text-amber-400 font-bold block">
+                        Q4. 3년 내 꼭 이루고 싶은 버킷리스트
+                      </span>
+                      <p className="text-lg font-bold text-white leading-snug">
+                        "{info['q4_bucketList'] || '미입력'}"
+                      </p>
+                    </div>
+
+                    <div className="bg-black/50 border border-amber-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg col-span-2 animate-fade-in">
+                      <span className="text-xs text-amber-400 font-bold block">
+                        Q5. 동료들이 알면 깜짝 놀랄 의외의 사실
+                      </span>
+                      <p className="text-lg font-bold text-white leading-snug">
+                        "{info['q5_unexpectedFact'] || currentP.truth2 || '미입력'}"
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* 낮 트레킹 추천 코멘트가 있을 때 (2단계 이상 노출) */}
+            {stageStep >= 2 && stat && stat.reasons.length > 0 && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-1 animate-fade-in">
                 <span className="text-xs text-red-400 font-bold block">
                   💬 낮 트레킹 동료들의 생생한 추천 코멘트:
                 </span>
@@ -516,21 +913,37 @@ const AdminScreen: React.FC = () => {
           {/* 하단 진행 컨트롤러 */}
           <div className="flex justify-between items-center pt-4">
             <button
-              onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
-              disabled={currentCardIndex === 0}
+              onClick={() => {
+                if (stageStep > 0) {
+                  setStageStep(prev => prev - 1);
+                } else if (currentCardIndex > 0) {
+                  setCurrentCardIndex(prev => prev - 1);
+                  setStageStep(3);
+                }
+              }}
+              disabled={currentCardIndex === 0 && stageStep === 0}
               className="px-6 py-4 bg-[#1A2235] hover:bg-[#232D42] disabled:opacity-30 text-white font-bold text-base rounded-2xl border border-white/10"
             >
-              ← 이전 참가자 (←)
+              ← 이전 단계/참가자
             </button>
             <span className="text-slate-400 text-sm">
-              키보드 <strong>좌우 방향키</strong> 또는 <strong>Space(블라인드 토글)</strong> 키로 진행할 수 있습니다.
+              키보드 <strong>Space / → (다음 단계)</strong>, <strong>0·1·2·3 (단계 점프)</strong>, <strong>C (폭죽)</strong>
             </span>
             <button
-              onClick={() => setCurrentCardIndex(prev => Math.min(participants.length - 1, prev + 1))}
-              disabled={currentCardIndex === participants.length - 1}
+              onClick={() => {
+                if (stageStep < 3) {
+                  const nextStep = stageStep + 1;
+                  setStageStep(nextStep);
+                  if (nextStep === 3) fireConfetti({ count: 90 });
+                } else if (currentCardIndex < participants.length - 1) {
+                  setCurrentCardIndex(prev => prev + 1);
+                  setStageStep(0);
+                }
+              }}
+              disabled={currentCardIndex === participants.length - 1 && stageStep === 3}
               className="px-6 py-4 bg-red-500 hover:bg-red-600 disabled:opacity-30 text-white font-bold text-base rounded-2xl shadow-lg"
             >
-              다음 참가자 (→) →
+              {stageStep < 3 ? `${stageStep + 1}단계 힌트 열기 (Space) →` : '다음 참가자로 이동 →'}
             </button>
           </div>
         </div>
@@ -538,6 +951,9 @@ const AdminScreen: React.FC = () => {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // VIEW 3: 일반 모바일 / 데스크톱 관리자 콘솔 화면
+  // ─────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-[440px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
       {/* 헤더 */}
@@ -574,20 +990,36 @@ const AdminScreen: React.FC = () => {
           <span className="text-slate-500 ml-1">/ 50명</span>
         </div>
         <div>
-          <span>💡 7문항 완료: </span>
+          <span>💡 7문항 작성: </span>
           <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
         </div>
       </div>
 
-      {/* 5개 탭 네비게이션 */}
-      <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-5 gap-1 text-[11px] font-bold">
+      {/* 6개 탭 네비게이션 */}
+      <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-6 gap-1 text-[10.5px] font-bold">
         <button
           onClick={() => setActiveTab('quizMaster')}
           className={`py-2 rounded-lg transition-all text-center ${
             activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          🎯 저녁퀴즈
+          🎯 퀴즈쇼
+        </button>
+        <button
+          onClick={() => setActiveTab('teams')}
+          className={`py-2 rounded-lg transition-all text-center ${
+            activeTab === 'teams' ? 'bg-amber-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🏆 시상식
+        </button>
+        <button
+          onClick={() => setActiveTab('broadcast')}
+          className={`py-2 rounded-lg transition-all text-center ${
+            activeTab === 'broadcast' ? 'bg-emerald-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          📢 공지발송
         </button>
         <button
           onClick={() => setActiveTab('discoveryQuizzes')}
@@ -611,15 +1043,7 @@ const AdminScreen: React.FC = () => {
             activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          💬 추천현황
-        </button>
-        <button
-          onClick={() => setActiveTab('teams')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'teams' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          📊 조별순위
+          💬 추천
         </button>
       </div>
 
@@ -633,17 +1057,20 @@ const AdminScreen: React.FC = () => {
             <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/40 rounded-2xl p-4 space-y-2.5 shadow-xl">
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
-                  📽️ 빔프로젝터 무대 퀴즈쇼 모드
+                  📽️ 빔프로젝터 3단계 퀴즈쇼 모드
                 </span>
                 <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
-                  16:9 풀스크린
+                  16:9 무대용
                 </span>
               </div>
               <p className="text-[11.5px] text-slate-300 leading-relaxed">
-                저녁 식사 무대 빔프로젝터에 띄우고 방향키와 스페이스바로 블라인드 퀴즈를 시원하게 진행할 수 있습니다.
+                저녁 식사 무대 빔프로젝터에 띄우고 방향키와 스페이스바로 <strong>3단계 점진적 힌트</strong>를 극적으로 공개할 수 있습니다.
               </p>
               <button
-                onClick={() => setIsStageMode(true)}
+                onClick={() => {
+                  setStageStep(0);
+                  setIsStageMode(true);
+                }}
                 className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[13.5px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
               >
                 <span>📽️ 무대 퀴즈쇼 풀스크린 시작</span>
@@ -693,12 +1120,6 @@ const AdminScreen: React.FC = () => {
                 <p className="text-slate-400 text-[13px]">
                   아직 등록된 참가자 정보가 없습니다.
                 </p>
-                <button
-                  onClick={handleGenerateSampleData}
-                  className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl shadow"
-                >
-                  🧪 퀴즈 테스트용 샘플 참가자 데이터 3명 생성
-                </button>
               </div>
             ) : (
               (() => {
@@ -717,7 +1138,7 @@ const AdminScreen: React.FC = () => {
                           {blindMode ? '❓ 누구의 이야기일까요?' : `👑 ${currentP.name || '미등록'} 님`}
                         </h2>
                         <span className="text-[12px] text-slate-400">
-                          {blindMode ? `소속: ${currentP.company} · ${currentP.teamName}` : `${currentP.company} · ${currentP.teamName}`}
+                          {blindMode ? `소속: ${currentP.company} · ${currentP.teamName || currentP.teamId}` : `${currentP.company} · ${currentP.teamName || currentP.teamId}`}
                         </span>
                       </div>
                       {stat && stat.count > 0 && (
@@ -750,20 +1171,6 @@ const AdminScreen: React.FC = () => {
                       })}
                     </div>
 
-                    {/* 낮 트레킹 추천 사유가 있다면 노출 */}
-                    {stat && stat.reasons.length > 0 && (
-                      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 space-y-1.5">
-                        <span className="text-[11px] text-red-400 font-bold block">
-                          💬 낮 트레킹 동료들의 추천 코멘트:
-                        </span>
-                        {stat.reasons.map((r, i) => (
-                          <p key={i} className="text-[12px] text-slate-200 italic">
-                            • {r}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-
                     {/* 이전 / 다음 카드 전환 */}
                     <div className="flex gap-2 pt-2 border-t border-white/10">
                       <button
@@ -786,25 +1193,233 @@ const AdminScreen: React.FC = () => {
               })()
             )}
 
-            {/* 하단 CSV 다운로드 & 샘플 생성 버튼 */}
-            <div className="pt-2 space-y-2">
+            {/* 하단 CSV 다운로드 버튼 */}
+            <div className="pt-2">
               <button
                 onClick={handleExportMasterMergedCSV}
                 className="w-full py-3.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-bold text-[14px] rounded-xl shadow-lg flex items-center justify-center gap-2"
               >
                 <span>📥 저녁 퀴즈용 전체 결합 엑셀(CSV) 다운로드</span>
               </button>
-              <button
-                onClick={handleGenerateSampleData}
-                className="w-full py-2.5 bg-[#1A2235] hover:bg-[#222C44] text-slate-300 font-bold text-[12px] rounded-xl border border-white/10"
-              >
-                🧪 퀴즈 테스트용 샘플 참가자 데이터 3명 추가
-              </button>
             </div>
           </div>
         )}
 
-        {/* TAB 2: Discovery 현장 퀴즈 관리 & 실시간 풀이 테스트 */}
+        {/* TAB 2: 조별 순위 및 최종 시상식 모드 */}
+        {activeTab === 'teams' && (
+          <div className="space-y-4">
+            {/* 시상식 모드 실행 배너 */}
+            <div className="bg-gradient-to-r from-amber-900/40 via-yellow-900/30 to-orange-900/40 border border-amber-500/40 rounded-2xl p-4 space-y-2.5 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold text-amber-300 flex items-center gap-1.5">
+                  🏆 빔프로젝터 최종 시상식 모드
+                </span>
+                <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
+                  6위~1위 순차 발표
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+                행사 마지막 순간, 16:9 풀스크린 무대 화면으로 6위부터 우승팀(1위)까지 긴장감 넘치게 발표하고 축하 팡파레를 터뜨릴 수 있습니다.
+              </p>
+              <button
+                onClick={() => {
+                  setRevealedAwardRank(7);
+                  setIsAwardMode(true);
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[14px] rounded-xl shadow-2xl active:scale-98 transition-all flex items-center justify-center gap-2"
+              >
+                <span>🏆 최종 시상식 풀스크린 시작</span>
+              </button>
+            </div>
+
+            {/* 현재 조별 실시간 순위표 */}
+            <div className="space-y-2.5">
+              <span className="text-[12px] font-bold text-slate-300 block">
+                📊 실시간 조별 종합 순위표
+              </span>
+              {rankedTeams.map((team, idx) => (
+                <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-6 h-6 rounded-full font-bold text-[11px] flex items-center justify-center ${
+                        idx === 0
+                          ? 'bg-amber-400 text-slate-950 font-black'
+                          : idx === 1
+                          ? 'bg-slate-300 text-slate-950'
+                          : idx === 2
+                          ? 'bg-amber-700 text-white'
+                          : 'bg-white/10 text-slate-300'
+                      }`}>
+                        {idx + 1}
+                      </span>
+                      <strong className="text-[14px] text-white">{team.emoji} {team.name}</strong>
+                      <span className="text-[11px] text-slate-400">({team.members.length}명)</span>
+                    </div>
+                    <span className="text-[14px] font-extrabold text-amber-400">
+                      {team.totalScore.toLocaleString()} pt
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {team.members.map(m => (
+                      <span key={m.id} className="text-[10px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
+                        {m.name || '미등록'} ({m.score ?? 0}pt)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: 관리자 실시간 긴급 공지 발송 패널 */}
+        {activeTab === 'broadcast' && (
+          <div className="space-y-4">
+            {/* 현재 활성 공지 상태 */}
+            <div className="bg-[#1A2235] border border-emerald-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold text-emerald-400 flex items-center gap-1.5">
+                  📢 실시간 브로드캐스트 공지 센터
+                </span>
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                  currentBroadcast && currentBroadcast.active
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-white/10 text-slate-400'
+                }`}>
+                  {currentBroadcast && currentBroadcast.active ? '🟢 송출 중' : '⚪ 송출 없음'}
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+                공지를 발송하면 모든 참가자의 스마트폰 상단에 <strong>실시간 알림 팝업</strong>이 즉시 나타납니다.
+              </p>
+
+              {currentBroadcast && currentBroadcast.active && (
+                <div className="bg-black/40 border border-emerald-500/30 rounded-xl p-3 space-y-1 mt-2">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-emerald-400 font-bold">현재 화면에 노출 중인 내용:</span>
+                    <span className="text-slate-400 text-[10px]">{new Date(currentBroadcast.timestamp).toLocaleTimeString('ko-KR')}</span>
+                  </div>
+                  {currentBroadcast.title && (
+                    <strong className="text-white text-[13px] block">{currentBroadcast.title}</strong>
+                  )}
+                  <p className="text-slate-200 text-[12px]">{currentBroadcast.message}</p>
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={handleClearBroadcast}
+                      className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 text-[11px] font-bold rounded-lg transition-all"
+                    >
+                      🗑️ 현재 공지 내리기 (삭제)
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 원클릭 프리셋 버튼 모음 */}
+            <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2.5 shadow-xl">
+              <span className="text-[12px] font-bold text-slate-300 block">
+                ⚡ 빠른 공지 프리셋 (1-Click 전송)
+              </span>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleSendBroadcast({
+                    title: '📸 미술관 앞 단체사진 집결 안내',
+                    message: '5분 뒤 국립현대미술관 앞에서 단체사진 촬영이 진행됩니다. 모든 조원들은 미술관 앞으로 모여주세요!',
+                    type: 'photo',
+                  })}
+                  className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
+                >
+                  <span>📸 <strong>[단체사진]</strong> 5분 뒤 미술관 앞 집결</span>
+                  <span className="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendBroadcast({
+                    title: '⏰ 트레킹 마감 15분 전 안내',
+                    message: '트레킹 미션 종료 15분 전입니다. 코끼리열차 매표소(출발지)로 안전하게 복귀해 주시기 바랍니다.',
+                    type: 'urgent',
+                  })}
+                  className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
+                >
+                  <span>⏰ <strong>[마감 15분 전]</strong> 출발지로 복귀 안내</span>
+                  <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendBroadcast({
+                    title: '🍽️ 저녁 만찬 및 퀴즈쇼 장소 이동',
+                    message: '낮 트레킹이 종료되었습니다. 만찬 장소로 이동하여 맛있는 저녁 식사와 저녁 퀴즈쇼를 준비해 주세요!',
+                    type: 'dinner',
+                  })}
+                  className="w-full p-3 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
+                >
+                  <span>🍽️ <strong>[저녁 만찬]</strong> 만찬 및 퀴즈쇼 장소 이동</span>
+                  <span className="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 직접 작성 폼 */}
+            <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-xl">
+              <span className="text-[12px] font-bold text-slate-300 block">
+                ✍️ 공지 직접 작성
+              </span>
+
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[11px] text-slate-400 block mb-1">공지 분류</label>
+                  <select
+                    value={broadcastType}
+                    onChange={e => setBroadcastType(e.target.value as any)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[12px] text-white focus:outline-none focus:border-red-500"
+                  >
+                    <option value="info">📢 일반 알림 (하늘색)</option>
+                    <option value="photo">📸 단체사진 (초록색)</option>
+                    <option value="dinner">🍽️ 저녁 만찬/퀴즈 (주황색)</option>
+                    <option value="urgent">⚡ 긴급 공지 (빨간색)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-400 block mb-1">제목 (선택사항)</label>
+                  <input
+                    type="text"
+                    value={broadcastTitle}
+                    onChange={e => setBroadcastTitle(e.target.value)}
+                    placeholder="예: [운영본부] 긴급 안내"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-400 block mb-1">공지 본문 (필수)</label>
+                  <textarea
+                    value={broadcastMessage}
+                    onChange={e => setBroadcastMessage(e.target.value)}
+                    rows={3}
+                    placeholder="참가자들에게 전달할 내용을 입력하세요."
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSendingBroadcast || !broadcastMessage.trim()}
+                  onClick={() => handleSendBroadcast()}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-40 text-white font-bold text-[13px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
+                >
+                  <span>🚀 전체 참가자에게 실시간 전송</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: Discovery 현장 퀴즈 관리 & 실시간 풀이 테스트 */}
         {activeTab === 'discoveryQuizzes' && (
           <div className="space-y-4">
             {/* 상단 안내 배너 */}
@@ -998,7 +1613,7 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 3: 나의 정보 7문항 전체 목록 */}
+        {/* TAB 5: 나의 정보 7문항 전체 목록 */}
         {activeTab === 'myInfoList' && (
           <div className="space-y-3">
             <div className="flex gap-2">
@@ -1050,7 +1665,7 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 4: 조별 People Quest 추천 현황 */}
+        {/* TAB 6: 조별 People Quest 추천 현황 */}
         {activeTab === 'peopleQuest' && (
           <div className="space-y-3">
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 space-y-2">
@@ -1114,41 +1729,6 @@ const AdminScreen: React.FC = () => {
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* TAB 5: 조별 순위 현황 */}
-        {activeTab === 'teams' && (
-          <div className="space-y-3">
-            {WORKSHOP_TEAMS.map((team, idx) => {
-              const teamMembers = participants.filter(p => p.teamId === team.id);
-              const totalScore = teamMembers.reduce((acc, cur) => acc + (cur.score ?? 0), 0);
-
-              return (
-                <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[11px] flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <strong className="text-[14px] text-white">{team.emoji} {team.name}</strong>
-                      <span className="text-[11px] text-slate-400">({teamMembers.length}명)</span>
-                    </div>
-                    <span className="text-[14px] font-extrabold text-amber-400">
-                      {totalScore.toLocaleString()} pt
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {teamMembers.map(m => (
-                      <span key={m.id} className="text-[10px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
-                        {m.name || '미등록'} ({m.score ?? 0}pt)
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
 
