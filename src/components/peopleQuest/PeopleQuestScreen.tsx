@@ -52,7 +52,6 @@ const PeopleQuestScreen: React.FC = () => {
 
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [submittedData, setSubmittedData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
@@ -67,40 +66,42 @@ const PeopleQuestScreen: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 실시간 불러오기 (Firebase SDK)
+  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 실시간 동기화 (논블로킹 백그라운드)
   useEffect(() => {
-    if (!myTeam?.id) {
-      setIsLoading(false);
-      return;
-    }
+    if (!myTeam?.id) return;
 
-    const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
-    const unsubscribe = onValue(
-      pqRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          if (data) {
-            if (data.status === 'submitted') {
-              setIsSubmitted(true);
-              setSubmittedData(data);
-            } else {
-              setIsSubmitted(false);
-            }
-            if (data.recommendation) {
-              setRecommendation(data.recommendation);
+    try {
+      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+      const unsubscribe = onValue(
+        pqRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            if (data) {
+              if (data.status === 'submitted') {
+                setIsSubmitted(true);
+                setSubmittedData(data);
+              } else {
+                setIsSubmitted(false);
+              }
+              if (data.recommendation) {
+                setRecommendation(prev => ({
+                  ...prev,
+                  ...data.recommendation,
+                }));
+              }
             }
           }
+        },
+        (error) => {
+          console.warn('PeopleQuest 동기화 경고:', error);
         }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.warn('PeopleQuest 불러오기 실패:', error);
-        setIsLoading(false);
-      }
-    );
+      );
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn('Firebase 리스너 연결 경고:', e);
+    }
   }, [myTeam?.id]);
 
   // 2. 추천 대상자 검색 및 필터링 (본인 제외)
@@ -127,7 +128,7 @@ const PeopleQuestScreen: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  // 4. 임시 저장 (Firebase SDK)
+  // 4. 임시 저장
   const handleDraftSave = async () => {
     if (!myTeam?.id) return;
     setIsSaving(true);
@@ -150,7 +151,7 @@ const PeopleQuestScreen: React.FC = () => {
     }
   };
 
-  // 5. 최종 제출 실행 (Firebase SDK ref & set)
+  // 5. 최종 제출 실행
   const executeSubmit = async () => {
     if (!myTeam?.id) return;
     setIsSaving(true);
@@ -170,7 +171,7 @@ const PeopleQuestScreen: React.FC = () => {
       const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
       await set(pqRef, payload);
 
-      // 2) 내 참가자 점수 동적 멱등 동기화 (Firebase SDK get & update)
+      // 2) 내 참가자 점수 동적 멱등 동기화
       if (participantName && participantCompany) {
         try {
           const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
@@ -240,17 +241,6 @@ const PeopleQuestScreen: React.FC = () => {
     }
     setIsConfirmModalOpen(true);
   };
-
-  if (isLoading) {
-    return (
-      <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex items-center justify-center text-slate-400">
-        <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-[13px]">피플 퀘스트 데이터 동기화 중...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
