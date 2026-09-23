@@ -256,110 +256,189 @@ const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   );
 };
 
-// ─── 대시보드 메인 컴포넌트 (실시간 RTDB 양방향 바인딩) ─────────
+// ─── 대시보드 메인 컴포넌트 (실시간 RTDB 양방향 바인딩 & Dual-Channel 동기화) ─────────
 const Dashboard: React.FC = () => {
-  const { myTeam, participantName, participantCompany, selectedCourse, updateTeamScore } = useAppStore();
+  const {
+    myTeam,
+    participantName,
+    participantCompany,
+    selectedCourse,
+    updateTeamScore,
+    isPeopleQuestSubmitted,
+    answeredQuizIds,
+    syncSessionData,
+  } = useAppStore();
 
   const [liveTeamScore, setLiveTeamScore] = useState<number>(myTeam?.score ?? 0);
   const [liveTeamRank, setLiveTeamRank] = useState<number>(myTeam?.rank ?? 1);
   const [livePersonalScore, setLivePersonalScore] = useState<number>(0);
   const [maxScore, setMaxScore] = useState<number>(100);
-  const [pqSubmitted, setPqSubmitted] = useState<boolean>(false);
-  const [answeredQuizCount, setAnsweredQuizCount] = useState<number>(0);
+  const [pqSubmitted, setPqSubmitted] = useState<boolean>(isPeopleQuestSubmitted || false);
+  const [answeredQuizCount, setAnsweredQuizCount] = useState<number>(answeredQuizIds?.length ?? 0);
 
   const teamId = myTeam?.id ?? 'team1';
   const participantId = participantName && participantCompany
-    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
+    ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
     : 'anonymous';
 
   const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
   const totalQuizCount = activeCourseQuizzes.length;
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  useEffect(() => {
-    const sessionRef = ref(rtdb, 'sessions/trekking2026');
+  const processSessionData = (data: any) => {
+    if (!data || typeof data !== 'object') return;
 
-    const unsubscribe = onValue(
-      sessionRef,
-      (snapshot) => {
-        if (!snapshot.exists()) return;
-        const data = snapshot.val();
-        if (!data) return;
+    const participants = data.participants || {};
+    const quests = data.peopleQuest || {};
 
-        const participants = data.participants || {};
-        const quests = data.peopleQuest || {};
+    // 1) People Quest 상태
+    const isTeamPqSubmitted = quests[teamId]?.status === 'submitted' || isPeopleQuestSubmitted;
+    setPqSubmitted(isTeamPqSubmitted);
 
-        // 1) People Quest 상태
-        const isTeamPqSubmitted = quests[teamId]?.status === 'submitted';
-        setPqSubmitted(isTeamPqSubmitted);
+    // 2) 내 개인 점수 및 푼 퀴즈 수 실시간 계산 (다중 매칭 방어)
+    let myP = participants[participantId];
+    if (!myP && participantName) {
+      const trimmedName = participantName.trim();
+      myP = Object.values(participants).find((p: any) => (p?.name || '').trim() === trimmedName);
+    }
 
-        // 2) 내 개인 점수 및 푼 퀴즈 수 실시간 계산
-        let myP = participants[participantId];
-        if (!myP && participantName) {
-          const trimmedName = participantName.trim();
-          myP = Object.values(participants).find((p: any) => (p.name || '').trim() === trimmedName);
-        }
+    let pQuizPts = 0;
+    let pQuizCount = 0;
+    const answeredIds: string[] = [];
 
-        let pQuizPts = 0;
-        let pQuizCount = 0;
-        if (myP) {
-          if (myP.quizzes && typeof myP.quizzes === 'object') {
-            Object.values(myP.quizzes).forEach((q: any) => {
-              pQuizPts += Number(q.pointsEarned || 0);
-              if (q.isCorrect || q.pointsEarned !== undefined) pQuizCount += 1;
-            });
-          }
-        }
-
-        const personalTotal = pQuizPts + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
-        setLivePersonalScore(personalTotal);
-        setAnsweredQuizCount(pQuizCount);
-
-        // 3) 전체 6개 조 실시간 점수 & 순위 집계
-        const teamScoreMap: Record<string, number> = {
-          team1: 0, team2: 0, team3: 0, team4: 0, team5: 0, team6: 0
-        };
-
-        Object.values(participants).forEach((p: any) => {
-          if (p && p.teamId && teamScoreMap[p.teamId] !== undefined) {
-            let userPts = 0;
-            if (p.quizzes && typeof p.quizzes === 'object') {
-              Object.values(p.quizzes).forEach((q: any) => {
-                userPts += Number(q.pointsEarned || 0);
-              });
-            }
-            if (quests[p.teamId]?.status === 'submitted') {
-              userPts += PEOPLE_QUEST_POINTS_PER_MEMBER;
-            }
-            teamScoreMap[p.teamId] += userPts;
+    if (myP) {
+      if (myP.quizzes && typeof myP.quizzes === 'object') {
+        Object.entries(myP.quizzes).forEach(([qId, q]: [string, any]) => {
+          pQuizPts += Number(q.pointsEarned || 0);
+          if (q.isCorrect || q.pointsEarned !== undefined) {
+            pQuizCount += 1;
+            answeredIds.push(qId);
           }
         });
-
-        const ranked = WORKSHOP_TEAMS.map(t => ({
-          id: t.id,
-          score: teamScoreMap[t.id] || 0,
-        })).sort((a, b) => b.score - a.score).map((t, idx) => ({
-          ...t,
-          rank: idx + 1,
-        }));
-
-        const highest = Math.max(...ranked.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
-        setMaxScore(highest);
-
-        const myRankObj = ranked.find(r => r.id === teamId);
-        if (myRankObj) {
-          setLiveTeamScore(myRankObj.score);
-          setLiveTeamRank(myRankObj.rank);
-          updateTeamScore(teamId, myRankObj.score);
-        }
-      },
-      (error) => {
-        console.warn('대시보드 실시간 동기화 경고:', error);
       }
-    );
+    }
 
-    return () => unsubscribe();
-  }, [teamId, participantId, selectedCourse, participantName]);
+    const personalTotal = pQuizPts + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+    setLivePersonalScore(personalTotal);
+    setAnsweredQuizCount(Math.max(pQuizCount, answeredQuizIds?.length ?? 0));
+
+    // 3) 전체 6개 조 실시간 점수 & 순위 집계
+    const teamScoreMap: Record<string, number> = {
+      team1: 0, team2: 0, team3: 0, team4: 0, team5: 0, team6: 0
+    };
+
+    const teamMissionsMap: Record<string, number> = {
+      team1: 0, team2: 0, team3: 0, team4: 0, team5: 0, team6: 0
+    };
+
+    // 조별 People Quest 완료 여부
+    Object.entries(quests).forEach(([tId, qData]: [string, any]) => {
+      if (qData?.status === 'submitted' && teamMissionsMap[tId] !== undefined) {
+        teamMissionsMap[tId] += 1;
+      }
+    });
+
+    Object.values(participants).forEach((p: any) => {
+      if (p && p.teamId && teamScoreMap[p.teamId] !== undefined) {
+        let userPts = 0;
+        if (p.quizzes && typeof p.quizzes === 'object') {
+          Object.values(p.quizzes).forEach((q: any) => {
+            userPts += Number(q.pointsEarned || 0);
+            if (q.isCorrect || q.pointsEarned !== undefined) {
+              teamMissionsMap[p.teamId] = (teamMissionsMap[p.teamId] || 0) + 1;
+            }
+          });
+        }
+        if (quests[p.teamId]?.status === 'submitted') {
+          userPts += PEOPLE_QUEST_POINTS_PER_MEMBER;
+        }
+        teamScoreMap[p.teamId] += userPts;
+      }
+    });
+
+    // 내 팀의 로컬 점수 낙관적 보정
+    if (myTeam?.id && teamScoreMap[myTeam.id] < (myTeam.score ?? 0)) {
+      teamScoreMap[myTeam.id] = myTeam.score ?? 0;
+    }
+
+    const ranked = WORKSHOP_TEAMS.map(t => ({
+      id: t.id,
+      name: t.name,
+      shortCode: t.shortCode,
+      color: t.color,
+      score: teamScoreMap[t.id] || 0,
+      missionsCompleted: teamMissionsMap[t.id] || 0,
+      memberCount: 1,
+      totalMissions: 2,
+      lastActivity: new Date(),
+      status: 'active' as const,
+    })).sort((a, b) => b.score - a.score).map((t, idx) => ({
+      ...t,
+      rank: idx + 1,
+    }));
+
+    const highest = Math.max(...ranked.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
+    setMaxScore(highest);
+
+    const myRankObj = ranked.find(r => r.id === teamId);
+    if (myRankObj) {
+      setLiveTeamScore(myRankObj.score);
+      setLiveTeamRank(myRankObj.rank);
+      updateTeamScore(teamId, myRankObj.score);
+      syncSessionData({
+        teams: ranked,
+        myTeamScore: myRankObj.score,
+        myTeamRank: myRankObj.rank,
+        myTeamMissionsCompleted: myRankObj.missionsCompleted,
+        answeredQuizIds: answeredIds.length > 0 ? answeredIds : undefined,
+        isPeopleQuestSubmitted: isTeamPqSubmitted,
+      });
+    }
+  };
+
+  useEffect(() => {
+    // 1) REST 즉시 호출 (빠른 0ms 복원)
+    const fetchSessionData = async () => {
+      try {
+        const res = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          processSessionData(data);
+        }
+      } catch (err) {
+        console.warn('대시보드 REST 폴링 경고:', err);
+      }
+    };
+
+    fetchSessionData();
+
+    // 2) 2.5초 주기 REST 폴링 백업 (모바일 네트워크 전환 안정화)
+    const pollInterval = setInterval(fetchSessionData, 2500);
+
+    // 3) Firebase SDK WebSocket 실시간 리스너
+    let unsubscribe = () => {};
+    try {
+      const sessionRef = ref(rtdb, 'sessions/trekking2026');
+      unsubscribe = onValue(
+        sessionRef,
+        (snapshot) => {
+          if (!snapshot.exists()) return;
+          const data = snapshot.val();
+          processSessionData(data);
+        },
+        (error) => {
+          console.warn('대시보드 실시간 동기화 경고:', error);
+        }
+      );
+    } catch (e) {
+      console.warn('Firebase 리스너 등록 경고:', e);
+    }
+
+    return () => {
+      clearInterval(pollInterval);
+      unsubscribe();
+    };
+  }, [teamId, participantId, selectedCourse, participantName, isPeopleQuestSubmitted]);
 
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">

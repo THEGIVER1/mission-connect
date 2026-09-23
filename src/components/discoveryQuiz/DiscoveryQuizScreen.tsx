@@ -41,6 +41,9 @@ const DiscoveryQuizScreen: React.FC = () => {
     setMyLocation,
     selectedCourse,
     updateTeamScore,
+    addAnsweredQuiz,
+    syncSessionData,
+    isPeopleQuestSubmitted,
   } = useAppStore();
 
   const activeCourse = selectedCourse;
@@ -93,6 +96,7 @@ const DiscoveryQuizScreen: React.FC = () => {
           const data = await res.json();
           if (data && typeof data === 'object') {
             setQuizResults(data);
+            Object.keys(data).forEach(qId => addAnsweredQuiz(qId));
           }
         }
       } catch (err) {
@@ -186,7 +190,7 @@ const DiscoveryQuizScreen: React.FC = () => {
     });
   };
 
-  // 4. 정답 제출 핸들러 (동적 배점 & 실시간 멱등 재계산)
+  // 4. 정답 제출 핸들러 (동적 배점 & 실시간 멱등 재계산 + 0ms 낙관적 스토어 동기화)
   const handleAnswerSubmit = async () => {
     if (selectedOption === null || hasSubmittedAnswer || !currentQuiz) return;
 
@@ -205,35 +209,71 @@ const DiscoveryQuizScreen: React.FC = () => {
     setQuizResults(updatedResults);
     setHasSubmittedAnswer(true);
 
+    // Zustand 스토어 즉각 반영 (0ms 낙관적 업데이트)
+    addAnsweredQuiz(currentQuiz.id);
+    const totalQuizEarned = Object.values(updatedResults).reduce((sum, r) => sum + (r.pointsEarned || 0), 0);
+    const isPqDone = isPeopleQuestSubmitted;
+    const totalPersonalScore = totalQuizEarned + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+    const totalMissions = Object.values(updatedResults).filter(r => r.isCorrect).length + (isPqDone ? 1 : 0);
+
+    if (myTeam?.id) {
+      updateTeamScore(myTeam.id, (myTeam.score ?? 0) + pointsEarned);
+      syncSessionData({
+        myTeamScore: (myTeam.score ?? 0) + pointsEarned,
+        myTeamMissionsCompleted: totalMissions,
+        answeredQuizIds: Object.keys(updatedResults),
+      });
+    }
+
     // 정답 시 축하 컨페티 효과 실행!
     if (isCorrect) {
       fireConfetti({ count: 70, spread: 75 });
     }
 
-    // Firebase RTDB 동적 멱등 저장 (Firebase SDK)
+    // 1) REST API로 퀴즈 풀이 및 참가자 프로필 보장 저장
+    try {
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/quizzes/${currentQuiz.id}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newResult),
+      });
+
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: participantName?.trim() || '',
+          company: participantCompany || '',
+          teamId: myTeam?.id || 'team1',
+          teamName: myTeam?.name || '1조',
+          course: selectedCourse,
+          score: totalPersonalScore,
+          missionsCompleted: totalMissions,
+          updatedAt: nowIso,
+        }),
+      });
+    } catch (restErr) {
+      console.warn('REST 퀴즈 결과 저장 경고:', restErr);
+    }
+
+    // 2) Firebase RTDB SDK 저장 (실시간 웹소켓 푸시 트리거)
     try {
       const qRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}/quizzes/${currentQuiz.id}`);
       await set(qRef, newResult);
 
-      // 참가자 점수 동적 멱등 재계산
       const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-      const pSnap = await get(pRef);
-      const existing = pSnap.exists() ? pSnap.val() : null;
-
-      // 퀴즈 획득 점수 전체 재합산
-      const totalQuizEarned = Object.values(updatedResults).reduce((sum, r) => sum + (r.pointsEarned || 0), 0);
-      const isPqDone = existing?.peopleQuestCompleted;
-      const totalScore = totalQuizEarned + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
-
       await update(pRef, {
-        score: totalScore,
+        name: participantName?.trim() || '',
+        company: participantCompany || '',
+        teamId: myTeam?.id || 'team1',
+        teamName: myTeam?.name || '1조',
+        course: selectedCourse,
+        score: totalPersonalScore,
+        missionsCompleted: totalMissions,
+        updatedAt: nowIso,
       });
-
-      if (myTeam?.id && pointsEarned > 0) {
-        updateTeamScore(myTeam.id, totalScore);
-      }
-    } catch (err) {
-      console.warn('퀴즈 결과 저장 실패:', err);
+    } catch (sdkErr) {
+      console.warn('SDK 퀴즈 결과 저장 경고:', sdkErr);
     }
   };
 

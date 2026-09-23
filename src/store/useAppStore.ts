@@ -35,6 +35,14 @@ interface AppStore extends AppState {
   setPeopleQuestSubmitted:    (submitted: boolean) => void;
   answeredQuizIds:            string[];
   addAnsweredQuiz:            (quizId: string) => void;
+  syncSessionData:            (data: {
+    teams?: Team[];
+    myTeamScore?: number;
+    myTeamRank?: number;
+    myTeamMissionsCompleted?: number;
+    answeredQuizIds?: string[];
+    isPeopleQuestSubmitted?: boolean;
+  }) => void;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -70,6 +78,27 @@ export const useAppStore = create<AppStore>()(
             : [...(s.answeredQuizIds || []), quizId],
         })),
 
+      syncSessionData: (data) =>
+        set((s) => {
+          const updatedTeams = data.teams ?? s.teams ?? MOCK_TEAMS;
+          let updatedMyTeam = s.myTeam;
+          if (updatedMyTeam) {
+            const foundTeam = updatedTeams.find((t) => t.id === updatedMyTeam?.id);
+            updatedMyTeam = {
+              ...updatedMyTeam,
+              score: data.myTeamScore !== undefined ? data.myTeamScore : (foundTeam?.score ?? updatedMyTeam.score),
+              rank: data.myTeamRank !== undefined ? data.myTeamRank : (foundTeam?.rank ?? updatedMyTeam.rank),
+              missionsCompleted: data.myTeamMissionsCompleted !== undefined ? data.myTeamMissionsCompleted : (foundTeam?.missionsCompleted ?? updatedMyTeam.missionsCompleted),
+            };
+          }
+          return {
+            teams: updatedTeams,
+            myTeam: updatedMyTeam,
+            answeredQuizIds: data.answeredQuizIds ?? s.answeredQuizIds,
+            isPeopleQuestSubmitted: data.isPeopleQuestSubmitted !== undefined ? data.isPeopleQuestSubmitted : s.isPeopleQuestSubmitted,
+          };
+        }),
+
       setCourse: (course) => set({ selectedCourse: course }),
 
       logout: () =>
@@ -87,17 +116,25 @@ export const useAppStore = create<AppStore>()(
         set((s) => {
           const activeCourse = course ?? s.selectedCourse ?? DEFAULT_COURSE;
           const currentTeams = s.teams || MOCK_TEAMS;
+          const existingTeamInStore = currentTeams.find((t) => t.id === team.id);
+          const initialScore = team.score || existingTeamInStore?.score || 0;
+          const initialCompleted = team.missionsCompleted || existingTeamInStore?.missionsCompleted || 0;
+
           return {
-            myTeam:     team,
+            myTeam: {
+              ...team,
+              score: initialScore,
+              missionsCompleted: initialCompleted,
+            },
             selectedCourse: activeCourse,
             participantName: name ?? s.participantName,
             participantCompany: company ?? s.participantCompany,
             myLocation: null,
-            missions:   [],
+            missions: [],
             coreValues: (MOCK_CORE_VALUES || []).map((cv) => ({ ...cv, found: false })),
             teams: currentTeams.map((t) =>
               t.id === team.id
-                ? { ...t, score: 0, missionsCompleted: 0, rank: t.rank }
+                ? { ...t, score: initialScore, missionsCompleted: initialCompleted, rank: t.rank }
                 : t
             ),
           };

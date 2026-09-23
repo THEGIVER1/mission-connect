@@ -40,6 +40,7 @@ const PeopleQuestScreen: React.FC = () => {
     completeMission,
     updateTeamScore,
     setPeopleQuestSubmitted,
+    syncSessionData,
   } = useAppStore();
 
   const [recommendation, setRecommendation] = useState<UnifiedRecommendation>({
@@ -60,16 +61,46 @@ const PeopleQuestScreen: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const teamId = myTeam?.id ?? 'team1';
+  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 실시간 동기화 (논블로킹 백그라운드)
+  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 실시간 동기화 (Dual: REST + SDK)
   useEffect(() => {
     if (!myTeam?.id) return;
 
+    // 1) REST 즉시 조회
+    const fetchPQ = async () => {
+      try {
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            if (data.status === 'submitted') {
+              setIsSubmitted(true);
+              setSubmittedData(data);
+              setPeopleQuestSubmitted(true);
+            } else {
+              setIsSubmitted(false);
+            }
+            if (data.recommendation) {
+              setRecommendation(prev => ({
+                ...prev,
+                ...data.recommendation,
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('REST PQ 조회 경고:', err);
+      }
+    };
+    fetchPQ();
+
+    // 2) WebSocket 실시간 리스너
     try {
       const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
       const unsubscribe = onValue(
@@ -81,6 +112,7 @@ const PeopleQuestScreen: React.FC = () => {
               if (data.status === 'submitted') {
                 setIsSubmitted(true);
                 setSubmittedData(data);
+                setPeopleQuestSubmitted(true);
               } else {
                 setIsSubmitted(false);
               }
@@ -102,7 +134,7 @@ const PeopleQuestScreen: React.FC = () => {
     } catch (e) {
       console.warn('Firebase 리스너 연결 경고:', e);
     }
-  }, [myTeam?.id]);
+  }, [myTeam?.id, dbUrl]);
 
   // 2. 추천 대상자 검색 및 필터링 (본인 제외)
   const availablePeople = useMemo(() => {
@@ -128,20 +160,33 @@ const PeopleQuestScreen: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  // 4. 임시 저장
+  // 4. 임시 저장 (Dual: REST + SDK)
   const handleDraftSave = async () => {
     if (!myTeam?.id) return;
     setIsSaving(true);
+    const draftPayload = {
+      teamId: myTeam.id,
+      teamName: myTeam.name,
+      recommendation,
+      status: 'draft',
+      updatedAt: new Date().toISOString(),
+      updatedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
+    };
+
     try {
-      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
-      await set(pqRef, {
-        teamId: myTeam.id,
-        teamName: myTeam.name,
-        recommendation,
-        status: 'draft',
-        updatedAt: new Date().toISOString(),
-        updatedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
+      // 1) REST
+      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftPayload),
       });
+
+      // 2) SDK
+      try {
+        const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+        await set(pqRef, draftPayload);
+      } catch (sdkErr) {}
+
       showToast('💾 임시 저장이 완료되었습니다.');
     } catch (e: any) {
       console.warn('임시 저장 실패:', e);
@@ -151,38 +196,51 @@ const PeopleQuestScreen: React.FC = () => {
     }
   };
 
-  // 5. 최종 제출 실행
+  // 5. 최종 제출 실행 (Dual: REST + SDK + 0ms Optimistic Update)
   const executeSubmit = async () => {
     if (!myTeam?.id) return;
     setIsSaving(true);
     setIsConfirmModalOpen(false);
 
     try {
+      const nowIso = new Date().toISOString();
       const payload = {
         teamId: myTeam.id,
         teamName: myTeam.name,
         recommendation,
         status: 'submitted',
-        submittedAt: new Date().toISOString(),
+        submittedAt: nowIso,
         submittedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
       };
 
-      // 1) People Quest 상태 저장 (Firebase SDK set)
-      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
-      await set(pqRef, payload);
+      // 1) 로컬 Zustand 스토어 즉시 반영 (0ms 낙관적 업데이트)
+      setPeopleQuestSubmitted(true);
+      completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
+      updateTeamScore(myTeam.id, (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER);
+      syncSessionData({
+        isPeopleQuestSubmitted: true,
+        myTeamScore: (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER,
+      });
 
-      // 2) 내 참가자 점수 동적 멱등 동기화
-      if (participantName && participantCompany) {
-        try {
+      // 2) REST API로 People Quest 상태 및 참가자 점수 보장 저장
+      try {
+        await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (participantName && participantCompany) {
           const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
-          const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-          const pSnap = await get(pRef);
-          const existing = pSnap.exists() ? pSnap.val() : null;
+          // 기존 참가자 퀴즈 점수 조회
+          const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
+          let existingData: any = null;
+          if (pRes.ok) existingData = await pRes.json();
 
           let quizEarned = 0;
           let quizCompletedCount = 0;
-          if (existing?.quizzes && typeof existing.quizzes === 'object') {
-            Object.values(existing.quizzes).forEach((q: any) => {
+          if (existingData?.quizzes && typeof existingData.quizzes === 'object') {
+            Object.values(existingData.quizzes).forEach((q: any) => {
               quizEarned += Number(q.pointsEarned || 0);
               if (q.isCorrect) quizCompletedCount += 1;
             });
@@ -191,29 +249,43 @@ const PeopleQuestScreen: React.FC = () => {
           const newScore = quizEarned + PEOPLE_QUEST_POINTS_PER_MEMBER;
           const newMissions = quizCompletedCount + 1;
 
-          await update(pRef, {
-            score: newScore,
-            missionsCompleted: newMissions,
-            peopleQuestCompleted: true,
+          await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: participantName.trim(),
+              company: participantCompany,
+              teamId: myTeam.id,
+              teamName: myTeam.name,
+              score: newScore,
+              missionsCompleted: newMissions,
+              peopleQuestCompleted: true,
+              updatedAt: nowIso,
+            }),
           });
-        } catch (syncErr) {
-          console.warn('참가자 점수 동기화 경고:', syncErr);
         }
+      } catch (restErr) {
+        console.warn('REST PQ 제출 경고:', restErr);
       }
 
-      // 3) 로컬 Zustand 스토어 반영
+      // 3) Firebase RTDB SDK 저장 (웹소켓 브로드캐스트)
       try {
-        if (typeof completeMission === 'function') {
-          completeMission('mission_people_quest', PEOPLE_QUEST_POINTS_PER_MEMBER);
+        const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+        await set(pqRef, payload);
+
+        if (participantName && participantCompany) {
+          const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+          const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+          await update(pRef, {
+            name: participantName.trim(),
+            company: participantCompany,
+            teamId: myTeam.id,
+            teamName: myTeam.name,
+            peopleQuestCompleted: true,
+          });
         }
-        if (typeof updateTeamScore === 'function') {
-          updateTeamScore(myTeam.id, (myTeam.score ?? 0) + PEOPLE_QUEST_POINTS_PER_MEMBER);
-        }
-        if (typeof setPeopleQuestSubmitted === 'function') {
-          setPeopleQuestSubmitted(true);
-        }
-      } catch (storeErr) {
-        console.warn('스토어 갱신 경고:', storeErr);
+      } catch (sdkErr) {
+        console.warn('SDK PQ 제출 경고:', sdkErr);
       }
 
       setIsSubmitted(true);

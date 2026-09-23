@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
+import { ref, get, update } from 'firebase/database';
+import { rtdb } from '../lib/firebase';
 import {
   WORKSHOP_COMPANIES,
   WORKSHOP_TEAMS,
   MY_INFO_QUESTIONS,
+  PEOPLE_QUEST_POINTS_PER_MEMBER,
   WorkshopTeamConfig,
 } from '../config/workshopConfig';
 
@@ -86,11 +89,45 @@ const TeamSelect: React.FC = () => {
     const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
 
     try {
-      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-      const checkSnap = await get(pRef);
-      const existing = checkSnap.exists() ? checkSnap.val() : null;
-      const initialScore = Number(existing?.score ?? 0);
-      const initialCompleted = Number(existing?.missionsCompleted ?? 0);
+      let existing: any = null;
+
+      // 1) REST 및 SDK로 기존 데이터 확인
+      try {
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
+        if (res.ok) {
+          existing = await res.json();
+        }
+      } catch (e) {
+        console.warn('REST 데이터 조회 실패:', e);
+      }
+
+      if (!existing) {
+        try {
+          const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+          const checkSnap = await get(pRef);
+          if (checkSnap.exists()) {
+            existing = checkSnap.val();
+          }
+        } catch (e) {
+          console.warn('SDK 데이터 조회 경고:', e);
+        }
+      }
+
+      // 기존 푼 퀴즈 점수 및 미션 집계
+      let quizEarned = 0;
+      let quizCount = 0;
+      if (existing?.quizzes && typeof existing.quizzes === 'object') {
+        Object.values(existing.quizzes).forEach((q: any) => {
+          quizEarned += Number(q.pointsEarned || 0);
+          if (q.isCorrect || q.pointsEarned !== undefined) quizCount += 1;
+        });
+      }
+
+      const isPqDone = existing?.peopleQuestCompleted || false;
+      const computedScore = quizEarned + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+      const computedCompleted = quizCount + (isPqDone ? 1 : 0);
+      const initialScore = Math.max(Number(existing?.score ?? 0), computedScore);
+      const initialCompleted = Math.max(Number(existing?.missionsCompleted ?? 0), computedCompleted);
 
       const payload = {
         name: name.trim(),
@@ -105,12 +142,30 @@ const TeamSelect: React.FC = () => {
         lie: answers['q3_dreamJob'] || '',
         score: initialScore,
         missionsCompleted: initialCompleted,
+        peopleQuestCompleted: isPqDone,
         joinedAt: existing?.joinedAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         status: 'active',
       };
 
-      await update(pRef, payload);
+      // 1) REST로 즉시 저장
+      try {
+        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (restErr) {
+        console.warn('REST 저장 경고:', restErr);
+      }
+
+      // 2) Firebase SDK로도 저장
+      try {
+        const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+        await update(pRef, payload);
+      } catch (sdkErr) {
+        console.warn('SDK 저장 경고:', sdkErr);
+      }
 
       selectTeam({
         id: selectedTeam.id,
