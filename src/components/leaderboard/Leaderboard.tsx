@@ -201,16 +201,25 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 2: 미션별 현황 (동적 배점 연동)
+// 탭 2: 미션별 현황 (동적 배점 연동 & 실시간 인원수 집계)
 // ─────────────────────────────────────────────────────────────────
 const MissionTab: React.FC<{
   peopleQuests: Record<string, any>;
   participants: Record<string, any>;
 }> = ({ peopleQuests, participants }) => {
+  const answeredQuizIds = useAppStore((s) => s.answeredQuizIds || []);
+  const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
+  const myTeam = useAppStore((s) => s.myTeam);
+  const participantName = useAppStore((s) => s.participantName);
+
   // People Quest 제출 완료 팀 수
   const pqCompletedTeams = useMemo(() => {
-    return WORKSHOP_TEAMS.filter(t => peopleQuests[t.id]?.status === 'submitted');
-  }, [peopleQuests]);
+    return WORKSHOP_TEAMS.filter(t => {
+      const isSub = peopleQuests[t.id]?.status === 'submitted';
+      const isMyTeamSub = t.id === myTeam?.id && isPeopleQuestSubmitted;
+      return isSub || isMyTeamSub;
+    });
+  }, [peopleQuests, myTeam?.id, isPeopleQuestSubmitted]);
 
   // 각 Discovery Quiz 문항별 완료 참가자 수 집계
   const quizStats = useMemo(() => {
@@ -218,20 +227,38 @@ const MissionTab: React.FC<{
     return DISCOVERY_QUIZZES.map((quiz, idx) => {
       let completedCount = 0;
       let correctCount = 0;
+      let isMyAnswered = false;
+      let isMyCorrect = false;
+
       pList.forEach((p: any) => {
         if (p?.quizzes && p.quizzes[quiz.id]) {
           completedCount += 1;
           if (p.quizzes[quiz.id].isCorrect) correctCount += 1;
+          if (participantName && (p.name || '').trim() === participantName.trim()) {
+            isMyAnswered = true;
+            isMyCorrect = !!p.quizzes[quiz.id].isCorrect;
+          }
         }
       });
+
+      // 내 로컬 상태 낙관적 보정
+      if (answeredQuizIds.includes(quiz.id)) {
+        isMyAnswered = true;
+        if (!isMyCorrect) isMyCorrect = true; // 기본 정답 가산
+        if (completedCount === 0) completedCount = 1;
+        if (correctCount === 0) correctCount = 1;
+      }
+
       return {
         quiz,
         idx,
         completedCount,
         correctCount,
+        isMyAnswered,
+        isMyCorrect,
       };
     });
-  }, [participants]);
+  }, [participants, answeredQuizIds, participantName]);
 
   return (
     <div className="px-4 pb-28 space-y-4 pt-2">
@@ -241,7 +268,7 @@ const MissionTab: React.FC<{
           <div className="flex items-center gap-2">
             <span className="text-xl">💬</span>
             <div>
-              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider block">Activity 1 · 대화형</span>
+              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider block">Activity 1 · 대화형 (조별 1명 추천)</span>
               <h3 className="text-[15px] font-bold text-white">People Quest (최고의 스토리 동료 추천)</h3>
             </div>
           </div>
@@ -251,13 +278,13 @@ const MissionTab: React.FC<{
         </div>
 
         <p className="text-[12px] text-slate-300 leading-relaxed">
-          트레킹 중 조원들과 대화하며 가장 인상 깊었던 동료를 찾아 추천하는 미션입니다.
+          트레킹 중 조원들과 대화하며 인상 깊었던 동료 1명을 추천합니다. 제출 시 <strong>조원 전원에게 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 부여됩니다.
         </p>
 
         {/* 진행률 바 */}
         <div>
           <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-            <span>조별 제출 완료율</span>
+            <span>6개 조 제출 완료율</span>
             <span className="text-green-400 font-bold">
               {pqCompletedTeams.length} / {WORKSHOP_TEAMS.length}개 조 완료 ({Math.round((pqCompletedTeams.length / WORKSHOP_TEAMS.length) * 100)}%)
             </span>
@@ -270,13 +297,15 @@ const MissionTab: React.FC<{
           </div>
         </div>
 
-        {/* 조별 현황 뱃지 */}
+        {/* 조별 현황 뱃지 (6개 조) */}
         <div className="grid grid-cols-2 gap-2 pt-1">
           {WORKSHOP_TEAMS.map(team => {
             const pq = peopleQuests[team.id];
-            const isSubmitted = pq?.status === 'submitted';
+            const isMyTeam = team.id === myTeam?.id;
+            const isSubmitted = pq?.status === 'submitted' || (isMyTeam && isPeopleQuestSubmitted);
             const isDraft = pq?.status === 'draft';
             const recName = pq?.recommendation?.recommendedPersonName;
+            const topic = pq?.recommendation?.selectedTopic;
 
             return (
               <div
@@ -290,7 +319,10 @@ const MissionTab: React.FC<{
                 }`}
               >
                 <div className="flex justify-between items-center mb-0.5">
-                  <span className="font-bold text-white">{team.emoji} {team.name}</span>
+                  <span className="font-bold text-white flex items-center gap-1">
+                    {team.emoji} {team.name}
+                    {isMyTeam && <span className="text-[9px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
+                  </span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
                     isSubmitted ? 'bg-green-500/30 text-green-300' : isDraft ? 'bg-amber-500/30 text-amber-300' : 'text-slate-500'
                   }`}>
@@ -299,7 +331,7 @@ const MissionTab: React.FC<{
                 </div>
                 {recName ? (
                   <p className="text-[10px] text-slate-300 truncate">
-                    👑 {recName} 님 추천
+                    👑 {recName} 님 {topic ? `(${topic.slice(0, 10)}...)` : ''}
                   </p>
                 ) : (
                   <p className="text-[10px] text-slate-500">대화 진행 중</p>
@@ -316,137 +348,204 @@ const MissionTab: React.FC<{
           <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
             🧭 Activity 2: Discovery Quiz 현장 퀴즈 ({DISCOVERY_QUIZZES.length}문항)
           </span>
-          <span className="text-[11px] text-sky-400 font-bold">문항별 배점</span>
+          <span className="text-[11px] text-sky-400 font-bold">개인별 각자 풀이 (+100pt)</span>
         </div>
 
-        {quizStats.map(({ quiz, idx, completedCount, correctCount }) => (
-          <div key={quiz.id} className="bg-[#1A2235] border border-white/8 rounded-xl p-3.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-bold text-sky-400">
-                QUIZ {idx + 1}. {quiz.title} (+{quiz.points}pt)
-              </span>
-              <span className="text-[10px] text-slate-400">📍 {quiz.locationLabel}</span>
-            </div>
+        {quizStats.map(({ quiz, idx, completedCount, correctCount, isMyAnswered, isMyCorrect }) => {
+          const courseLabel = quiz.courseKey === 'all'
+            ? '전체 공통'
+            : quiz.courseKey === 'forest'
+            ? '1~3조 동물원둘레길'
+            : '4~6조 호수둘레길';
 
-            <p className="text-[12px] text-slate-300">{quiz.questionText}</p>
+          return (
+            <div key={quiz.id} className="bg-[#1A2235] border border-white/8 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-bold text-sky-400">
+                    QUIZ {idx + 1}. {quiz.title}
+                  </span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                    quiz.courseKey === 'all'
+                      ? 'bg-slate-700 text-slate-300'
+                      : quiz.courseKey === 'forest'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                  }`}>
+                    {courseLabel}
+                  </span>
+                </div>
+                <span className="text-[11px] text-amber-400 font-bold">+{quiz.points}pt</span>
+              </div>
 
-            <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
-              <span>참가자 풀이: <strong className="text-white">{completedCount}명</strong></span>
-              <span>정답 맞힌 인원: <strong className="text-green-400">{correctCount}명</strong></span>
+              <p className="text-[12px] text-slate-300 leading-snug">{quiz.questionText}</p>
+
+              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400 border-t border-white/5">
+                <div className="flex items-center gap-3">
+                  <span>참가자 풀이: <strong className="text-white">{completedCount}명</strong></span>
+                  <span>정답: <strong className="text-green-400">{correctCount}명</strong></span>
+                </div>
+                {isMyAnswered ? (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                    isMyCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {isMyCorrect ? '내 결과: 정답 ✓' : '내 결과: 오답 ✕'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-500">내 결과: 미풀이</span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 3: 개인 기여 순위 (동적 멱등 점수 집계)
+// 탭 3: 개인 기여 순위 (50명 참가자 실시간 멱등 순위표)
 // ─────────────────────────────────────────────────────────────────
 const IndividualTab: React.FC<{
   participants: Record<string, any>;
   peopleQuests: Record<string, any>;
 }> = ({ participants, peopleQuests }) => {
   const participantName = useAppStore((s) => s.participantName);
+  const participantCompany = useAppStore((s) => s.participantCompany);
   const myTeam = useAppStore((s) => s.myTeam);
+  const answeredQuizIds = useAppStore((s) => s.answeredQuizIds || []);
+  const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
   const EMOJIS = ['🔥', '💡', '🤝', '⚖️', '🏆', '🌟', '💪', '🎯'];
 
   const individuals = useMemo(() => {
     const listMap = new Map<string, any>();
 
-    // 1) RTDB에 등록된 참가자 리스트
-    Object.values(participants).forEach((p: any, i: number) => {
-      if (!p?.name) return;
+    // 1) 50명 사전 등록 명단을 기본 베이스로 초기화
+    PRE_REGISTERED_PARTICIPANTS.forEach((p, i) => {
+      listMap.set(p.name.trim(), {
+        id: p.id,
+        name: p.name.trim(),
+        team: p.teamName,
+        teamId: p.teamId,
+        company: p.company,
+        pts: 0,
+        missions: 0,
+        emoji: EMOJIS[i % EMOJIS.length],
+      });
+    });
 
-      // 퀴즈 푼 점수 합산
+    // 2) RTDB에 저장된 참가자 실시간 퀴즈 및 퀘스트 점수 병합
+    Object.values(participants).forEach((p: any) => {
+      if (!p?.name) return;
+      const trimmedName = p.name.trim();
+      const existing = listMap.get(trimmedName) || {
+        id: p.id || trimmedName,
+        name: trimmedName,
+        team: p.teamName || '1조',
+        teamId: p.teamId || 'team1',
+        company: p.company || '',
+        pts: 0,
+        missions: 0,
+        emoji: '🌟',
+      };
+
+      // 퀴즈 푼 점수 계산
       let quizPoints = 0;
       let quizMissions = 0;
       if (p.quizzes && typeof p.quizzes === 'object') {
         Object.values(p.quizzes).forEach((q: any) => {
           if (q.pointsEarned) quizPoints += Number(q.pointsEarned);
-          if (q.isCorrect) quizMissions += 1;
+          if (q.isCorrect || q.pointsEarned !== undefined) quizMissions += 1;
         });
       }
 
-      // 조별 People Quest 완료 여부에 따른 점수 동적 가산
-      const isTeamPqDone = peopleQuests[p.teamId]?.status === 'submitted' || p.peopleQuestCompleted;
+      // 조별 People Quest 완료 여부
+      const targetTeamId = p.teamId || existing.teamId;
+      const isTeamPqDone = peopleQuests[targetTeamId]?.status === 'submitted' || p.peopleQuestCompleted;
       const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
       const pqMissions = isTeamPqDone ? 1 : 0;
 
       const totalPts = Math.max(Number(p.score ?? 0), quizPoints + pqPoints);
       const totalMissions = Math.max(Number(p.missionsCompleted ?? 0), quizMissions + pqMissions);
 
-      listMap.set(p.name.trim(), {
-        id: p.name,
-        name: p.name.trim(),
-        team: p.teamName ?? '',
-        teamId: p.teamId ?? '',
-        company: p.company ?? '',
+      listMap.set(trimmedName, {
+        ...existing,
+        team: p.teamName || existing.team,
+        teamId: targetTeamId,
+        company: p.company || existing.company,
         pts: totalPts,
         missions: totalMissions,
-        emoji: EMOJIS[i % EMOJIS.length],
       });
     });
 
-    // 2) 현재 내 계정이 아직 RTDB에 없다면 즉시 추가
-    if (participantName && !listMap.has(participantName.trim())) {
-      const isTeamPqDone = myTeam?.id && peopleQuests[myTeam.id]?.status === 'submitted';
-      const myPts = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const myMissions = isTeamPqDone ? 1 : 0;
-
-      listMap.set(participantName.trim(), {
-        id: participantName.trim(),
-        name: participantName.trim(),
+    // 3) 현재 로그인된 내 계정 낙관적(Optimistic) 로컬 점수 즉시 보정
+    if (participantName) {
+      const myTrimmedName = participantName.trim();
+      const myExisting = listMap.get(myTrimmedName) || {
+        id: myTrimmedName,
+        name: myTrimmedName,
         team: myTeam?.name ?? '1조',
         teamId: myTeam?.id ?? 'team1',
-        company: '',
-        pts: myPts,
-        missions: myMissions,
+        company: participantCompany ?? '',
+        pts: 0,
+        missions: 0,
         emoji: '🔥',
+      };
+
+      const isMyTeamPqDone = (myTeam?.id && peopleQuests[myTeam.id]?.status === 'submitted') || isPeopleQuestSubmitted;
+      const myLocalQuizPts = answeredQuizIds.length * 100;
+      const myLocalPqPts = isMyTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
+      const myCalculatedTotal = myLocalQuizPts + myLocalPqPts;
+      const myCalculatedMissions = answeredQuizIds.length + (isMyTeamPqDone ? 1 : 0);
+
+      listMap.set(myTrimmedName, {
+        ...myExisting,
+        team: myTeam?.name ?? myExisting.team,
+        teamId: myTeam?.id ?? myExisting.teamId,
+        company: participantCompany ?? myExisting.company,
+        pts: Math.max(myExisting.pts, myCalculatedTotal),
+        missions: Math.max(myExisting.missions, myCalculatedMissions),
       });
     }
 
     const arr = Array.from(listMap.values());
-
-    // 3) 만약 아무 데이터도 없다면 프리셋 노출 (빈 화면 방지)
-    if (arr.length === 0) {
-      return PRE_REGISTERED_PARTICIPANTS.slice(0, 10).map((p, i) => ({
-        id: p.id,
-        name: p.name,
-        team: p.teamName,
-        company: p.company,
-        pts: 0,
-        missions: 0,
-        emoji: EMOJIS[i % EMOJIS.length],
-        rank: i + 1,
-      }));
-    }
-
     return arr
-      .sort((a, b) => b.pts - a.pts)
+      .sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name))
       .map((p, i) => ({ ...p, rank: i + 1 }));
-  }, [participants, peopleQuests, participantName, myTeam]);
+  }, [participants, peopleQuests, participantName, participantCompany, myTeam, answeredQuizIds, isPeopleQuestSubmitted]);
 
   return (
     <div className="px-4 pb-28 space-y-2 pt-2">
-      <p className="text-[11px] text-slate-400 text-center mb-3">
-        실시간 개인 미션 기여 점수 (People Quest + Discovery Quiz)
-      </p>
+      <div className="bg-[#1A2235] border border-white/8 rounded-xl p-3 text-center mb-2">
+        <p className="text-[12px] font-bold text-white">
+          개인 미션 기여 순위 (전체 {individuals.length}명)
+        </p>
+        <p className="text-[10px] text-slate-400 mt-0.5">
+          개인 획득 점수 = 디스커버리 퀴즈 정답(+100pt/문항) + 조별 피플퀘스트 완료(+100pt)
+        </p>
+      </div>
 
       {individuals.map((p) => {
         const isMe = !!participantName && p.name.trim() === participantName.trim();
         return (
           <div
-            key={p.id}
+            key={p.id || p.name}
             className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl border transition-all ${
-              isMe ? 'bg-red-500/10 border-red-500/40 shadow-lg' : 'bg-[#1A2235] border-white/6'
+              isMe
+                ? 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10 ring-1 ring-red-500'
+                : 'bg-[#1A2235] border-white/6'
             }`}
           >
             <span className={`font-bebas text-xl w-7 text-center ${
-              p.rank === 1 ? 'text-amber-400' : p.rank === 2 ? 'text-slate-300' : p.rank === 3 ? 'text-amber-700' : 'text-slate-500'
+              p.rank === 1
+                ? 'text-amber-400 text-2xl font-bold'
+                : p.rank === 2
+                ? 'text-slate-300 text-xl font-bold'
+                : p.rank === 3
+                ? 'text-amber-600 text-xl font-bold'
+                : 'text-slate-500'
             }`}>
-              {p.rank}
+              {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
             </span>
             <div className="w-9 h-9 rounded-xl bg-[#212C42] border border-white/8 flex items-center justify-center text-lg flex-shrink-0">
               {p.emoji}
@@ -466,7 +565,7 @@ const IndividualTab: React.FC<{
               <span className="text-[11px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="font-bebas text-[19px] text-white leading-none">
+              <span className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
                 {p.pts}<span className="text-[11px] text-slate-400 ml-0.5">pt</span>
               </span>
             </div>

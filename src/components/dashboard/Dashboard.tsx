@@ -271,7 +271,11 @@ const Dashboard: React.FC = () => {
 
   const [liveTeamScore, setLiveTeamScore] = useState<number>(myTeam?.score ?? 0);
   const [liveTeamRank, setLiveTeamRank] = useState<number>(myTeam?.rank ?? 1);
-  const [livePersonalScore, setLivePersonalScore] = useState<number>(0);
+  const [livePersonalScore, setLivePersonalScore] = useState<number>(() => {
+    const quizPts = (answeredQuizIds?.length ?? 0) * 100;
+    const pqPts = isPeopleQuestSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
+    return quizPts + pqPts;
+  });
   const [maxScore, setMaxScore] = useState<number>(100);
   const [pqSubmitted, setPqSubmitted] = useState<boolean>(isPeopleQuestSubmitted || false);
   const [answeredQuizCount, setAnsweredQuizCount] = useState<number>(answeredQuizIds?.length ?? 0);
@@ -318,7 +322,11 @@ const Dashboard: React.FC = () => {
       }
     }
 
-    const personalTotal = pQuizPts + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+    const localQuizPts = (answeredQuizIds || []).length * 100;
+    const localPqPts = isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
+    const computedLocalPersonal = localQuizPts + localPqPts;
+
+    const personalTotal = Math.max(pQuizPts + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0), computedLocalPersonal);
     setLivePersonalScore(personalTotal);
     setAnsweredQuizCount(Math.max(pQuizCount, answeredQuizIds?.length ?? 0));
 
