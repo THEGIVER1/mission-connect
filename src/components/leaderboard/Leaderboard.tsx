@@ -417,53 +417,63 @@ const IndividualTab: React.FC<{
         </p>
       </div>
 
-      {individuals.map((p) => {
-        const isMe = !!participantName && p.name.trim() === participantName.trim();
-        return (
-          <div
-            key={p.id || p.name}
-            className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl border transition-all ${
-              isMe
-                ? 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10 ring-1 ring-red-500'
-                : 'bg-[#1A2235] border-white/6'
-            }`}
-          >
-            <span className={`font-bebas text-xl w-7 text-center ${
-              p.rank === 1
-                ? 'text-amber-400 text-2xl font-bold'
-                : p.rank === 2
-                ? 'text-slate-300 text-xl font-bold'
-                : p.rank === 3
-                ? 'text-amber-600 text-xl font-bold'
-                : 'text-slate-500'
-            }`}>
-              {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-[#212C42] border border-white/8 flex items-center justify-center text-lg flex-shrink-0">
-              {p.emoji}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[14px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
-                  {p.name}
-                </span>
-                {isMe && (
-                  <span className="text-[9px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">나</span>
-                )}
-                {p.company && (
-                  <span className="text-[10px] text-slate-500">({p.company})</span>
-                )}
-              </div>
-              <span className="text-[11px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
-                {p.pts}<span className="text-[11px] text-slate-400 ml-0.5">pt</span>
+      {individuals.length === 0 ? (
+        <div className="bg-[#1A2235] border border-white/8 rounded-2xl p-8 text-center space-y-2 my-4">
+          <div className="text-3xl">👥</div>
+          <h4 className="text-[14px] font-bold text-white">아직 등록된 참가자가 없습니다</h4>
+          <p className="text-[12px] text-slate-400">
+            참가자가 로그인하고 미션에 참여하면 실시간으로 순위표에 등록됩니다.
+          </p>
+        </div>
+      ) : (
+        individuals.map((p) => {
+          const isMe = !!participantName && p.name.trim() === participantName.trim();
+          return (
+            <div
+              key={p.id || p.name}
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl border transition-all ${
+                isMe
+                  ? 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10 ring-1 ring-red-500'
+                  : 'bg-[#1A2235] border-white/6'
+              }`}
+            >
+              <span className={`font-bebas text-xl w-7 text-center ${
+                p.rank === 1
+                  ? 'text-amber-400 text-2xl font-bold'
+                  : p.rank === 2
+                  ? 'text-slate-300 text-xl font-bold'
+                  : p.rank === 3
+                  ? 'text-amber-600 text-xl font-bold'
+                  : 'text-slate-500'
+              }`}>
+                {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
               </span>
+              <div className="w-9 h-9 rounded-xl bg-[#212C42] border border-white/8 flex items-center justify-center text-lg flex-shrink-0">
+                {p.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[14px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
+                    {p.name}
+                  </span>
+                  {isMe && (
+                    <span className="text-[9px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">나</span>
+                  )}
+                  {p.company && (
+                    <span className="text-[10px] text-slate-500">({p.company})</span>
+                  )}
+                </div>
+                <span className="text-[11px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                  {p.pts}<span className="text-[11px] text-slate-400 ml-0.5">pt</span>
+                </span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })
+      )}
     </div>
   );
 };

@@ -60,6 +60,12 @@ const PeopleQuestScreen: React.FC = () => {
   const [companyFilter, setCompanyFilter] = useState<'all' | '㈜두산' | '두산경영연구원'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // 동적 참여자 목록 & 직접 입력 상태
+  const [realParticipants, setRealParticipants] = useState<any[]>([]);
+  const [modalTab, setModalTab] = useState<'roster' | 'manual'>('roster');
+  const [manualName, setManualName] = useState<string>('');
+  const [manualCompany, setManualCompany] = useState<string>('㈜두산');
+
   const teamId = myTeam?.id ?? 'team1';
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
@@ -68,7 +74,7 @@ const PeopleQuestScreen: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 실시간 동기화 (Dual: REST + SDK)
+  // 1. Firebase RTDB에서 우리 조의 People Quest 현황 및 전체 참가자 실시간 동기화 (Dual: REST + SDK)
   useEffect(() => {
     if (!myTeam?.id) return;
 
@@ -98,12 +104,28 @@ const PeopleQuestScreen: React.FC = () => {
         console.warn('REST PQ 조회 경고:', err);
       }
     };
+
+    const fetchParticipants = async () => {
+      try {
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/participants.json?t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            setRealParticipants(Object.values(data));
+          }
+        }
+      } catch (err) {
+        console.warn('참가자 목록 조회 경고:', err);
+      }
+    };
+
     fetchPQ();
+    fetchParticipants();
 
     // 2) WebSocket 실시간 리스너
     try {
       const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
-      const unsubscribe = onValue(
+      const unsubscribePQ = onValue(
         pqRef,
         (snapshot) => {
           if (snapshot.exists()) {
@@ -130,32 +152,82 @@ const PeopleQuestScreen: React.FC = () => {
         }
       );
 
-      return () => unsubscribe();
+      const pRef = ref(rtdb, 'sessions/trekking2026/participants');
+      const unsubscribeP = onValue(
+        pRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            if (data && typeof data === 'object') {
+              setRealParticipants(Object.values(data));
+            }
+          }
+        },
+        (error) => {
+          console.warn('참가자 목록 동기화 경고:', error);
+        }
+      );
+
+      return () => {
+        unsubscribePQ();
+        unsubscribeP();
+      };
     } catch (e) {
       console.warn('Firebase 리스너 연결 경고:', e);
     }
   }, [myTeam?.id, dbUrl]);
 
-  // 2. 추천 대상자 검색 및 필터링 (본인 제외)
+  // 2. 추천 대상자 검색 및 필터링 (본인 제외, 실제 접속 참가자 통합)
   const availablePeople = useMemo(() => {
-    return PRE_REGISTERED_PARTICIPANTS.filter((p) => {
+    const map = new Map<string, any>();
+    PRE_REGISTERED_PARTICIPANTS.forEach(p => {
+      map.set(p.name.trim(), p);
+    });
+    realParticipants.forEach(p => {
+      if (!p?.name) return;
+      map.set(p.name.trim(), {
+        id: p.id || p.name.trim(),
+        name: p.name.trim(),
+        company: p.company || '',
+        teamId: p.teamId || 'team1',
+        teamName: p.teamName || '1조',
+      });
+    });
+
+    const list = Array.from(map.values());
+    return list.filter((p) => {
       if (participantName && p.name.trim() === participantName.trim()) return false;
       if (companyFilter !== 'all' && p.company !== companyFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        return p.name.toLowerCase().includes(q) || p.company.toLowerCase().includes(q) || p.teamName.includes(q);
+        return p.name.toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q) || (p.teamName || '').includes(q);
       }
       return true;
     });
-  }, [participantName, companyFilter, searchQuery]);
+  }, [participantName, companyFilter, searchQuery, realParticipants]);
 
   // 3. 인물 선택 핸들러
-  const handleSelectPerson = (person: PreRegisteredPerson) => {
+  const handleSelectPerson = (person: { id: string; name: string; company: string }) => {
     setRecommendation(prev => ({
       ...prev,
       recommendedPersonId: person.id,
       recommendedPersonName: person.name,
       recommendedPersonCompany: person.company,
+    }));
+    setIsModalOpen(false);
+  };
+
+  // 3-1. 직접 입력 선택 핸들러
+  const handleManualSelect = () => {
+    if (!manualName.trim()) {
+      showToast('⚠️ 동료 이름을 입력해주세요.');
+      return;
+    }
+    setRecommendation(prev => ({
+      ...prev,
+      recommendedPersonId: manualName.trim(),
+      recommendedPersonName: manualName.trim(),
+      recommendedPersonCompany: manualCompany,
     }));
     setIsModalOpen(false);
   };
@@ -442,6 +514,7 @@ const PeopleQuestScreen: React.FC = () => {
                     </span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setIsModalOpen(true)}
                     className="px-3 py-1.5 bg-[#212C42] hover:bg-[#2A3752] text-slate-300 text-[12px] rounded-lg border border-white/10"
                   >
@@ -455,7 +528,7 @@ const PeopleQuestScreen: React.FC = () => {
                   className="w-full py-3.5 bg-black/30 hover:bg-black/50 border border-dashed border-white/20 rounded-xl text-slate-300 text-[13px] font-bold flex items-center justify-center gap-2 active:scale-98 transition-all"
                 >
                   <span>🔍</span>
-                  <span>50명 참가자 명단에서 동료 찾기</span>
+                  <span>추천할 동료 선택 또는 직접 입력</span>
                 </button>
               )}
             </div>
@@ -562,14 +635,14 @@ const PeopleQuestScreen: React.FC = () => {
         </div>
       )}
 
-      {/* 50명 참가자 명단 검색 모달 */}
+      {/* 추천 동료 선택 / 직접 입력 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-[#13192A] border border-white/10 w-full max-w-[390px] h-[80vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden animate-slide-up">
+          <div className="bg-[#13192A] border border-white/10 w-full max-w-[390px] h-[82vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden animate-slide-up">
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
               <div>
                 <h3 className="text-[16px] font-bold text-white">추천할 동료 찾기</h3>
-                <p className="text-[11px] text-slate-400">대화 중 인상 깊었던 동료를 선택하세요</p>
+                <p className="text-[11px] text-slate-400">대화 중 인상 깊었던 동료를 선택하거나 입력하세요</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -579,65 +652,156 @@ const PeopleQuestScreen: React.FC = () => {
               </button>
             </div>
 
-            {/* 검색창 & 소속 필터 */}
-            <div className="p-3 bg-[#0D1117] space-y-2 border-b border-white/5">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="이름 또는 소속 검색 (예: 김민준)"
-                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
-              />
-              <div className="flex gap-1.5">
-                {(['all', '㈜두산', '두산경영연구원'] as const).map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setCompanyFilter(tab)}
-                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                      companyFilter === tab
-                        ? 'bg-red-500 text-white'
-                        : 'bg-[#1A2235] text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {tab === 'all' ? '전체' : tab}
-                  </button>
-                ))}
-              </div>
+            {/* 탭 전환 (참여 동료 목록 / 직접 이름 입력) */}
+            <div className="flex bg-[#0D1117] border-b border-white/10">
+              <button
+                type="button"
+                onClick={() => setModalTab('roster')}
+                className={`flex-1 py-2.5 text-[12px] font-bold border-b-2 transition-all ${
+                  modalTab === 'roster'
+                    ? 'text-red-400 border-red-500'
+                    : 'text-slate-400 border-transparent hover:text-white'
+                }`}
+              >
+                👥 참여 동료 목록 ({availablePeople.length}명)
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalTab('manual')}
+                className={`flex-1 py-2.5 text-[12px] font-bold border-b-2 transition-all ${
+                  modalTab === 'manual'
+                    ? 'text-red-400 border-red-500'
+                    : 'text-slate-400 border-transparent hover:text-white'
+                }`}
+              >
+                ✏️ 직접 이름 입력
+              </button>
             </div>
 
-            {/* 참가자 리스트 */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {availablePeople.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-[13px]">
-                  검색 결과가 없습니다.
+            {modalTab === 'roster' ? (
+              <>
+                {/* 검색창 & 소속 필터 */}
+                <div className="p-3 bg-[#0D1117] space-y-2 border-b border-white/5">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="이름 또는 소속 검색 (예: 홍길동)"
+                    className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                  />
+                  <div className="flex gap-1.5">
+                    {(['all', '㈜두산', '두산경영연구원'] as const).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setCompanyFilter(tab)}
+                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          companyFilter === tab
+                            ? 'bg-red-500 text-white'
+                            : 'bg-[#1A2235] text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {tab === 'all' ? '전체' : tab}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                availablePeople.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => handleSelectPerson(p)}
-                    className="w-full bg-[#1A2235] hover:bg-[#202B42] border border-white/5 rounded-xl p-3 flex items-center justify-between text-left transition-all active:scale-98"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-[13px]">
-                        {p.name.charAt(0)}
-                      </div>
-                      <div>
-                        <span className="text-[14px] font-bold text-white block">
-                          {p.name}
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {p.company} · {p.teamName}
-                        </span>
-                      </div>
+
+                {/* 참가자 리스트 */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {availablePeople.length === 0 ? (
+                    <div className="text-center py-10 px-4 space-y-3">
+                      <div className="text-3xl">👥</div>
+                      <p className="text-slate-400 text-[13px] font-bold">
+                        아직 참여한 동료가 없거나 검색 결과가 없습니다.
+                      </p>
+                      <p className="text-slate-500 text-[11px]">
+                        아직 앱에 로그인하지 않은 동료는 [직접 이름 입력]으로 추천할 수 있습니다.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setModalTab('manual')}
+                        className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-[12px] font-bold hover:bg-red-500/30"
+                      >
+                        ✏️ 직접 이름 입력하러 가기
+                      </button>
                     </div>
-                    <span className="text-[12px] text-red-400 font-bold">
-                      선택 →
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
+                  ) : (
+                    availablePeople.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => handleSelectPerson(p)}
+                        className="w-full bg-[#1A2235] hover:bg-[#202B42] border border-white/5 rounded-xl p-3 flex items-center justify-between text-left transition-all active:scale-98"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-[13px]">
+                            {p.name.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="text-[14px] font-bold text-white block">
+                              {p.name}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {p.company} {p.teamName ? `· ${p.teamName}` : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[12px] text-red-400 font-bold">
+                          선택 →
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              /* 직접 이름 입력 폼 */
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3">
+                  <div>
+                    <label className="text-[12px] font-bold text-slate-300 block mb-1">
+                      추천할 동료 이름 *
+                    </label>
+                    <input
+                      type="text"
+                      value={manualName}
+                      onChange={e => setManualName(e.target.value)}
+                      placeholder="예: 홍길동"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-3 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[12px] font-bold text-slate-300 block mb-1">
+                      소속 회사 *
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['㈜두산', '두산경영연구원'].map(comp => (
+                        <button
+                          key={comp}
+                          type="button"
+                          onClick={() => setManualCompany(comp)}
+                          className={`py-2.5 rounded-xl text-[12px] font-bold border transition-all ${
+                            manualCompany === comp
+                              ? 'bg-red-500/20 border-red-500 text-red-300 font-bold'
+                              : 'bg-black/30 border-white/10 text-slate-400'
+                          }`}
+                        >
+                          {comp}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleManualSelect}
+                  className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] rounded-xl shadow-lg active:scale-98 transition-all"
+                >
+                  이 동료로 선택 완료 ✓
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

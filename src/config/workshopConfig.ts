@@ -194,71 +194,9 @@ export function getCourseTotalMaxPoints(courseKey: CourseKey = 'lake'): number {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// 7. 사전 등록된 50명 참가자 명단 풀
+// 7. 참가자 명단 (실제 참여자 실시간 동적 등록 모드)
 // ─────────────────────────────────────────────────────────────────
-export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [
-  // 1조 (동물원둘레길)
-  { id: 'p01', name: '김민준', company: '㈜두산', teamId: 'team1', teamName: '1조' },
-  { id: 'p02', name: '이서연', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
-  { id: 'p03', name: '박도윤', company: '㈜두산', teamId: 'team1', teamName: '1조' },
-  { id: 'p04', name: '최지우', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
-  { id: 'p05', name: '정도현', company: '㈜두산', teamId: 'team1', teamName: '1조' },
-  { id: 'p06', name: '강예은', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
-  { id: 'p07', name: '조현우', company: '㈜두산', teamId: 'team1', teamName: '1조' },
-  { id: 'p08', name: '윤하은', company: '두산경영연구원', teamId: 'team1', teamName: '1조' },
-
-  // 2조 (동물원둘레길)
-  { id: 'p09', name: '장시우', company: '㈜두산', teamId: 'team2', teamName: '2조' },
-  { id: 'p10', name: '임수아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
-  { id: 'p11', name: '한지호', company: '㈜두산', teamId: 'team2', teamName: '2조' },
-  { id: 'p12', name: '오서아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
-  { id: 'p13', name: '서유준', company: '㈜두산', teamId: 'team2', teamName: '2조' },
-  { id: 'p14', name: '신지아', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
-  { id: 'p15', name: '권예준', company: '㈜두산', teamId: 'team2', teamName: '2조' },
-  { id: 'p16', name: '황나은', company: '두산경영연구원', teamId: 'team2', teamName: '2조' },
-
-  // 3조 (동물원둘레길)
-  { id: 'p17', name: '안준우', company: '㈜두산', teamId: 'team3', teamName: '3조' },
-  { id: 'p18', name: '송민서', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
-  { id: 'p19', name: '전도경', company: '㈜두산', teamId: 'team3', teamName: '3조' },
-  { id: 'p20', name: '홍채원', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
-  { id: 'p21', name: '유건우', company: '㈜두산', teamId: 'team3', teamName: '3조' },
-  { id: 'p22', name: '고다은', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
-  { id: 'p23', name: '문태양', company: '㈜두산', teamId: 'team3', teamName: '3조' },
-  { id: 'p24', name: '양소율', company: '두산경영연구원', teamId: 'team3', teamName: '3조' },
-
-  // 4조 (호수둘레길)
-  { id: 'p25', name: '손우진', company: '㈜두산', teamId: 'team4', teamName: '4조' },
-  { id: 'p26', name: '배지안', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
-  { id: 'p27', name: '조선우', company: '㈜두산', teamId: 'team4', teamName: '4조' },
-  { id: 'p28', name: '백하윤', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
-  { id: 'p29', name: '허도윤', company: '㈜두산', teamId: 'team4', teamName: '4조' },
-  { id: 'p30', name: '노시아', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
-  { id: 'p31', name: '심은우', company: '㈜두산', teamId: 'team4', teamName: '4조' },
-  { id: 'p32', name: '하서윤', company: '두산경영연구원', teamId: 'team4', teamName: '4조' },
-
-  // 5조 (호수둘레길)
-  { id: 'p33', name: '곽시후', company: '㈜두산', teamId: 'team5', teamName: '5조' },
-  { id: 'p34', name: '성아린', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
-  { id: 'p35', name: '차민재', company: '㈜두산', teamId: 'team5', teamName: '5조' },
-  { id: 'p36', name: '주아인', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
-  { id: 'p37', name: '우현준', company: '㈜두산', teamId: 'team5', teamName: '5조' },
-  { id: 'p38', name: '구지유', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
-  { id: 'p39', name: '진이준', company: '㈜두산', teamId: 'team5', teamName: '5조' },
-  { id: 'p40', name: '나수빈', company: '두산경영연구원', teamId: 'team5', teamName: '5조' },
-
-  // 6조 (호수둘레길)
-  { id: 'p41', name: '민정우', company: '㈜두산', teamId: 'team6', teamName: '6조' },
-  { id: 'p42', name: '엄채아', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
-  { id: 'p43', name: '채승우', company: '㈜두산', teamId: 'team6', teamName: '6조' },
-  { id: 'p44', name: '원하은', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
-  { id: 'p45', name: '천유찬', company: '㈜두산', teamId: 'team6', teamName: '6조' },
-  { id: 'p46', name: '방서진', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
-  { id: 'p47', name: '공동현', company: '㈜두산', teamId: 'team6', teamName: '6조' },
-  { id: 'p48', name: '현소은', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
-  { id: 'p49', name: '탁재윤', company: '㈜두산', teamId: 'team6', teamName: '6조' },
-  { id: 'p50', name: '옥지민', company: '두산경영연구원', teamId: 'team6', teamName: '6조' },
-];
+export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [];
 
 export const ACTIVE_VENUE = {
   venueName: '서울대공원',

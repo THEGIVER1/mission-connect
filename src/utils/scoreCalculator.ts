@@ -177,7 +177,7 @@ export function calculateLeaderboardData(
       color: teamConfig.color,
       score: totalScore,
       missionsCompleted: Math.max(totalMissions, minMissions),
-      memberCount: teamMembers.length || 8,
+      memberCount: teamMembers.length,
       totalMissions: 2,
       lastActivity: new Date(),
       status: 'active' as const,
