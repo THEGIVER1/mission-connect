@@ -529,12 +529,14 @@ const AdminScreen: React.FC = () => {
 
     try {
       setIsLoading(true);
+      const resetTimestamp = Date.now();
       await fetch(`${dbUrl}/sessions/trekking2026.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           participants: {},
           peopleQuest: {},
+          lastResetAt: resetTimestamp,
           broadcastNotice: { active: false, message: '', timestamp: new Date().toISOString() },
         }),
       });

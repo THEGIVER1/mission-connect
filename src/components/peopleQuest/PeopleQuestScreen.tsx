@@ -41,6 +41,8 @@ const PeopleQuestScreen: React.FC = () => {
     updateTeamScore,
     setPeopleQuestSubmitted,
     syncSessionData,
+    lastResetAt,
+    resetLocalProgress,
   } = useAppStore();
 
   const [recommendation, setRecommendation] = useState<UnifiedRecommendation>({
@@ -81,24 +83,53 @@ const PeopleQuestScreen: React.FC = () => {
     // 1) REST 즉시 조회
     const fetchPQ = async () => {
       try {
-        const res = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`);
+        const sessionRes = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData && sessionData.lastResetAt && (!lastResetAt || sessionData.lastResetAt > lastResetAt)) {
+            resetLocalProgress(sessionData.lastResetAt);
+            setIsSubmitted(false);
+            setSubmittedData(null);
+            setPeopleQuestSubmitted(false);
+            setRecommendation({
+              recommendedPersonId: '',
+              recommendedPersonName: '',
+              recommendedPersonCompany: '',
+              selectedTopic: TOPIC_OPTIONS[0],
+              reason: '',
+            });
+            return;
+          }
+        }
+
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json?t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
-          if (data) {
-            if (data.status === 'submitted') {
-              setIsSubmitted(true);
-              setSubmittedData(data);
-              setPeopleQuestSubmitted(true);
-            } else {
-              setIsSubmitted(false);
-            }
+          if (data && data.status === 'submitted') {
+            setIsSubmitted(true);
+            setSubmittedData(data);
+            setPeopleQuestSubmitted(true);
             if (data.recommendation) {
               setRecommendation(prev => ({
                 ...prev,
                 ...data.recommendation,
               }));
             }
+          } else {
+            setIsSubmitted(false);
+            setSubmittedData(null);
+            setPeopleQuestSubmitted(false);
+            if (data?.recommendation) {
+              setRecommendation(prev => ({
+                ...prev,
+                ...data.recommendation,
+              }));
+            }
           }
+        } else {
+          setIsSubmitted(false);
+          setSubmittedData(null);
+          setPeopleQuestSubmitted(false);
         }
       } catch (err) {
         console.warn('REST PQ 조회 경고:', err);
@@ -112,6 +143,8 @@ const PeopleQuestScreen: React.FC = () => {
           const data = await res.json();
           if (data && typeof data === 'object') {
             setRealParticipants(Object.values(data));
+          } else {
+            setRealParticipants([]);
           }
         }
       } catch (err) {
@@ -130,21 +163,31 @@ const PeopleQuestScreen: React.FC = () => {
         (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
-            if (data) {
-              if (data.status === 'submitted') {
-                setIsSubmitted(true);
-                setSubmittedData(data);
-                setPeopleQuestSubmitted(true);
-              } else {
-                setIsSubmitted(false);
-              }
+            if (data && data.status === 'submitted') {
+              setIsSubmitted(true);
+              setSubmittedData(data);
+              setPeopleQuestSubmitted(true);
               if (data.recommendation) {
                 setRecommendation(prev => ({
                   ...prev,
                   ...data.recommendation,
                 }));
               }
+            } else {
+              setIsSubmitted(false);
+              setSubmittedData(null);
+              setPeopleQuestSubmitted(false);
+              if (data?.recommendation) {
+                setRecommendation(prev => ({
+                  ...prev,
+                  ...data.recommendation,
+                }));
+              }
             }
+          } else {
+            setIsSubmitted(false);
+            setSubmittedData(null);
+            setPeopleQuestSubmitted(false);
           }
         },
         (error) => {
@@ -160,7 +203,11 @@ const PeopleQuestScreen: React.FC = () => {
             const data = snapshot.val();
             if (data && typeof data === 'object') {
               setRealParticipants(Object.values(data));
+            } else {
+              setRealParticipants([]);
             }
+          } else {
+            setRealParticipants([]);
           }
         },
         (error) => {
@@ -175,7 +222,7 @@ const PeopleQuestScreen: React.FC = () => {
     } catch (e) {
       console.warn('Firebase 리스너 연결 경고:', e);
     }
-  }, [myTeam?.id, dbUrl]);
+  }, [myTeam?.id, dbUrl, lastResetAt, resetLocalProgress]);
 
   // 2. 추천 대상자 검색 및 필터링 (본인 제외, 실제 접속 참가자 통합)
   const availablePeople = useMemo(() => {

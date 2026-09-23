@@ -490,6 +490,8 @@ const Leaderboard: React.FC = () => {
   const participantCompany = useAppStore((s) => s.participantCompany);
   const answeredQuizIds = useAppStore((s) => s.answeredQuizIds || []);
   const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
+  const lastResetAt = useAppStore((s) => s.lastResetAt);
+  const resetLocalProgress = useAppStore((s) => s.resetLocalProgress);
   const syncSessionData = useAppStore((s) => s.syncSessionData);
   const myTeamId = myTeam?.id ?? '';
 
@@ -497,7 +499,9 @@ const Leaderboard: React.FC = () => {
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  // 1. 실시간 개인 순위표(50명) 및 6개 조 랭킹 통합 계산
+  const isMyTeamPqSubmitted = !!(myTeamId && peopleQuestsData[myTeamId]?.status === 'submitted');
+
+  // 1. 실시간 개인 순위표(전체 참가자) 및 6개 조 랭킹 통합 계산
   const { individuals, teams: computedTeams } = useMemo(() => {
     return calculateLeaderboardData(
       participantsData,
@@ -507,7 +511,7 @@ const Leaderboard: React.FC = () => {
         company: participantCompany,
         teamId: myTeamId || null,
         answeredQuizIds,
-        isPeopleQuestSubmitted,
+        isPeopleQuestSubmitted: isMyTeamPqSubmitted,
       }
     );
   }, [
@@ -517,7 +521,7 @@ const Leaderboard: React.FC = () => {
     participantCompany,
     myTeamId,
     answeredQuizIds,
-    isPeopleQuestSubmitted,
+    isMyTeamPqSubmitted,
   ]);
 
   // Zustand 스토어 동기화
@@ -533,8 +537,14 @@ const Leaderboard: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object') {
+            if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
+              resetLocalProgress(data.lastResetAt);
+            }
             setParticipantsData(data.participants || {});
             setPeopleQuestsData(data.peopleQuest || {});
+          } else {
+            setParticipantsData({});
+            setPeopleQuestsData({});
           }
         }
       } catch (err) {
@@ -551,11 +561,21 @@ const Leaderboard: React.FC = () => {
       unsubscribe = onValue(
         sessionRef,
         (snapshot) => {
-          if (!snapshot.exists()) return;
+          if (!snapshot.exists()) {
+            setParticipantsData({});
+            setPeopleQuestsData({});
+            return;
+          }
           const data = snapshot.val();
           if (data && typeof data === 'object') {
+            if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
+              resetLocalProgress(data.lastResetAt);
+            }
             setParticipantsData(data.participants || {});
             setPeopleQuestsData(data.peopleQuest || {});
+          } else {
+            setParticipantsData({});
+            setPeopleQuestsData({});
           }
         },
         (error) => {
@@ -570,7 +590,7 @@ const Leaderboard: React.FC = () => {
       clearInterval(pollInterval);
       unsubscribe();
     };
-  }, [dbUrl]);
+  }, [dbUrl, lastResetAt, resetLocalProgress]);
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'team',       label: '팀 순위'   },

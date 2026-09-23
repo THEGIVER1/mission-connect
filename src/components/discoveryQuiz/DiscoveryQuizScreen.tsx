@@ -42,8 +42,11 @@ const DiscoveryQuizScreen: React.FC = () => {
     selectedCourse,
     updateTeamScore,
     addAnsweredQuiz,
+    setAnsweredQuizIds,
     syncSessionData,
     isPeopleQuestSubmitted,
+    lastResetAt,
+    resetLocalProgress,
   } = useAppStore();
 
   const activeCourse = selectedCourse;
@@ -87,16 +90,33 @@ const DiscoveryQuizScreen: React.FC = () => {
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  // 1. Firebase에서 내가 이미 푼 퀴즈 결과 불러오기
+  // 1. Firebase에서 내가 이미 푼 퀴즈 결과 불러오기 (세션 리셋 및 실시간 리스너 연동)
   useEffect(() => {
-    const fetchMyQuizzes = async () => {
+    const fetchSessionAndMyQuizzes = async () => {
       try {
-        const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/quizzes.json`);
+        const sessionRes = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData && sessionData.lastResetAt && (!lastResetAt || sessionData.lastResetAt > lastResetAt)) {
+            resetLocalProgress(sessionData.lastResetAt);
+            setQuizResults({});
+            setAnsweredQuizIds([]);
+            setSelectedOption(null);
+            setHasSubmittedAnswer(false);
+            setUnlockedQuizzes({});
+            return;
+          }
+        }
+
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/quizzes.json?t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
-          if (data && typeof data === 'object') {
+          if (data && typeof data === 'object' && Object.keys(data).length > 0) {
             setQuizResults(data);
-            Object.keys(data).forEach(qId => addAnsweredQuiz(qId));
+            setAnsweredQuizIds(Object.keys(data));
+          } else {
+            setQuizResults({});
+            setAnsweredQuizIds([]);
           }
         }
       } catch (err) {
@@ -104,8 +124,32 @@ const DiscoveryQuizScreen: React.FC = () => {
       }
     };
 
-    fetchMyQuizzes();
-  }, [participantId, dbUrl]);
+    fetchSessionAndMyQuizzes();
+
+    let unsubscribe = () => {};
+    try {
+      const qRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}/quizzes`);
+      unsubscribe = onValue(qRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.val();
+          if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+            setQuizResults(data);
+            setAnsweredQuizIds(Object.keys(data));
+          } else {
+            setQuizResults({});
+            setAnsweredQuizIds([]);
+          }
+        } else {
+          setQuizResults({});
+          setAnsweredQuizIds([]);
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      unsubscribe();
+    };
+  }, [participantId, dbUrl, lastResetAt, resetLocalProgress, setAnsweredQuizIds]);
 
   // 2. 현재 퀴즈 전환 시 이전 풀이 상태 복원
   useEffect(() => {

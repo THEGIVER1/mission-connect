@@ -31,10 +31,13 @@ interface AppStore extends AppState {
   // ── CHRO 2대 액티비티 상태 ──
   peopleQuestDraft:           Record<string, PeopleQuestRecItem>;
   isPeopleQuestSubmitted:     boolean;
+  lastResetAt:                number | null;
   setPeopleQuestDraft:        (questionId: string, rec: PeopleQuestRecItem) => void;
   setPeopleQuestSubmitted:    (submitted: boolean) => void;
   answeredQuizIds:            string[];
   addAnsweredQuiz:            (quizId: string) => void;
+  setAnsweredQuizIds:         (ids: string[]) => void;
+  resetLocalProgress:         (resetTimestamp?: number) => void;
   syncSessionData:            (data: {
     teams?: Team[];
     myTeamScore?: number;
@@ -64,6 +67,7 @@ export const useAppStore = create<AppStore>()(
       // CHRO 액티비티
       peopleQuestDraft: {},
       isPeopleQuestSubmitted: false,
+      lastResetAt: null,
       setPeopleQuestDraft: (questionId, rec) =>
         set((s) => ({
           peopleQuestDraft: { ...(s.peopleQuestDraft || {}), [questionId]: rec },
@@ -77,6 +81,22 @@ export const useAppStore = create<AppStore>()(
             ? (s.answeredQuizIds || [])
             : [...(s.answeredQuizIds || []), quizId],
         })),
+      setAnsweredQuizIds: (ids) => set({ answeredQuizIds: ids }),
+
+      resetLocalProgress: (resetTimestamp) => {
+        set((s) => ({
+          answeredQuizIds: [],
+          isPeopleQuestSubmitted: false,
+          peopleQuestDraft: {},
+          lastResetAt: resetTimestamp ?? Date.now(),
+          myTeam: s.myTeam ? { ...s.myTeam, score: 0, missionsCompleted: 0 } : null,
+          teams: (s.teams || MOCK_TEAMS).map(t => ({ ...t, score: 0, missionsCompleted: 0 })),
+        }));
+        try {
+          sessionStorage.removeItem('discovery_unlocked_quizzes');
+          sessionStorage.removeItem('discovery_gps_bypassed');
+        } catch (e) {}
+      },
 
       syncSessionData: (data) =>
         set((s) => {
@@ -231,6 +251,7 @@ export const useAppStore = create<AppStore>()(
         peopleQuestDraft: state.peopleQuestDraft,
         isPeopleQuestSubmitted: state.isPeopleQuestSubmitted,
         answeredQuizIds: state.answeredQuizIds,
+        lastResetAt: state.lastResetAt,
       }),
     }
   )

@@ -268,6 +268,10 @@ const Dashboard: React.FC = () => {
     isPeopleQuestSubmitted,
     answeredQuizIds,
     syncSessionData,
+    lastResetAt,
+    resetLocalProgress,
+    setAnsweredQuizIds,
+    setPeopleQuestSubmitted,
   } = useAppStore();
 
   const [liveTeamScore, setLiveTeamScore] = useState<number>(myTeam?.score ?? 0);
@@ -293,27 +297,22 @@ const Dashboard: React.FC = () => {
   const processSessionData = (data: any) => {
     if (!data || typeof data !== 'object') return;
 
-    const participants = data.participants || {};
-    const quests = data.peopleQuest || {};
+    // 0) 관리자 데이터 리셋 감지 시 로컬 캐시 즉시 소거
+    if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
+      resetLocalProgress(data.lastResetAt);
+    }
 
-    // 1) People Quest 상태
-    const isTeamPqSubmitted = quests[teamId]?.status === 'submitted' || isPeopleQuestSubmitted;
+    const participants = (data.participants && typeof data.participants === 'object') ? data.participants : {};
+    const quests = (data.peopleQuest && typeof data.peopleQuest === 'object') ? data.peopleQuest : {};
+
+    // 1) People Quest 상태: RTDB 상태를 단일 진실 공급원으로 바인딩
+    const isTeamPqSubmitted = quests[teamId]?.status === 'submitted';
     setPqSubmitted(isTeamPqSubmitted);
+    if (!isTeamPqSubmitted && isPeopleQuestSubmitted) {
+      setPeopleQuestSubmitted(false);
+    }
 
-    // 2) 통합 점수 계산기 실행 (전체 50명 & 6개 조 실시간 연동)
-    const { individuals, teams } = calculateLeaderboardData(
-      participants,
-      quests,
-      {
-        name: participantName,
-        company: participantCompany,
-        teamId,
-        answeredQuizIds,
-        isPeopleQuestSubmitted,
-      }
-    );
-
-    // 3) 내 개인 점수 및 푼 퀴즈 수 실시간 바인딩
+    // 2) 내 개인 RTDB 참가자 레코드 확인 및 퀴즈 목록 동기화
     let myP = participants[participantId];
     if (!myP && participantName) {
       const trimmedName = participantName.trim();
@@ -331,11 +330,32 @@ const Dashboard: React.FC = () => {
       });
     }
 
+    if (!myP?.quizzes || Object.keys(myP.quizzes).length === 0) {
+      if (answeredQuizIds.length > 0) {
+        setAnsweredQuizIds([]);
+      }
+    } else if (answeredIds.length !== answeredQuizIds.length) {
+      setAnsweredQuizIds(answeredIds);
+    }
+
+    // 3) 통합 점수 계산기 실행 (전체 조 및 참여자 동시 계산)
+    const { individuals, teams } = calculateLeaderboardData(
+      participants,
+      quests,
+      {
+        name: participantName,
+        company: participantCompany,
+        teamId,
+        answeredQuizIds: answeredIds,
+        isPeopleQuestSubmitted: isTeamPqSubmitted,
+      }
+    );
+
     const myInd = individuals.find(ind => ind.name.trim() === (participantName || '').trim());
-    const personalTotal = myInd ? myInd.pts : (answeredQuizIds?.length ?? 0) * 100 + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+    const personalTotal = myInd ? myInd.pts : (answeredIds.length * 100) + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
 
     setLivePersonalScore(personalTotal);
-    setAnsweredQuizCount(Math.max(pQuizCount, answeredQuizIds?.length ?? 0));
+    setAnsweredQuizCount(pQuizCount);
 
     // 4) 내 조 실시간 점수 & 순위 바인딩
     const highest = Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
@@ -351,7 +371,7 @@ const Dashboard: React.FC = () => {
         myTeamScore: myRankObj.score,
         myTeamRank: myRankObj.rank,
         myTeamMissionsCompleted: myRankObj.missionsCompleted,
-        answeredQuizIds: answeredIds.length > 0 ? answeredIds : undefined,
+        answeredQuizIds: answeredIds,
         isPeopleQuestSubmitted: isTeamPqSubmitted,
       });
     }

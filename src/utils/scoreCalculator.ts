@@ -98,14 +98,13 @@ export function calculateLeaderboardData(
     const targetTeamId = p.teamId || existing.teamId;
     const isTeamPqDone =
       peopleQuestsData[targetTeamId]?.status === 'submitted' ||
-      p.peopleQuestCompleted ||
       (targetTeamId === myTeamId && !!isMyTeamPqSubmitted);
 
     const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
     const pqMissions = isTeamPqDone ? 1 : 0;
 
-    const totalPts = Math.max(Number(p.score ?? 0), quizPoints + pqPoints);
-    const totalMissions = Math.max(Number(p.missionsCompleted ?? 0), quizMissions + pqMissions);
+    const totalPts = quizPoints + pqPoints;
+    const totalMissions = quizMissions + pqMissions;
 
     listMap.set(trimmedName, {
       ...existing,
