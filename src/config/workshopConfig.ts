@@ -116,7 +116,7 @@ export const MY_INFO_QUESTIONS: MyInfoQuestion[] = [
 // ─────────────────────────────────────────────────────────────────
 export const PEOPLE_QUEST_MISSION_TITLE = "우리 조가 발견한 '최고의 스토리 동료' 추천";
 export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들과 7가지 주제(취미, 버킷리스트, 성장 경험 등)에 대해 자유롭게 대화해 보세요. 대화 중 가장 인상 깊었던 동료 1명을 선택하고 나누었던 스토리를 작성해 주세요. (저녁 퀴즈 및 네트워킹에 활용됩니다)";
-export const PEOPLE_QUEST_POINTS_PER_MEMBER = 200; // 배점 변경 시 이 값만 수정하면 전역 연동
+export const PEOPLE_QUEST_POINTS_PER_MEMBER = 100; // 배점 변경 시 이 값만 수정하면 전역 연동 (조원당 100pt)
 
 // ─────────────────────────────────────────────────────────────────
 // 5. Activity 2: Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개)
