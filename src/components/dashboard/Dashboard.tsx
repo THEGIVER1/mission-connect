@@ -274,16 +274,7 @@ const Dashboard: React.FC = () => {
     setPeopleQuestSubmitted,
   } = useAppStore();
 
-  const [liveTeamScore, setLiveTeamScore] = useState<number>(myTeam?.score ?? 0);
-  const [liveTeamRank, setLiveTeamRank] = useState<number>(myTeam?.rank ?? 1);
-  const [livePersonalScore, setLivePersonalScore] = useState<number>(() => {
-    const quizPts = (answeredQuizIds?.length ?? 0) * 100;
-    const pqPts = isPeopleQuestSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-    return quizPts + pqPts;
-  });
-  const [maxScore, setMaxScore] = useState<number>(100);
-  const [pqSubmitted, setPqSubmitted] = useState<boolean>(isPeopleQuestSubmitted || false);
-  const [answeredQuizCount, setAnsweredQuizCount] = useState<number>(answeredQuizIds?.length ?? 0);
+  const [rawSessionData, setRawSessionData] = useState<any>({});
 
   const teamId = myTeam?.id ?? 'team1';
   const participantId = participantName && participantCompany
@@ -294,97 +285,112 @@ const Dashboard: React.FC = () => {
   const totalQuizCount = activeCourseQuizzes.length;
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  const processSessionData = (data: any) => {
-    if (!data || typeof data !== 'object') return;
+  // 1. RTDB 데이터를 단일 진실 공급원(Single Source of Truth)으로 삼는 100% 통합 점수 계산
+  const { individuals, teams } = useMemo(() => {
+    const participants = (rawSessionData?.participants && typeof rawSessionData.participants === 'object')
+      ? rawSessionData.participants
+      : {};
+    const quests = (rawSessionData?.peopleQuest && typeof rawSessionData.peopleQuest === 'object')
+      ? rawSessionData.peopleQuest
+      : {};
 
-    // 0) 관리자 데이터 리셋 감지 시 로컬 캐시 즉시 소거
-    if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
-      resetLocalProgress(data.lastResetAt);
-    }
-
-    const participants = (data.participants && typeof data.participants === 'object') ? data.participants : {};
-    const quests = (data.peopleQuest && typeof data.peopleQuest === 'object') ? data.peopleQuest : {};
-
-    // 1) People Quest 상태: RTDB 상태를 단일 진실 공급원으로 바인딩
-    const isTeamPqSubmitted = quests[teamId]?.status === 'submitted';
-    setPqSubmitted(isTeamPqSubmitted);
-    if (!isTeamPqSubmitted && isPeopleQuestSubmitted) {
-      setPeopleQuestSubmitted(false);
-    }
-
-    // 2) 내 개인 RTDB 참가자 레코드 확인 및 퀴즈 목록 동기화
-    let myP = participants[participantId];
-    if (!myP && participantName) {
-      const trimmedName = participantName.trim();
-      myP = Object.values(participants).find((p: any) => (p?.name || '').trim() === trimmedName);
-    }
-
-    const answeredIds: string[] = [];
-    let pQuizCount = 0;
-    if (myP?.quizzes && typeof myP.quizzes === 'object') {
-      Object.entries(myP.quizzes).forEach(([qId, q]: [string, any]) => {
-        if (q.isCorrect || q.pointsEarned !== undefined) {
-          pQuizCount += 1;
-          answeredIds.push(qId);
-        }
-      });
-    }
-
-    if (!myP?.quizzes || Object.keys(myP.quizzes).length === 0) {
-      if (answeredQuizIds.length > 0) {
-        setAnsweredQuizIds([]);
-      }
-    } else if (answeredIds.length !== answeredQuizIds.length) {
-      setAnsweredQuizIds(answeredIds);
-    }
-
-    // 3) 통합 점수 계산기 실행 (전체 조 및 참여자 동시 계산)
-    const { individuals, teams } = calculateLeaderboardData(
+    return calculateLeaderboardData(
       participants,
       quests,
       {
         name: participantName,
         company: participantCompany,
         teamId,
-        answeredQuizIds: answeredIds,
-        isPeopleQuestSubmitted: isTeamPqSubmitted,
+        answeredQuizIds,
+        isPeopleQuestSubmitted,
       }
     );
+  }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 
-    const myInd = individuals.find(ind => ind.name.trim() === (participantName || '').trim());
-    const personalTotal = myInd ? myInd.pts : (answeredIds.length * 100) + (isTeamPqSubmitted ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
+  // 2. 파생 점수 및 상태 산출 (내 조 점수, 순위, 내 기여 점수)
+  const myRankObj = useMemo(() => {
+    return teams.find(t => t.id === teamId) || teams[0];
+  }, [teams, teamId]);
 
-    setLivePersonalScore(personalTotal);
-    setAnsweredQuizCount(pQuizCount);
+  const myIndividual = useMemo(() => {
+    if (!participantName) return null;
+    const trimmed = participantName.trim();
+    return individuals.find(ind => ind.name.trim() === trimmed) || null;
+  }, [individuals, participantName]);
 
-    // 4) 내 조 실시간 점수 & 순위 바인딩
-    const highest = Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
-    setMaxScore(highest);
+  const teamScore = myRankObj ? myRankObj.score : 0;
+  const teamRank = myRankObj ? myRankObj.rank : 1;
+  const personalScore = myIndividual ? myIndividual.pts : 0;
 
-    const myRankObj = teams.find(r => r.id === teamId);
-    if (myRankObj) {
-      setLiveTeamScore(myRankObj.score);
-      setLiveTeamRank(myRankObj.rank);
-      updateTeamScore(teamId, myRankObj.score);
-      syncSessionData({
-        teams,
-        myTeamScore: myRankObj.score,
-        myTeamRank: myRankObj.rank,
-        myTeamMissionsCompleted: myRankObj.missionsCompleted,
-        answeredQuizIds: answeredIds,
-        isPeopleQuestSubmitted: isTeamPqSubmitted,
-      });
+  const pqSubmitted = useMemo(() => {
+    const quests = rawSessionData?.peopleQuest || {};
+    return quests[teamId]?.status === 'submitted' || false;
+  }, [rawSessionData, teamId]);
+
+  const answeredQuizCount = useMemo(() => {
+    if (!myIndividual) return 0;
+    return Math.max(0, myIndividual.missions - (pqSubmitted ? 1 : 0));
+  }, [myIndividual, pqSubmitted]);
+
+  const maxScore = useMemo(() => {
+    return Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
+  }, [teams, selectedCourse]);
+
+  // 3. RTDB 데이터 수신 및 세션 리셋 감지 처리
+  const processSessionData = (data: any) => {
+    if (!data || typeof data !== 'object') {
+      setRawSessionData({});
+      return;
     }
+
+    // 관리자 데이터 리셋 감지 시 로컬 캐시 즉시 소거
+    if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
+      resetLocalProgress(data.lastResetAt);
+    }
+
+    // 서버에 내 퀴즈 기록이 없으면 로컬 answeredQuizIds도 즉시 0으로 소거
+    const myP = data.participants?.[participantId] ||
+      (participantName ? Object.values(data.participants || {}).find((p: any) => (p?.name || '').trim() === participantName.trim()) : null);
+
+    if (!myP || !myP.quizzes || Object.keys(myP.quizzes).length === 0) {
+      if (answeredQuizIds.length > 0) {
+        setAnsweredQuizIds([]);
+      }
+    }
+
+    // 피플 퀘스트 제출 해제 감지 시 로컬 제출 플래그도 동기화 해제
+    const isTeamPqSubmitted = data.peopleQuest?.[teamId]?.status === 'submitted';
+    if (!isTeamPqSubmitted && isPeopleQuestSubmitted) {
+      setPeopleQuestSubmitted(false);
+    }
+
+    setRawSessionData(data);
   };
 
+  // 4. 스토어 동기화
   useEffect(() => {
-    // 1) REST 즉시 호출 (빠른 0ms 복원)
+    if (myRankObj) {
+      updateTeamScore(teamId, teamScore);
+      syncSessionData({
+        teams,
+        myTeamScore: teamScore,
+        myTeamRank: teamRank,
+        myTeamMissionsCompleted: myRankObj.missionsCompleted,
+        isPeopleQuestSubmitted: pqSubmitted,
+      });
+    }
+  }, [teams, teamScore, teamRank, myRankObj, pqSubmitted, teamId, updateTeamScore, syncSessionData]);
+
+  // 5. Dual-Channel 실시간 데이터 로드 (REST 2.5s Polling + WebSocket)
+  useEffect(() => {
     const fetchSessionData = async () => {
       try {
         const res = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           processSessionData(data);
+        } else {
+          processSessionData({});
         }
       } catch (err) {
         console.warn('대시보드 REST 폴링 경고:', err);
@@ -392,18 +398,18 @@ const Dashboard: React.FC = () => {
     };
 
     fetchSessionData();
-
-    // 2) 2.5초 주기 REST 폴링 백업 (모바일 네트워크 전환 안정화)
     const pollInterval = setInterval(fetchSessionData, 2500);
 
-    // 3) Firebase SDK WebSocket 실시간 리스너
     let unsubscribe = () => {};
     try {
       const sessionRef = ref(rtdb, 'sessions/trekking2026');
       unsubscribe = onValue(
         sessionRef,
         (snapshot) => {
-          if (!snapshot.exists()) return;
+          if (!snapshot.exists()) {
+            processSessionData({});
+            return;
+          }
           const data = snapshot.val();
           processSessionData(data);
         },
@@ -419,15 +425,15 @@ const Dashboard: React.FC = () => {
       clearInterval(pollInterval);
       unsubscribe();
     };
-  }, [teamId, participantId, selectedCourse, participantName, isPeopleQuestSubmitted]);
+  }, [teamId, participantId, dbUrl, lastResetAt]);
 
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
       <Header />
       <ScoreCard
-        teamScore={liveTeamScore}
-        teamRank={liveTeamRank}
-        personalScore={livePersonalScore}
+        teamScore={teamScore}
+        teamRank={teamRank}
+        personalScore={personalScore}
         maxScore={maxScore}
       />
       <ActivitySection

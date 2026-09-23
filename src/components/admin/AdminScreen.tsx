@@ -534,9 +534,8 @@ const AdminScreen: React.FC = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          participants: {},
-          peopleQuest: {},
           lastResetAt: resetTimestamp,
+          resetVersion: resetTimestamp,
           broadcastNotice: { active: false, message: '', timestamp: new Date().toISOString() },
         }),
       });

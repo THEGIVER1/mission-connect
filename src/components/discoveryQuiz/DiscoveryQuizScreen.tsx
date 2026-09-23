@@ -8,6 +8,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   getCourseQuizTotalPoints,
 } from '../../config/workshopConfig';
+import { normalizeTeamId } from '../../utils/scoreCalculator';
 import { DiscoveryQuizItem } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
 import { ref, get, set, update } from 'firebase/database';
@@ -288,7 +289,7 @@ const DiscoveryQuizScreen: React.FC = () => {
         body: JSON.stringify({
           name: participantName?.trim() || '',
           company: participantCompany || '',
-          teamId: myTeam?.id || 'team1',
+          teamId: normalizeTeamId(myTeam?.id),
           teamName: myTeam?.name || '1조',
           course: selectedCourse,
           score: totalPersonalScore,
@@ -309,7 +310,7 @@ const DiscoveryQuizScreen: React.FC = () => {
       await update(pRef, {
         name: participantName?.trim() || '',
         company: participantCompany || '',
-        teamId: myTeam?.id || 'team1',
+        teamId: normalizeTeamId(myTeam?.id),
         teamName: myTeam?.name || '1조',
         course: selectedCourse,
         score: totalPersonalScore,

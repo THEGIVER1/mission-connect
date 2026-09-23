@@ -126,8 +126,8 @@ const TeamSelect: React.FC = () => {
       const isPqDone = existing?.peopleQuestCompleted || false;
       const computedScore = quizEarned + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
       const computedCompleted = quizCount + (isPqDone ? 1 : 0);
-      const initialScore = Math.max(Number(existing?.score ?? 0), computedScore);
-      const initialCompleted = Math.max(Number(existing?.missionsCompleted ?? 0), computedCompleted);
+      const initialScore = computedScore;
+      const initialCompleted = computedCompleted;
 
       const payload = {
         name: name.trim(),
