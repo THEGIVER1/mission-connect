@@ -8,8 +8,13 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   EMERGENCY_GPS_BYPASS_CODE,
 } from '../../config/workshopConfig';
-import { calculateLeaderboardData } from '../../utils/scoreCalculator';
-import { onValue, ref } from 'firebase/database';
+import {
+  calculateLeaderboardData,
+  normalizeTeamId,
+  isPqSubmittedForTeam,
+  getPqForTeam,
+} from '../../utils/scoreCalculator';
+import { onValue, ref, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import { fireConfetti } from '../../lib/confetti';
 
@@ -440,15 +445,39 @@ const AdminScreen: React.FC = () => {
 
   // 3. 조별 People Quest 제출 해제
   const handleResetPeopleQuest = async (teamId: string) => {
+    const normTeamId = normalizeTeamId(teamId);
     if (!window.confirm(`[${teamId}]의 People Quest 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
       return;
     }
     try {
-      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json`, {
+      // 1) REST
+      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${normTeamId}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'draft' }),
       });
+
+      // 2) SDK
+      try {
+        const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${normTeamId}`);
+        await update(pqRef, { status: 'draft' });
+      } catch (sdkErr) {}
+
+      // 3) 해당 조 참가자들의 peopleQuestCompleted 플래그도 false로 해제
+      Object.entries(rawParticipantsMap).forEach(async ([pKey, pVal]: [string, any]) => {
+        if (normalizeTeamId(pVal?.teamId) === normTeamId) {
+          try {
+            await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pKey)}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ peopleQuestCompleted: false }),
+            });
+            const pRef = ref(rtdb, `sessions/trekking2026/participants/${pKey}`);
+            await update(pRef, { peopleQuestCompleted: false });
+          } catch (err) {}
+        }
+      });
+
       fetchData();
       alert('제출이 해제되었습니다.');
     } catch (e) {
@@ -1821,8 +1850,8 @@ const AdminScreen: React.FC = () => {
 
             <div className="space-y-2.5">
               {WORKSHOP_TEAMS.map(team => {
-                const pq = peopleQuests[team.id];
-                const isSubmitted = pq?.status === 'submitted';
+                const pq = getPqForTeam(team.id, peopleQuests);
+                const isSubmitted = isPqSubmittedForTeam(team.id, peopleQuests);
                 const rec = pq?.recommendation;
 
                 return (

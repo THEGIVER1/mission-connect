@@ -10,7 +10,13 @@ import {
   DISCOVERY_QUIZZES,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
 } from '../../config/workshopConfig';
-import { calculateLeaderboardData, IndividualItem } from '../../utils/scoreCalculator';
+import {
+  calculateLeaderboardData,
+  IndividualItem,
+  normalizeTeamId,
+  isPqSubmittedForTeam,
+  getPqForTeam,
+} from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
 type TabKey = 'team' | 'mission' | 'individual';
@@ -214,8 +220,8 @@ const MissionTab: React.FC<{
   // People Quest 제출 완료 팀 수
   const pqCompletedTeams = useMemo(() => {
     return WORKSHOP_TEAMS.filter(t => {
-      const isSub = peopleQuests[t.id]?.status === 'submitted';
-      const isMyTeamSub = t.id === myTeam?.id && isPeopleQuestSubmitted;
+      const isSub = isPqSubmittedForTeam(t.id, peopleQuests);
+      const isMyTeamSub = t.id === normalizeTeamId(myTeam?.id) && isPeopleQuestSubmitted;
       return isSub || isMyTeamSub;
     });
   }, [peopleQuests, myTeam?.id, isPeopleQuestSubmitted]);
@@ -299,9 +305,9 @@ const MissionTab: React.FC<{
         {/* 조별 현황 뱃지 (6개 조) */}
         <div className="grid grid-cols-2 gap-2 pt-1">
           {WORKSHOP_TEAMS.map(team => {
-            const pq = peopleQuests[team.id];
-            const isMyTeam = team.id === myTeam?.id;
-            const isSubmitted = pq?.status === 'submitted' || (isMyTeam && isPeopleQuestSubmitted);
+            const pq = getPqForTeam(team.id, peopleQuests);
+            const isMyTeam = team.id === normalizeTeamId(myTeam?.id);
+            const isSubmitted = isPqSubmittedForTeam(team.id, peopleQuests) || (isMyTeam && isPeopleQuestSubmitted);
             const isDraft = pq?.status === 'draft';
             const recName = pq?.recommendation?.recommendedPersonName;
             const topic = pq?.recommendation?.selectedTopic;
@@ -493,13 +499,15 @@ const Leaderboard: React.FC = () => {
   const lastResetAt = useAppStore((s) => s.lastResetAt);
   const resetLocalProgress = useAppStore((s) => s.resetLocalProgress);
   const syncSessionData = useAppStore((s) => s.syncSessionData);
-  const myTeamId = myTeam?.id ?? '';
+  const myTeamId = normalizeTeamId(myTeam?.id);
 
   const [participantsData, setParticipantsData] = useState<Record<string, any>>({});
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
-  const isMyTeamPqSubmitted = !!(myTeamId && peopleQuestsData[myTeamId]?.status === 'submitted');
+  const isMyTeamPqSubmitted = useMemo(() => {
+    return isPqSubmittedForTeam(myTeamId, peopleQuestsData) || isPeopleQuestSubmitted;
+  }, [myTeamId, peopleQuestsData, isPeopleQuestSubmitted]);
 
   // 1. 실시간 개인 순위표(전체 참가자) 및 6개 조 랭킹 통합 계산
   const { individuals, teams: computedTeams } = useMemo(() => {

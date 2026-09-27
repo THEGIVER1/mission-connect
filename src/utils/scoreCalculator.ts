@@ -45,6 +45,61 @@ export function normalizeTeamId(raw: string | undefined | null): string {
 }
 
 /**
+ * 특정 조의 People Quest가 제출 완료(submitted)되었는지 안전하게 판별
+ * - teamId ('team1', '1조', etc.)
+ * - peopleQuestsData 객체의 키를 normalizeTeamId로 전수 검사
+ * - val.teamId 또는 val.teamName이 일치하고 val.status === 'submitted' 인 경우도 지원
+ */
+export function isPqSubmittedForTeam(
+  teamId: string | undefined | null,
+  peopleQuestsData: Record<string, any> = {}
+): boolean {
+  if (!teamId || !peopleQuestsData || typeof peopleQuestsData !== 'object') return false;
+  const targetNorm = normalizeTeamId(teamId);
+
+  // 1. 직접 키 조회 (정규화 키 및 원본 키)
+  if (peopleQuestsData[targetNorm]?.status === 'submitted') return true;
+  if (peopleQuestsData[teamId]?.status === 'submitted') return true;
+
+  // 2. 전체 entries 순회하여 키 정규화 및 내부 teamId 필드 검사
+  for (const [key, val] of Object.entries(peopleQuestsData)) {
+    if (!val || typeof val !== 'object') continue;
+    if (val.status === 'submitted') {
+      if (normalizeTeamId(key) === targetNorm) return true;
+      if (val.teamId && normalizeTeamId(val.teamId) === targetNorm) return true;
+      if (val.teamName && normalizeTeamId(val.teamName) === targetNorm) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * 특정 조의 People Quest 데이터를 안전하게 획득
+ */
+export function getPqForTeam(
+  teamId: string | undefined | null,
+  peopleQuestsData: Record<string, any> = {}
+): any | null {
+  if (!teamId || !peopleQuestsData || typeof peopleQuestsData !== 'object') return null;
+  const targetNorm = normalizeTeamId(teamId);
+
+  if (peopleQuestsData[targetNorm]) return peopleQuestsData[targetNorm];
+  if (peopleQuestsData[teamId]) return peopleQuestsData[teamId];
+
+  for (const [key, val] of Object.entries(peopleQuestsData)) {
+    if (!val || typeof val !== 'object') continue;
+    if (
+      normalizeTeamId(key) === targetNorm ||
+      (val.teamId && normalizeTeamId(val.teamId) === targetNorm) ||
+      (val.teamName && normalizeTeamId(val.teamName) === targetNorm)
+    ) {
+      return val;
+    }
+  }
+  return null;
+}
+
+/**
  * 대시보드, 실시간 순위(리더보드), 관리자 화면 모두에 100% 동일한 점수를 보장하는 통합 계산 엔진
  *
  * [점수 규칙]
@@ -66,7 +121,7 @@ export function calculateLeaderboardData(
   // 1. 사전 등록 명단이 있을 경우 초기화 (동적 모드에서는 빈 배열)
   PRE_REGISTERED_PARTICIPANTS.forEach((p, i) => {
     const pTeamId = normalizeTeamId(p.teamId);
-    const isTeamPqDone = peopleQuestsData[pTeamId]?.status === 'submitted';
+    const isTeamPqDone = isPqSubmittedForTeam(pTeamId, peopleQuestsData) || (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
     const basePqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
     const basePqMissions = isTeamPqDone ? 1 : 0;
 
@@ -106,7 +161,12 @@ export function calculateLeaderboardData(
         });
       }
 
-      const isTeamPqDone = peopleQuestsData[pTeamId]?.status === 'submitted';
+      // 조별 People Quest 완료 여부 판정 (RTDB 완료 OR 참가자 플래그 OR 현재 사용자 로컬 제출)
+      const isTeamPqDone =
+        isPqSubmittedForTeam(pTeamId, peopleQuestsData) ||
+        p.peopleQuestCompleted === true ||
+        (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
+
       const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
       const pqMissions = isTeamPqDone ? 1 : 0;
 
@@ -132,7 +192,7 @@ export function calculateLeaderboardData(
     const myTrimmedName = currentUser.name.trim();
     const existing = listMap.get(myTrimmedName);
     const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normalizedMyTeamId);
-    const isTeamPqDone = peopleQuestsData[normalizedMyTeamId]?.status === 'submitted';
+    const isTeamPqDone = isPqSubmittedForTeam(normalizedMyTeamId, peopleQuestsData) || !!currentUser.isPeopleQuestSubmitted;
 
     if (!existing) {
       // RTDB에 아직 없는 신규 접속자: 로컬 점수(0pt 또는 풀이)로 등록
@@ -168,7 +228,7 @@ export function calculateLeaderboardData(
     const teamMembers = individuals.filter((ind) => ind.teamId === teamConfig.id);
     const totalScore = teamMembers.reduce((sum, m) => sum + m.pts, 0);
     const totalMissions = teamMembers.reduce((sum, m) => sum + m.missions, 0);
-    const isPqDone = peopleQuestsData[teamConfig.id]?.status === 'submitted';
+    const isPqDone = isPqSubmittedForTeam(teamConfig.id, peopleQuestsData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
 
     return {
       id: teamConfig.id,

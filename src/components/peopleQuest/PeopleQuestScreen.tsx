@@ -8,7 +8,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   WORKSHOP_TEAMS,
 } from '../../config/workshopConfig';
-import { normalizeTeamId } from '../../utils/scoreCalculator';
+import { normalizeTeamId, isPqSubmittedForTeam, getPqForTeam } from '../../utils/scoreCalculator';
 import { PreRegisteredPerson } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
 import { ref, set, get, update, onValue } from 'firebase/database';
@@ -101,9 +101,24 @@ const PeopleQuestScreen: React.FC = () => {
             });
             return;
           }
+          const quests = sessionData?.peopleQuest || {};
+          const isPqSub = isPqSubmittedForTeam(teamId, quests);
+          const pqData = getPqForTeam(teamId, quests);
+          if (isPqSub && pqData) {
+            setIsSubmitted(true);
+            setSubmittedData(pqData);
+            setPeopleQuestSubmitted(true);
+            if (pqData.recommendation) {
+              setRecommendation(prev => ({
+                ...prev,
+                ...pqData.recommendation,
+              }));
+            }
+            return;
+          }
         }
 
-        const res = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json?t=${Date.now()}`);
+        const res = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json?t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.status === 'submitted') {
@@ -158,7 +173,7 @@ const PeopleQuestScreen: React.FC = () => {
 
     // 2) WebSocket 실시간 리스너
     try {
-      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+      const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${teamId}`);
       const unsubscribePQ = onValue(
         pqRef,
         (snapshot) => {
@@ -285,7 +300,7 @@ const PeopleQuestScreen: React.FC = () => {
     if (!myTeam?.id) return;
     setIsSaving(true);
     const draftPayload = {
-      teamId: myTeam.id,
+      teamId,
       teamName: myTeam.name,
       recommendation,
       status: 'draft',
@@ -295,7 +310,7 @@ const PeopleQuestScreen: React.FC = () => {
 
     try {
       // 1) REST
-      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${myTeam.id}.json`, {
+      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draftPayload),
@@ -303,7 +318,7 @@ const PeopleQuestScreen: React.FC = () => {
 
       // 2) SDK
       try {
-        const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${myTeam.id}`);
+        const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${teamId}`);
         await set(pqRef, draftPayload);
       } catch (sdkErr) {}
 

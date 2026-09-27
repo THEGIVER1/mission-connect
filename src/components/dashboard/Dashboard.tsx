@@ -11,7 +11,12 @@ import {
   getCourseTotalMaxPoints,
   DISCOVERY_QUIZZES,
 } from '../../config/workshopConfig';
-import { calculateLeaderboardData } from '../../utils/scoreCalculator';
+import {
+  calculateLeaderboardData,
+  normalizeTeamId,
+  isPqSubmittedForTeam,
+  getPqForTeam,
+} from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
@@ -276,7 +281,7 @@ const Dashboard: React.FC = () => {
 
   const [rawSessionData, setRawSessionData] = useState<any>({});
 
-  const teamId = myTeam?.id ?? 'team1';
+  const teamId = normalizeTeamId(myTeam?.id);
   const participantId = participantName && participantCompany
     ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
     : 'anonymous';
@@ -323,9 +328,11 @@ const Dashboard: React.FC = () => {
   const personalScore = myIndividual ? myIndividual.pts : 0;
 
   const pqSubmitted = useMemo(() => {
-    const quests = rawSessionData?.peopleQuest || {};
-    return quests[teamId]?.status === 'submitted' || false;
-  }, [rawSessionData, teamId]);
+    const quests = (rawSessionData?.peopleQuest && typeof rawSessionData.peopleQuest === 'object')
+      ? rawSessionData.peopleQuest
+      : {};
+    return isPqSubmittedForTeam(teamId, quests) || isPeopleQuestSubmitted || false;
+  }, [rawSessionData, teamId, isPeopleQuestSubmitted]);
 
   const answeredQuizCount = useMemo(() => {
     if (!myIndividual) return 0;
@@ -358,9 +365,9 @@ const Dashboard: React.FC = () => {
       }
     }
 
-    // 피플 퀘스트 제출 해제 감지 시 로컬 제출 플래그도 동기화 해제
-    const isTeamPqSubmitted = data.peopleQuest?.[teamId]?.status === 'submitted';
-    if (!isTeamPqSubmitted && isPeopleQuestSubmitted) {
+    // 피플 퀘스트 제출 해제 감지 (data.peopleQuest가 있고 status가 'draft' 등으로 명시적으로 바뀐 경우에만 해제)
+    const pqRecord = getPqForTeam(teamId, data.peopleQuest || {});
+    if (pqRecord && pqRecord.status === 'draft' && isPeopleQuestSubmitted) {
       setPeopleQuestSubmitted(false);
     }
 
