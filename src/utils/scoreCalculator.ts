@@ -124,8 +124,9 @@ export function calculateLeaderboardData(
     const isTeamPqDone = isPqSubmittedForTeam(pTeamId, peopleQuestsData) || (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
     const basePqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
     const basePqMissions = isTeamPqDone ? 1 : 0;
+    const uniqueKey = p.id || `${p.name.trim()}_${p.company || ''}_${pTeamId}`.replace(/\s/g, '_');
 
-    listMap.set(p.name.trim(), {
+    listMap.set(uniqueKey, {
       id: p.id,
       name: p.name.trim(),
       team: WORKSHOP_TEAMS.find(t => t.id === pTeamId)?.name ?? '1조',
@@ -172,9 +173,10 @@ export function calculateLeaderboardData(
 
       const totalPts = quizPoints + pqPoints;
       const totalMissions = quizMissions + pqMissions;
+      const uniqueKey = p.id || `${trimmedName}_${p.company || ''}`.replace(/\s/g, '_');
 
-      listMap.set(trimmedName, {
-        id: p.id || `${trimmedName}_${p.company || ''}`.replace(/\s/g, '_'),
+      listMap.set(uniqueKey, {
+        id: uniqueKey,
         name: trimmedName,
         team: teamConfig?.name ?? '1조',
         teamId: pTeamId,
@@ -190,7 +192,8 @@ export function calculateLeaderboardData(
   // 3. 현재 로그인된 사용자가 RTDB에 아직 반영 전인 경우(즉시 반영)
   if (currentUser?.name && currentUser.name.trim()) {
     const myTrimmedName = currentUser.name.trim();
-    const existing = listMap.get(myTrimmedName);
+    const myUniqueKey = `${myTrimmedName}_${currentUser.company || ''}`.replace(/\s/g, '_');
+    const existing = listMap.get(myUniqueKey) || Array.from(listMap.values()).find(ind => ind.name === myTrimmedName && ind.company === (currentUser.company || ''));
     const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normalizedMyTeamId);
     const isTeamPqDone = isPqSubmittedForTeam(normalizedMyTeamId, peopleQuestsData) || !!currentUser.isPeopleQuestSubmitted;
 
@@ -201,8 +204,8 @@ export function calculateLeaderboardData(
       const totalPts = localQuizPts + localPqPts;
       const totalMissions = (currentUser.answeredQuizIds?.length ?? 0) + (isTeamPqDone ? 1 : 0);
 
-      listMap.set(myTrimmedName, {
-        id: `${myTrimmedName}_${currentUser.company || ''}`.replace(/\s/g, '_'),
+      listMap.set(myUniqueKey, {
+        id: myUniqueKey,
         name: myTrimmedName,
         team: teamConfig?.name ?? '1조',
         teamId: normalizedMyTeamId,

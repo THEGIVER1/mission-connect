@@ -173,25 +173,44 @@ const AdminScreen: React.FC = () => {
   // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
   const participants: ParticipantRecord[] = useMemo(() => {
     return individuals.map(ind => {
-      const raw = rawParticipantsMap[ind.id] ||
+      const raw =
+        rawParticipantsMap[ind.id] ||
         rawParticipantsMap[`${ind.name}_${ind.company}`.replace(/\s/g, '_')] ||
-        Object.values(rawParticipantsMap).find((p: any) => (p?.name || '').trim() === ind.name.trim()) ||
+        Object.values(rawParticipantsMap).find(
+          (p: any) =>
+            (p?.name || '').trim().toLowerCase() === ind.name.trim().toLowerCase() &&
+            (!ind.company || !p?.company || (p?.company || '').trim() === ind.company.trim())
+        ) ||
+        Object.values(rawParticipantsMap).find(
+          (p: any) => (p?.name || '').trim().toLowerCase() === ind.name.trim().toLowerCase()
+        ) ||
         {};
+
+      const myInfo = raw.myInfo || {};
 
       return {
         id: ind.id,
         name: ind.name,
-        company: ind.company,
+        company: ind.company || raw.company || '',
         teamId: ind.teamId,
         teamName: ind.team,
         course: raw.course || (WORKSHOP_TEAMS.find(t => t.id === ind.teamId)?.assignedCourse ?? 'lake'),
         score: ind.pts,
         missionsCompleted: ind.missions,
-        myInfo: raw.myInfo || {},
+        myInfo: {
+          q1_passion: myInfo.q1_passion || raw.q1_passion || raw.truth1 || '',
+          q2_vacation: myInfo.q2_vacation || raw.q2_vacation || '',
+          q3_dreamJob: myInfo.q3_dreamJob || raw.q3_dreamJob || raw.lie || '',
+          q4_bucketList: myInfo.q4_bucketList || raw.q4_bucketList || '',
+          q5_unexpectedFact: myInfo.q5_unexpectedFact || raw.q5_unexpectedFact || raw.truth2 || '',
+          q6_growthExperience: myInfo.q6_growthExperience || raw.q6_growthExperience || '',
+          q7_careerChallenge: myInfo.q7_careerChallenge || raw.q7_careerChallenge || '',
+          ...myInfo,
+        },
         quizzes: raw.quizzes || {},
-        truth1: raw.truth1,
-        truth2: raw.truth2,
-        lie: raw.lie,
+        truth1: raw.truth1 || myInfo.q1_passion || '',
+        truth2: raw.truth2 || myInfo.q5_unexpectedFact || myInfo.q4_bucketList || '',
+        lie: raw.lie || myInfo.q3_dreamJob || '',
         joinedAt: raw.joinedAt,
       };
     });
@@ -252,14 +271,21 @@ const AdminScreen: React.FC = () => {
 
   // People Quest 추천 받은 횟수 집계
   const nominationStats = useMemo(() => {
-    const map: Record<string, { count: number; byTeams: string[]; reasons: string[] }> = {};
+    const map: Record<string, { count: number; byTeams: string[]; reasons: string[]; topics: string[] }> = {};
     Object.values(peopleQuests).forEach(pq => {
-      if (pq.status === 'submitted' && pq.recommendation?.recommendedPersonName) {
-        const name = pq.recommendation.recommendedPersonName;
-        if (!map[name]) map[name] = { count: 0, byTeams: [], reasons: [] };
+      if (pq && pq.status === 'submitted' && pq.recommendation?.recommendedPersonName) {
+        const name = String(pq.recommendation.recommendedPersonName).trim();
+        if (!name) return;
+        if (!map[name]) map[name] = { count: 0, byTeams: [], reasons: [], topics: [] };
         map[name].count += 1;
-        map[name].byTeams.push(pq.teamName);
-        map[name].reasons.push(`[${pq.teamName}] ${pq.recommendation.reason}`);
+        const teamName = pq.teamName || WORKSHOP_TEAMS.find(t => t.id === normalizeTeamId(pq.teamId))?.name || pq.teamId || '미정 조';
+        map[name].byTeams.push(teamName);
+        if (pq.recommendation.reason) {
+          map[name].reasons.push(`[${teamName}] ${pq.recommendation.reason}`);
+        }
+        if (pq.recommendation.selectedTopic) {
+          map[name].topics.push(`[${teamName}] ${pq.recommendation.selectedTopic}`);
+        }
       }
     });
     return map;
@@ -344,13 +370,17 @@ const AdminScreen: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // CSV 다운로드 유틸리티
-  const downloadCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
-    const escape = (val: string | number) => `"${String(val || '').replace(/"/g, '""')}"`;
+  // CSV 다운로드 유틸리티 (Windows Excel UTF-8 BOM 및 개행/특수문자 완벽 처리)
+  const downloadCSV = (filename: string, headers: string[], rows: (string | number | null | undefined)[][]) => {
+    const escape = (val: string | number | null | undefined) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
     const csvContent = [
       headers.map(escape).join(','),
-      ...rows.map(row => row.map(escape).join(',')),
-    ].join('\n');
+      ...rows.map(row => (row.length === 0 ? '' : row.map(escape).join(','))),
+    ].join('\r\n');
 
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -360,24 +390,26 @@ const AdminScreen: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // 1. 나의 정보 7문항 전체 CSV 다운로드
   const handleExportMyInfoCSV = () => {
     const headers = [
       '이름',
-      '소속',
+      '소속 회사',
       '소속 조',
       '배정 코스',
-      '현재 점수',
-      'Q1_가장 푹 빠진 것',
-      'Q2_5일 자유시간',
-      'Q3_해보고 싶은 직업',
-      'Q4_3년 내 버킷리스트',
-      'Q5_의외의 사실',
-      'Q6_가장 성장한 경험',
-      'Q7_새로운 커리어 도전',
-      '등록일시',
+      '현재 점수(pt)',
+      '완주 미션수',
+      'Q1_가장 푹 빠진 취미/관심사',
+      'Q2_5일 자유시간에 하고 싶은 일',
+      'Q3_다시 태어나면 해보고 싶은 직업',
+      'Q4_3년 내 꼭 이루고 싶은 버킷리스트',
+      'Q5_동료들이 의외라고 생각할 나만의 사실',
+      'Q6_회사생활 중 가장 성장했던 경험',
+      'Q7_앞으로 새롭게 도전해보고 싶은 커리어',
+      '등록 일시',
     ];
 
     const rows = participants.map(p => {
@@ -388,6 +420,7 @@ const AdminScreen: React.FC = () => {
         p.teamName || p.teamId || '',
         p.course || '',
         p.score ?? 0,
+        p.missionsCompleted ?? 0,
         info['q1_passion'] || p.truth1 || '',
         info['q2_vacation'] || '',
         info['q3_dreamJob'] || p.lie || '',
@@ -402,31 +435,45 @@ const AdminScreen: React.FC = () => {
     downloadCSV(`CHRO_트레킹_나의정보_7문항_원문_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 2. 통합 저녁 행사용 결합 CSV (7문항 + 조별 추천 내역)
+  // 2. 통합 저녁 행사용 결합 CSV (참가자 7문항 + 조별 People Quest 추천 결합 마스터)
   const handleExportMasterMergedCSV = () => {
     const headers = [
+      '구분',
       '이름',
-      '소속',
+      '소속 회사',
       '소속 조',
-      '추천받은 횟수',
-      '추천해준 조 목록',
-      '조별 추천 사유 통합',
-      'Q1_가장 푹 빠진 것',
-      'Q2_5일 자유시간',
-      'Q3_해보고 싶은 직업',
-      'Q4_3년 내 버킷리스트',
-      'Q5_의외의 사실',
-      'Q6_가장 성장한 경험',
-      'Q7_새로운 커리어 도전',
+      '배정 코스',
+      '트레킹 총점(pt)',
+      '완주 미션수',
+      'PQ 추천받은 횟수',
+      '나를 추천한 조',
+      'PQ 추천 사유 및 스토리',
+      'Q1_최근 가장 푹 빠진 것',
+      'Q2_5일 자유시간에 하고 싶은 일',
+      'Q3_다시 태어나면 해보고 싶은 직업',
+      'Q4_3년 내 꼭 이루고 싶은 버킷리스트',
+      'Q5_동료들이 의외라고 생각할 나만의 사실',
+      'Q6_회사생활 중 가장 성장했던 경험',
+      'Q7_새롭게 도전해보고 싶은 커리어',
+      '가입/제출 일시',
     ];
 
-    const rows = participants.map(p => {
+    const rows: (string | number)[][] = [];
+
+    // 1) 등록된 모든 참가자 데이터 매핑
+    participants.forEach(p => {
       const info = p.myInfo || {};
-      const stat = nominationStats[p.name] || { count: 0, byTeams: [], reasons: [] };
-      return [
-        p.name || '',
+      const trimmedName = (p.name || '').trim();
+      const stat = nominationStats[trimmedName] || { count: 0, byTeams: [], reasons: [], topics: [] };
+
+      rows.push([
+        '참가자 등록',
+        trimmedName,
         p.company || '',
         p.teamName || p.teamId || '',
+        p.course || '',
+        p.score ?? 0,
+        p.missionsCompleted ?? 0,
         stat.count,
         stat.byTeams.join(' / '),
         stat.reasons.join(' | '),
@@ -437,10 +484,108 @@ const AdminScreen: React.FC = () => {
         info['q5_unexpectedFact'] || p.truth2 || '',
         info['q6_growthExperience'] || '',
         info['q7_careerChallenge'] || '',
-      ];
+        p.joinedAt || '',
+      ]);
+    });
+
+    // 2) 피플퀘스트에서 추천되었으나 아직 참가자 명단에 없는 인물도 누락 없이 추가
+    Object.values(peopleQuests).forEach(pq => {
+      if (pq && pq.status === 'submitted' && pq.recommendation?.recommendedPersonName) {
+        const recName = String(pq.recommendation.recommendedPersonName).trim();
+        const recCompany = pq.recommendation.recommendedPersonCompany || '';
+        const exists = participants.some(p => (p.name || '').trim().toLowerCase() === recName.toLowerCase());
+
+        if (!exists && recName) {
+          const recommendingTeam = pq.teamName || WORKSHOP_TEAMS.find(t => t.id === normalizeTeamId(pq.teamId))?.name || pq.teamId || '미정 조';
+          rows.push([
+            '조별 추천 인물 (미등록)',
+            recName,
+            recCompany,
+            '미배정',
+            '-',
+            0,
+            0,
+            1,
+            recommendingTeam,
+            `[${recommendingTeam}] (주제: ${pq.recommendation.selectedTopic || ''}) ${pq.recommendation.reason || ''}`,
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            pq.submittedAt || '',
+          ]);
+        }
+      }
+    });
+
+    // 3) 조별 피플퀘스트 6개 조 추천 최종 현황 블록 추가
+    rows.push([]);
+    rows.push(['=== [2026 CHRO Trekking 조별 People Quest 6개 조 추천 최종 현황] ===']);
+    rows.push([
+      '조 명칭',
+      '제출 상태',
+      '추천 대상자 이름',
+      '추천 대상자 소속',
+      '선택 주제',
+      '추천 사유 및 상세 스토리',
+      '제출자',
+      '제출 일시',
+    ]);
+
+    WORKSHOP_TEAMS.forEach(team => {
+      const pq = getPqForTeam(team.id, peopleQuests);
+      const isSub = isPqSubmittedForTeam(team.id, peopleQuests);
+      const rec = pq?.recommendation;
+
+      rows.push([
+        team.name,
+        isSub ? '제출 완료' : pq?.status === 'draft' ? '임시저장' : '미제출',
+        rec?.recommendedPersonName || '-',
+        rec?.recommendedPersonCompany || '-',
+        rec?.selectedTopic || '-',
+        rec?.reason || '-',
+        pq?.submittedBy || pq?.updatedBy || '-',
+        pq?.submittedAt || pq?.updatedAt || '-',
+      ]);
     });
 
     downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+  };
+
+  // 3. 조별 People Quest 추천 현황 전용 CSV 다운로드
+  const handleExportPeopleQuestCSV = () => {
+    const headers = [
+      '추천 조',
+      '제출 상태',
+      '추천 대상자 이름',
+      '추천 대상자 소속',
+      '선택 주제',
+      '추천 사유 및 상세 스토리',
+      '제출자',
+      '제출 일시',
+    ];
+
+    const rows = WORKSHOP_TEAMS.map(team => {
+      const pq = getPqForTeam(team.id, peopleQuests);
+      const isSub = isPqSubmittedForTeam(team.id, peopleQuests);
+      const rec = pq?.recommendation;
+
+      return [
+        team.name,
+        isSub ? '제출 완료' : pq?.status === 'draft' ? '임시저장' : '미제출',
+        rec?.recommendedPersonName || '-',
+        rec?.recommendedPersonCompany || '-',
+        rec?.selectedTopic || '-',
+        rec?.reason || '-',
+        pq?.submittedBy || pq?.updatedBy || '-',
+        pq?.submittedAt || pq?.updatedAt || '-',
+      ];
+    });
+
+    downloadCSV(`CHRO_트레킹_조별_피플퀘스트_추천현황_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
   // 3. 조별 People Quest 제출 해제
@@ -1839,13 +1984,21 @@ const AdminScreen: React.FC = () => {
         {/* TAB 6: 조별 People Quest 추천 현황 */}
         {activeTab === 'peopleQuest' && (
           <div className="space-y-3">
-            <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 space-y-2">
-              <span className="text-[12px] font-bold text-white block">
-                💬 6개 조 People Quest 제출 상태
-              </span>
-              <p className="text-[11px] text-slate-400">
-                각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다. (조당 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
-              </p>
+            <div className="flex items-center justify-between bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 gap-2">
+              <div>
+                <span className="text-[12px] font-bold text-white block">
+                  💬 6개 조 People Quest 제출 상태
+                </span>
+                <p className="text-[11px] text-slate-400">
+                  각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다. (조당 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
+                </p>
+              </div>
+              <button
+                onClick={handleExportPeopleQuestCSV}
+                className="px-3 py-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white text-[12px] font-bold rounded-xl whitespace-nowrap shadow flex-shrink-0"
+              >
+                📥 추천 CSV 받기
+              </button>
             </div>
 
             <div className="space-y-2.5">
