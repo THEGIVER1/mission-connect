@@ -55,6 +55,7 @@ const MapScreen: React.FC = () => {
 
   const [selectedQuizId, setSelectedQuizId] = useState<string>('dq_elephant');
   const [isLocating, setIsLocating] = useState(false);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -75,6 +76,14 @@ const MapScreen: React.FC = () => {
     return haversine(myLocation, selectedQuiz.coords);
   }, [myLocation, selectedQuiz]);
 
+  const allowedRadius = useMemo(() => {
+    const base = selectedQuiz?.radiusMeters ?? 60;
+    const accuracyBuffer = gpsAccuracy ? Math.min(gpsAccuracy, 30) : 15;
+    return base + accuracyBuffer;
+  }, [selectedQuiz, gpsAccuracy]);
+
+  const isInRangeOfSelected = distance !== null && distance <= allowedRadius;
+
   // 1. GPS 위치 측정 함수
   const fetchMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -83,6 +92,7 @@ const MapScreen: React.FC = () => {
       pos => {
         const coord = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMyLocation(coord);
+        setGpsAccuracy(pos.coords.accuracy || null);
         setIsLocating(false);
         if (mapRef.current) {
           mapRef.current.flyTo([coord.lat, coord.lng], 16, { duration: 1.2 });
@@ -94,6 +104,21 @@ const MapScreen: React.FC = () => {
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
+
+  useEffect(() => {
+    fetchMyLocation();
+  }, []);
+
+  // 햅틱 진동 피드백
+  const prevSelectedInRange = useRef(false);
+  useEffect(() => {
+    if (isInRangeOfSelected && !prevSelectedInRange.current) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+      }
+    }
+    prevSelectedInRange.current = Boolean(isInRangeOfSelected);
+  }, [isInRangeOfSelected]);
 
   // 2. Leaflet 고해상도 위성 지도 초기화
   useEffect(() => {
@@ -315,8 +340,8 @@ const MapScreen: React.FC = () => {
             </span>
             <p className="text-[10px] text-slate-400">매표소 기점 순환 회귀 코스 지도</p>
           </div>
-          <span className="text-[11px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-            🛰️ 위성지도
+          <span className="text-[11px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+            {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
           </span>
         </div>
       </header>
@@ -354,8 +379,26 @@ const MapScreen: React.FC = () => {
       </div>
 
       {/* 실제 Leaflet 위성 지도 뷰포트 */}
-      <div className="relative w-full h-[350px] border-b border-white/8 overflow-hidden bg-[#0A0F1A]">
+      <div className="relative w-full h-[340px] border-b border-white/8 overflow-hidden bg-[#0A0F1A]">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
+
+        {/* 도착 알림 플로팅 오버레이 */}
+        {isInRangeOfSelected && (
+          <div className="absolute top-3 left-3 right-3 z-[400] bg-emerald-950/90 border border-emerald-500/50 backdrop-blur-md px-3 py-2 rounded-xl text-center shadow-2xl animate-fade-in flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base animate-bounce">🎉</span>
+              <span className="text-[12px] font-bold text-emerald-300">
+                [{selectedQuiz?.title}] 반경 도착!
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/discovery-quiz')}
+              className="text-[11px] bg-emerald-500 text-slate-900 font-extrabold px-2.5 py-1 rounded-lg shadow active:scale-95"
+            >
+              문제 풀기 →
+            </button>
+          </div>
+        )}
 
         {/* 플로팅 컨트롤 */}
         <div className="absolute right-3 bottom-3 flex flex-col gap-2 z-[400]">
@@ -365,7 +408,7 @@ const MapScreen: React.FC = () => {
             className="w-10 h-10 rounded-xl bg-[#1A2235]/95 border border-white/20 text-white shadow-xl flex items-center justify-center text-lg active:scale-95 transition-all"
             title="내 현재 GPS 위치로 이동"
           >
-            {isLocating ? '⏳' : '📍'}
+            {isLocating ? '🔄' : '📍'}
           </button>
           <button
             onClick={() => {
@@ -383,10 +426,18 @@ const MapScreen: React.FC = () => {
 
       {/* 선택된 퀴즈 스팟 정보 카드 */}
       <div className="p-4 flex-1 flex flex-col justify-between">
-        <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2.5 shadow-xl">
+        <div className={`border rounded-2xl p-4 space-y-2.5 shadow-xl transition-all ${
+          isInRangeOfSelected
+            ? 'bg-emerald-950/25 border-emerald-500/40 ring-1 ring-emerald-500/20'
+            : 'bg-[#1A2235] border-white/10'
+        }`}>
           <div className="flex items-center justify-between">
-            <span className="text-[12px] font-bold text-sky-400 bg-sky-500/15 border border-sky-500/30 px-2.5 py-0.5 rounded-full">
-              📍 Discovery Quiz {courseQuizzes.findIndex(q => q.id === selectedQuiz?.id) + 1}번째 스팟
+            <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full border ${
+              isInRangeOfSelected
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 animate-pulse'
+                : 'bg-sky-500/15 text-sky-400 border-sky-500/30'
+            }`}>
+              {isInRangeOfSelected ? '📍 현장 반경 진입 완료!' : `스팟 ${courseQuizzes.findIndex(q => q.id === selectedQuiz?.id) + 1} / ${courseQuizzes.length}`}
             </span>
             <span className="text-[12px] text-amber-400 font-bold">
               +{selectedQuiz?.points}pt
@@ -394,8 +445,13 @@ const MapScreen: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="text-[16px] font-bold text-white mb-1">
-              {selectedQuiz?.title}
+            <h3 className="text-[16px] font-bold text-white mb-1 flex items-center gap-1.5">
+              <span>{selectedQuiz?.title}</span>
+              {selectedQuiz?.id === 'dq_museum' && (
+                <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded font-bold">
+                  📸 단체사진
+                </span>
+              )}
             </h3>
             <p className="text-[12px] text-slate-300">
               위치: <strong className="text-white">{selectedQuiz?.locationLabel}</strong>
@@ -409,7 +465,7 @@ const MapScreen: React.FC = () => {
             </div>
             <div className="bg-black/40 p-2 rounded-xl text-[11px] text-slate-400 flex flex-col">
               <span>내 위치로부터 거리</span>
-              <strong className="text-amber-400 text-[12px] mt-0.5">
+              <strong className={`text-[12px] mt-0.5 ${isInRangeOfSelected ? 'text-emerald-400 font-bold' : 'text-amber-400'}`}>
                 {distance !== null ? `약 ${distance}m` : 'GPS 측정 중'}
               </strong>
             </div>
@@ -420,7 +476,7 @@ const MapScreen: React.FC = () => {
         <div className="pt-3">
           <button
             onClick={() => navigate('/discovery-quiz')}
-            className="w-full py-3.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[15px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-[15px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
           >
             <span>🧭 Discovery Quiz 화면으로 이동 (총 3문항)</span>
           </button>

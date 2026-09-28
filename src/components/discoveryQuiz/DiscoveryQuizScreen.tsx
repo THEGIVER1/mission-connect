@@ -11,7 +11,7 @@ import {
 import { normalizeTeamId } from '../../utils/scoreCalculator';
 import { DiscoveryQuizItem } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
-import { ref, get, set, update } from 'firebase/database';
+import { ref, get, set, update, onValue } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 
 function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -212,6 +212,27 @@ const DiscoveryQuizScreen: React.FC = () => {
 
   const isInRange = isBypassUnlocked || (distance <= allowedRadius);
 
+  // 3-1. 햅틱 진동 피드백 (스팟 반경 진입 시 모바일 진동 발생)
+  const prevInRangeRef = React.useRef(false);
+  useEffect(() => {
+    if (isInRange && !prevInRangeRef.current && !isCurrentQuizAnswered) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate([200, 100, 200]);
+        } catch (e) {}
+      }
+    }
+    prevInRangeRef.current = isInRange;
+  }, [isInRange, isCurrentQuizAnswered]);
+
+  // GPS 오차 정밀도 상태 헬퍼
+  const getGpsAccuracyBadge = (accuracy: number | null) => {
+    if (accuracy === null) return { text: 'GPS 대기 중', color: 'text-slate-400', bg: 'bg-slate-800/60 border-slate-700', icon: '⚪' };
+    if (accuracy <= 15) return { text: `오차 ±${Math.round(accuracy)}m (매우 양호)`, color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-500/30', icon: '🟢' };
+    if (accuracy <= 35) return { text: `오차 ±${Math.round(accuracy)}m (수신 양호)`, color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-500/30', icon: '🟡' };
+    return { text: `오차 ±${Math.round(accuracy)}m (신호 미약)`, color: 'text-rose-400', bg: 'bg-rose-500/15 border-rose-500/30', icon: '🔴' };
+  };
+
   // 현장 비상 패스코드 인증 검증
   const handleVerifyBypassCode = () => {
     if (inputBypassCode.trim() === EMERGENCY_GPS_BYPASS_CODE) {
@@ -398,51 +419,65 @@ const DiscoveryQuizScreen: React.FC = () => {
 
       <div className="p-4 space-y-4 flex-1 overflow-y-auto">
         {/* GPS 현장 인증 상태 카드 */}
-        <div className={`border rounded-2xl p-4 space-y-2 transition-all shadow-lg ${
+        <div className={`border rounded-2xl p-4 space-y-2.5 transition-all shadow-lg ${
           isInRange
-            ? 'bg-emerald-950/20 border-emerald-500/40'
+            ? 'bg-emerald-950/20 border-emerald-500/40 ring-1 ring-emerald-500/20'
             : 'bg-[#1A2235] border-white/10'
         }`}>
           <div className="flex items-center justify-between">
             <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
               isInRange
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 animate-pulse'
                 : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
             }`}>
               {isBypassUnlocked
                 ? '🔑 현장 인증 완료'
                 : isInRange
-                ? '📍 현장 도착 완료'
+                ? '📍 현장 도착 완료 (인증 성공)'
                 : '🚶‍♂️ 스팟으로 이동 중'}
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={checkCurrentLocation}
                 disabled={isLocating}
-                className="text-[11px] text-sky-400 hover:text-sky-300 underline flex items-center gap-1"
+                className="text-[11px] text-sky-400 hover:text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all"
               >
-                {isLocating ? '측정 중...' : 'GPS 새로고침'}
+                <span className={isLocating ? 'animate-spin inline-block' : ''}>🔄</span>
+                <span>{isLocating ? '측정 중...' : 'GPS 다시 측정'}</span>
               </button>
             </div>
           </div>
 
           <div>
-            <h3 className="text-[16px] font-bold text-white mb-0.5">
-              스팟 {currentIdx + 1}: {currentQuiz?.title}
+            <h3 className="text-[16px] font-bold text-white mb-0.5 flex items-center justify-between">
+              <span>스팟 {currentIdx + 1}: {currentQuiz?.title}</span>
+              <span className="text-[11px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                +{currentQuiz?.points}pt
+              </span>
             </h3>
             <p className="text-[12px] text-slate-300">
               위치: <strong className="text-white">{currentQuiz?.locationLabel}</strong>
             </p>
           </div>
 
-          <div className="flex justify-between items-center text-[11px] pt-1 text-slate-400 border-t border-white/5">
-            <span>인증 반경: <strong>{currentQuiz?.radiusMeters}m 이내</strong></span>
-            <span>
-              현재 거리:{' '}
-              <strong className={isInRange ? 'text-emerald-400' : 'text-amber-400'}>
-                {isBypassUnlocked ? '비상 인증됨' : distance !== Infinity ? `약 ${distance}m` : '위치 확인 필요'}
-              </strong>
-            </span>
+          {/* GPS 정밀도 및 거리 상태 바 */}
+          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+            <div className="bg-black/30 p-2 rounded-xl text-[11px] flex flex-col justify-center">
+              <span className="text-slate-400">GPS 수신 상태</span>
+              <span className={`font-bold mt-0.5 flex items-center gap-1 text-[11px] ${getGpsAccuracyBadge(gpsAccuracy).color}`}>
+                <span>{getGpsAccuracyBadge(gpsAccuracy).icon}</span>
+                <span>{getGpsAccuracyBadge(gpsAccuracy).text}</span>
+              </span>
+            </div>
+            <div className="bg-black/30 p-2 rounded-xl text-[11px] flex flex-col justify-center">
+              <span className="text-slate-400">인증 반경 ({currentQuiz?.radiusMeters}m 이내)</span>
+              <span className="mt-0.5">
+                현재 거리:{' '}
+                <strong className={isInRange ? 'text-emerald-400' : 'text-amber-400'}>
+                  {isBypassUnlocked ? '비상 인증됨' : distance !== Infinity ? `약 ${distance}m` : '위치 확인 필요'}
+                </strong>
+              </span>
+            </div>
           </div>
 
           {gpsError && (
@@ -454,16 +489,42 @@ const DiscoveryQuizScreen: React.FC = () => {
           {/* 현장 비상 패스코드 인증 버튼 */}
           {!isInRange && (
             <div className="pt-2 border-t border-white/5 flex justify-between items-center">
-              <span className="text-[11px] text-slate-400">위치 인식이 안 되시나요?</span>
+              <span className="text-[11px] text-slate-400">나무 그늘로 위치 인식이 안 되시나요?</span>
               <button
                 onClick={() => setIsBypassModalOpen(true)}
-                className="text-[11px] text-amber-400 hover:text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all"
+                className="text-[11px] text-amber-400 hover:text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all active:scale-95"
               >
                 🔑 현장 인증코드로 풀기
               </button>
             </div>
           )}
         </div>
+
+        {/* 📸 [공통 2번 국립현대미술관] 전용 공식 단체사진 포토스팟 가이드 */}
+        {currentQuiz?.id === 'dq_museum' && (
+          <div className="bg-gradient-to-r from-red-500/15 via-rose-500/10 to-purple-500/15 border border-red-500/30 rounded-2xl p-4 shadow-xl space-y-2 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl animate-bounce">📸</span>
+              <div>
+                <span className="text-[10px] bg-red-500/25 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full font-bold">
+                  [전체 조 공통] 공식 단체사진 촬영지
+                </span>
+                <h4 className="text-[14px] font-bold text-white mt-0.5">
+                  국립현대미술관 과천관 야외조각공원
+                </h4>
+              </div>
+            </div>
+            <p className="text-[12px] text-slate-200 leading-relaxed">
+              이곳은 모든 조가 함께 모여 <strong className="text-amber-300">2026 CHRO 트레킹 공식 단체사진</strong>을 촬영하는 메인 포토스팟입니다!
+            </p>
+            <div className="bg-black/40 p-2.5 rounded-xl text-[11px] text-slate-300 flex items-start gap-2 border border-white/5">
+              <span className="text-amber-400 text-sm">💡</span>
+              <span className="leading-snug">
+                <strong>추천 포즈:</strong> 거대한 '노래하는 사람' 조형물 앞 계단에서 조원들과 함께 두산 화이팅 포즈로 멋진 추억을 남겨보세요!
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* ────────────────────────────────────────────────────────── */}
         {/* CASE 1: 아직 현장에 도착하지 않은 경우 (문제 100% 잠김)     */}
@@ -494,13 +555,13 @@ const DiscoveryQuizScreen: React.FC = () => {
         {/* CASE 2: 도착 완료되었으나 아직 '활성화 버튼'을 누르지 않은 경우 */}
         {/* ────────────────────────────────────────────────────────── */}
         {isInRange && !isCurrentQuizUnlocked && !isCurrentQuizAnswered && (
-          <div className="bg-gradient-to-br from-[#162238] to-[#121B2C] border-2 border-emerald-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl animate-fade-in">
+          <div className="bg-gradient-to-br from-[#162238] to-[#121B2C] border-2 border-emerald-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl animate-fade-in ring-2 ring-emerald-500/20">
             <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-2xl mx-auto shadow-lg animate-bounce">
-              📍
+              🎉
             </div>
             <div>
               <span className="text-[11px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                현장 도착 인증 완료
+                현장 도착 인증 완료!
               </span>
               <h3 className="text-[17px] font-bold text-white mt-2">
                 [{currentQuiz?.locationLabel}] 에 도착했습니다!
@@ -511,7 +572,7 @@ const DiscoveryQuizScreen: React.FC = () => {
             </div>
             <button
               onClick={handleUnlockCurrentQuiz}
-              className="w-full py-4 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-bold text-[15px] rounded-xl shadow-xl shadow-emerald-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-sky-500 via-emerald-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-bold text-[15px] rounded-xl shadow-xl shadow-emerald-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
             >
               <span>🔓 퀴즈 문제 활성화하기 (열기)</span>
             </button>

@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { LiveBadge, Card, ScoreBar } from '../shared';
-import { onValue, ref } from 'firebase/database';
+import { onValue, ref, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import {
   ACTIVE_VENUE,
@@ -10,6 +10,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   getCourseTotalMaxPoints,
   DISCOVERY_QUIZZES,
+  MY_INFO_QUESTIONS,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
@@ -20,7 +21,7 @@ import {
 import type { Team } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
-const Header: React.FC = () => {
+const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
   const { myTeam, session, participantName, participantCompany } = useAppStore();
   const [now, setNow] = useState(Date.now());
 
@@ -53,7 +54,18 @@ const Header: React.FC = () => {
             {participantName ? `${participantName}님 (${participantCompany})` : 'CHRO Activity Platform'}
           </p>
         </div>
-        <LiveBadge />
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="text-[10px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
+            title="7개 질문 답변 확인 및 수정"
+          >
+            <span>👤</span>
+            <span className="font-bold">내 답변 수정</span>
+          </button>
+          <LiveBadge />
+        </div>
       </div>
 
       {/* 이벤트 & 팀/코스 칩 */}
@@ -229,6 +241,201 @@ const ActivitySection: React.FC<{
       <div className="bg-[#121826] border border-white/5 rounded-xl p-3 text-[11px] text-slate-400 leading-relaxed">
         💡 <strong>트레킹 활동 안내</strong><br />
         트레킹 중 미션은 두 가지입니다. <strong>People Quest</strong>는 이동하며 자유롭게 대화해 수행하고, <strong>Discovery Quiz</strong>는 코스 내 지정 장소에 도착하면 참여할 수 있습니다.
+      </div>
+    </div>
+  );
+};
+
+// ─── 내 프로필 & 7문항 답변 조회 및 실시간 수정 모달 ─────────────
+const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  const { participantName, participantCompany, myTeam } = useAppStore();
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
+  const participantId = participantName && participantCompany
+    ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
+    : 'anonymous';
+
+  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+
+  useEffect(() => {
+    if (!isOpen || !participantId) return;
+    setIsLoading(true);
+    setSaveSuccess(false);
+
+    let localAnswers: Record<string, string> = {};
+    try {
+      const saved = localStorage.getItem('my_info_answers_draft');
+      if (saved) localAnswers = JSON.parse(saved);
+    } catch {}
+
+    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json?t=${Date.now()}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.myInfo && typeof data.myInfo === 'object') {
+          setAnswers({ ...localAnswers, ...data.myInfo });
+        } else {
+          setAnswers(localAnswers);
+        }
+      })
+      .catch(() => setAnswers(localAnswers))
+      .finally(() => setIsLoading(false));
+  }, [isOpen, participantId, dbUrl]);
+
+  const handleTextChange = (qId: string, val: string) => {
+    if (val.length > 100) return;
+    setAnswers(prev => ({ ...prev, [qId]: val }));
+  };
+
+  const handleSave = async () => {
+    if (!participantId) return;
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      localStorage.setItem('my_info_answers_draft', JSON.stringify(answers));
+    } catch {}
+
+    const patchPayload = {
+      myInfo: answers,
+      truth1: answers['q1_passion'] || '',
+      truth2: answers['q5_unexpectedFact'] || answers['q4_bucketList'] || '',
+      lie: answers['q3_dreamJob'] || '',
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      // 1) REST API PATCH
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patchPayload),
+      });
+
+      // 2) Firebase RTDB SDK update
+      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+      await update(pRef, patchPayload);
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.warn('프로필 저장 경고:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-[#13192A] border border-white/15 w-full max-w-[370px] max-h-[90vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+        {/* 모달 상단 헤더 */}
+        <div className="bg-[#182035] border-b border-white/10 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
+          <div>
+            <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
+              MY PROFILE & SURVEY
+            </span>
+            <h3 className="text-[15px] font-bold text-white">
+              내 정보 및 7문항 답변 수정
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/10 text-slate-300 flex items-center justify-center hover:bg-white/20 active:scale-95"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 참가자 요약 배지 */}
+        <div className="bg-[#101626] px-5 py-2.5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow"
+                  style={{ background: teamConfig?.color || '#E31837' }}>
+              {teamConfig?.shortCode || '--'}
+            </span>
+            <div>
+              <p className="text-[13px] font-bold text-white leading-tight">
+                {participantName} <span className="text-slate-400 text-[11px] font-normal">({participantCompany})</span>
+              </p>
+              <p className="text-[10px] text-slate-400">
+                {teamConfig?.name} · {teamConfig?.courseName}
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
+            실시간 동기화
+          </span>
+        </div>
+
+        {/* 7개 문항 리스트 */}
+        <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="py-12 text-center text-slate-400 text-[13px]">
+              <span className="animate-spin inline-block text-xl mb-2">🔄</span>
+              <p>답변을 불러오는 중입니다...</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 leading-relaxed">
+                💡 입력하신 답변은 트레킹 대화 및 <strong>저녁 퀴즈쇼 힌트</strong>로 활용됩니다. 언제든 수정 후 <strong>[저장하기]</strong>를 누르시면 실시간 업데이트됩니다.
+              </div>
+
+              {MY_INFO_QUESTIONS.map((q, idx) => {
+                const currentVal = answers[q.id] || '';
+                return (
+                  <div key={q.id} className="bg-black/40 border border-white/8 rounded-2xl p-3 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <label className="text-[12px] font-bold text-slate-200 leading-snug">
+                        <span className="text-sky-400 font-extrabold mr-1">Q{idx + 1}.</span>
+                        {q.title}
+                      </label>
+                      <span className={`text-[10px] font-bold flex-shrink-0 ${currentVal.length >= 90 ? 'text-amber-400' : 'text-slate-500'}`}>
+                        {currentVal.length}/100자
+                      </span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      maxLength={100}
+                      value={currentVal}
+                      onChange={e => handleTextChange(q.id, e.target.value)}
+                      placeholder={q.placeholder}
+                      className="w-full bg-[#13192A] border border-white/10 rounded-xl p-2 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 resize-none"
+                    />
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {/* 모달 하단 액션 */}
+        <div className="bg-[#182035] border-t border-white/10 p-4 space-y-2 flex-shrink-0">
+          {saveSuccess && (
+            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[12px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
+              ✅ 답변이 성공적으로 저장되었습니다!
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 bg-[#13192A] text-slate-400 font-bold text-[13px] rounded-xl border border-white/10 hover:bg-[#1A2235] active:scale-95 transition-all"
+            >
+              닫기
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || isLoading}
+              className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold text-[13px] rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>{isSaving ? '저장 중...' : '저장하기 💾'}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -434,9 +641,11 @@ const Dashboard: React.FC = () => {
     };
   }, [teamId, participantId, dbUrl, lastResetAt]);
 
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
-      <Header />
+      <Header onOpenProfile={() => setIsProfileModalOpen(true)} />
       <ScoreCard
         teamScore={teamScore}
         teamRank={teamRank}
@@ -449,6 +658,12 @@ const Dashboard: React.FC = () => {
         totalQuizCount={totalQuizCount}
       />
       <BottomNav active="/" />
+
+      {/* 내 프로필 및 7문항 답변 실시간 수정 모달 */}
+      <MyProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 };
