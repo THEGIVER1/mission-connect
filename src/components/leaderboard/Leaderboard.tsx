@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
-import { LiveBadge, ScoreBar } from '../shared';
+import { LiveBadge, ScoreBar, AnimatedScoreCounter } from '../shared';
 import { onValue, ref } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import {
@@ -112,7 +112,7 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
 
         const heights = isFirst ? 'h-28' : isSecond ? 'h-22' : 'h-18';
         const bgColors = isFirst
-          ? 'bg-gradient-to-t from-amber-500/20 to-amber-500/5 border-amber-500/40'
+          ? 'bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-amber-500/5 border-amber-400/50 shadow-lg shadow-amber-500/15'
           : isSecond
           ? 'bg-gradient-to-t from-slate-400/20 to-slate-400/5 border-slate-400/30'
           : 'bg-gradient-to-t from-amber-700/20 to-amber-700/5 border-amber-700/30';
@@ -121,16 +121,18 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
 
         return (
           <div key={team.id} className="flex-1 flex flex-col items-center max-w-[105px]">
-            <div className="text-xl mb-1">{teamConfig?.emoji || '🌲'}</div>
+            <div className="text-xl mb-1">{isFirst ? '👑' : (teamConfig?.emoji || '🌲')}</div>
             <div className={`w-full border rounded-t-2xl flex flex-col items-center justify-between p-2 ${heights} ${bgColors} ${isMe ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0D1117]' : ''}`}>
               <span className={`font-bebas text-2xl font-bold ${
-                isFirst ? 'text-amber-400' : isSecond ? 'text-slate-300' : 'text-amber-600'
+                isFirst ? 'text-amber-300' : isSecond ? 'text-slate-300' : 'text-amber-600'
               }`}>
-                {actualRank}
+                {actualRank === 1 ? '1위 🥇' : actualRank === 2 ? '2위 🥈' : '3위 🥉'}
               </span>
               <div className="text-center w-full">
                 <p className="text-[12px] font-bold text-white truncate">{team.name}</p>
-                <p className="text-[11px] font-bebas text-amber-300">{team.score.toLocaleString()}pt</p>
+                <div className="font-bebas text-amber-300 text-[12px]">
+                  <AnimatedScoreCounter value={team.score} className="text-amber-300" />pt
+                </div>
               </div>
             </div>
           </div>
@@ -141,10 +143,30 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 1: 팀 순위
+// 탭 1: 팀 순위 (실시간 순위 변동 & 롤링 카운터 & 완주 뱃지)
 // ─────────────────────────────────────────────────────────────────
 const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId }) => {
   const maxScore = useMemo(() => Math.max(...teams.map(t => t.score), 100), [teams]);
+
+  const prevRanksRef = useRef<Record<string, number>>({});
+  const [rankDiffs, setRankDiffs] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const diffs: Record<string, number> = {};
+    teams.forEach(t => {
+      const prev = prevRanksRef.current[t.id];
+      if (prev !== undefined && prev !== t.rank) {
+        diffs[t.id] = prev - t.rank; // 양수면 순위 상승(예: 3->1 = +2)
+      }
+      prevRanksRef.current[t.id] = t.rank;
+    });
+
+    if (Object.keys(diffs).length > 0) {
+      setRankDiffs(diffs);
+      const timer = setTimeout(() => setRankDiffs({}), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [teams]);
 
   return (
     <div className="px-4 pb-28 space-y-3 pt-2">
@@ -154,28 +176,58 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
         {teams.map((team) => {
           const isMe = team.id === myTeamId;
           const teamConfig = WORKSHOP_TEAMS.find(t => t.id === team.id);
+          const diff = rankDiffs[team.id];
+          const isFullCompleted = (team.missionsCompleted || 0) >= 4;
 
           return (
             <div
               key={team.id}
               className={`p-3.5 rounded-2xl border transition-all ${
-                isMe ? 'bg-[#1D2538] border-red-500/50 shadow-lg' : 'bg-[#1A2235] border-white/8'
+                isMe
+                  ? 'bg-[#1D2538] border-red-500/50 shadow-lg'
+                  : team.rank === 1
+                  ? 'bg-gradient-to-r from-[#1A2235] to-[#252018] border-amber-500/40 shadow-md'
+                  : 'bg-[#1A2235] border-white/8'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
-                  <span className="font-bebas text-xl text-slate-400 w-5 text-center">
-                    {team.rank}
-                  </span>
+                  <div className="flex flex-col items-center justify-center w-7">
+                    <span className={`font-bebas text-xl leading-none ${
+                      team.rank === 1 ? 'text-amber-400 font-bold' : 'text-slate-400'
+                    }`}>
+                      {team.rank}
+                    </span>
+                    {diff !== undefined && diff !== 0 ? (
+                      <span className={`text-[9px] font-extrabold leading-none mt-0.5 ${
+                        diff > 0 ? 'text-emerald-400' : 'text-rose-400'
+                      }`}>
+                        {diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] text-slate-600 leading-none mt-0.5">—</span>
+                    )}
+                  </div>
+
                   <div className="w-8 h-8 rounded-lg bg-[#212C42] border border-white/8 flex items-center justify-center text-base">
                     {teamConfig?.emoji || '🌲'}
                   </div>
                   <div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <strong className="text-[14px] text-white">{team.name}</strong>
                       {isMe && (
                         <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">
                           우리 조
+                        </span>
+                      )}
+                      {team.rank === 1 && (
+                        <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-extrabold flex items-center gap-0.5">
+                          👑 1위
+                        </span>
+                      )}
+                      {isFullCompleted && (
+                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">
+                          🏅 완주
                         </span>
                       )}
                     </div>
@@ -186,10 +238,10 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
                 </div>
 
                 <div className="text-right">
-                  <span className="font-bebas text-2xl text-white">
-                    {team.score.toLocaleString()}
+                  <div className="font-bebas text-2xl text-white flex items-baseline justify-end">
+                    <AnimatedScoreCounter value={team.score} className="text-white" />
                     <span className="text-red-500 text-sm ml-0.5">pt</span>
-                  </span>
+                  </div>
                   <span className="text-[10px] text-slate-400 block">
                     완료 미션 {team.missionsCompleted}건
                   </span>
@@ -434,12 +486,15 @@ const IndividualTab: React.FC<{
       ) : (
         individuals.map((p) => {
           const isMe = !!participantName && p.name.trim() === participantName.trim();
+          const isTop3 = p.rank <= 3;
           return (
             <div
               key={p.id || p.name}
               className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl border transition-all ${
                 isMe
                   ? 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10 ring-1 ring-red-500'
+                  : p.rank === 1
+                  ? 'bg-gradient-to-r from-[#1A2235] to-[#252018] border-amber-400/40 shadow-sm'
                   : 'bg-[#1A2235] border-white/6'
               }`}
             >
@@ -458,7 +513,7 @@ const IndividualTab: React.FC<{
                 {p.emoji}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className={`text-[14px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
                     {p.name}
                   </span>
@@ -468,13 +523,19 @@ const IndividualTab: React.FC<{
                   {p.company && (
                     <span className="text-[10px] text-slate-500">({p.company})</span>
                   )}
+                  {p.missions >= 4 && (
+                    <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded">
+                      👑 완주
+                    </span>
+                  )}
                 </div>
                 <span className="text-[11px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
-                  {p.pts}<span className="text-[11px] text-slate-400 ml-0.5">pt</span>
-                </span>
+                <div className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'} flex items-baseline`}>
+                  <AnimatedScoreCounter value={p.pts} className={p.pts > 0 ? 'text-amber-400' : 'text-slate-400'} />
+                  <span className="text-[11px] text-slate-400 ml-0.5">pt</span>
+                </div>
               </div>
             </div>
           );

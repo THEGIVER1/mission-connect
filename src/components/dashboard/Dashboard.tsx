@@ -1,7 +1,8 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
-import { LiveBadge, Card, ScoreBar } from '../shared';
+import { LiveBadge, Card, ScoreBar, AnimatedScoreCounter } from '../shared';
+import { CompletionCertificateModal } from '../common/CompletionCertificateModal';
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import {
@@ -106,7 +107,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
   );
 };
 
-// ─── 점수 & 순위 카드 (실시간 RTDB 동기화 & 개인 점수 노출) ────────
+// ─── 점수 & 순위 카드 (실시간 RTDB 동기화 & 롤링 카운터 & 순위 변동 인디케이터) ────────
 const ScoreCard: React.FC<{
   teamScore: number;
   teamRank: number;
@@ -116,20 +117,51 @@ const ScoreCard: React.FC<{
   const { myTeam } = useAppStore();
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
+  const prevRankRef = useRef<number>(teamRank);
+  const [rankChangeText, setRankChangeText] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prev = prevRankRef.current;
+    if (prev && prev !== teamRank) {
+      if (teamRank < prev) {
+        setRankChangeText(`▲ ${prev - teamRank}계단 상승!`);
+      } else {
+        setRankChangeText(`▼ ${teamRank - prev}계단`);
+      }
+      const timer = setTimeout(() => setRankChangeText(null), 3500);
+      prevRankRef.current = teamRank;
+      return () => clearTimeout(timer);
+    }
+    prevRankRef.current = teamRank;
+  }, [teamRank]);
+
   return (
     <Card className="mx-4 mt-3 p-3.5 shadow-xl">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
           {myTeam?.name ?? '우리 조'} 실시간 획득 점수
         </span>
-        <span className="text-[11px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
-          현재 {teamRank}위 🏆
-        </span>
+        <div className="flex items-center gap-1.5">
+          {rankChangeText && (
+            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full animate-bounce ${
+              rankChangeText.includes('▲') ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+            }`}>
+              {rankChangeText}
+            </span>
+          )}
+          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+            teamRank === 1
+              ? 'text-amber-300 bg-amber-500/20 border-amber-400/40 shadow-sm shadow-amber-500/30'
+              : 'text-amber-400 bg-amber-400/10 border-amber-400/20'
+          }`}>
+            <span>{teamRank === 1 ? '👑 현재 1위 (선두)' : `현재 ${teamRank}위 🏆`}</span>
+          </span>
+        </div>
       </div>
 
       <div className="flex items-end justify-between mb-2">
-        <div className="font-['Bebas_Neue'] text-4xl text-white leading-none">
-          {teamScore.toLocaleString()}
+        <div className="font-['Bebas_Neue'] text-4xl text-white leading-none flex items-baseline">
+          <AnimatedScoreCounter value={teamScore} className="text-white" />
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
         <div className="text-right">
@@ -144,16 +176,48 @@ const ScoreCard: React.FC<{
   );
 };
 
-// ─── 2대 핵심 액티비티 카드 섹션 (실시간 RTDB 상태 연동) ────────
+// ─── 2대 핵심 액티비티 카드 섹션 (실시간 RTDB 상태 연동 & 완주 축하 배너) ────────
 const ActivitySection: React.FC<{
   pqSubmitted: boolean;
   answeredQuizCount: number;
   totalQuizCount: number;
-}> = ({ pqSubmitted, answeredQuizCount, totalQuizCount }) => {
+  isAllCompleted: boolean;
+  onOpenCertificate: () => void;
+}> = ({ pqSubmitted, answeredQuizCount, totalQuizCount, isAllCompleted, onOpenCertificate }) => {
   const navigate = useNavigate();
 
   return (
     <div className="mx-4 mt-4 space-y-3">
+      {/* 👑 전 코스 완주 달성 시 골든 배너 */}
+      {isAllCompleted && (
+        <div className="bg-gradient-to-r from-amber-500/25 via-yellow-500/15 to-amber-600/25 border-2 border-amber-400/60 rounded-2xl p-4 text-center space-y-2.5 shadow-2xl shadow-amber-500/20 animate-fade-in relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] bg-amber-400 text-slate-950 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+              CHRO ALL MISSIONS CLEARED
+            </span>
+            <span className="text-xs text-amber-300 font-bold flex items-center gap-1">
+              <span>✨</span>
+              <span>명예의 전당</span>
+            </span>
+          </div>
+          <div>
+            <h3 className="text-[16px] font-extrabold text-white">
+              🎉 축하합니다! 4개 미션을 완주하셨습니다!
+            </h3>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              피플퀘스트와 3개 스팟 퀴즈를 모두 완료하여 완주 증서가 발급되었습니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenCertificate}
+            className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-extrabold text-[13px] rounded-xl shadow-lg shadow-amber-500/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>👑 나의 완주 인증서 보기 (골드 엠블럼)</span>
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between px-1">
         <span className="text-[13px] font-bold text-white tracking-wide">
           🎯 오늘의 트레킹 미션 (2개)
@@ -641,7 +705,22 @@ const Dashboard: React.FC = () => {
     };
   }, [teamId, participantId, dbUrl, lastResetAt]);
 
+  const totalMissions = (myIndividual?.missions || 0);
+  const isAllCompleted = (answeredQuizCount >= totalQuizCount && pqSubmitted) || (totalMissions >= (totalQuizCount + 1));
+
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+
+  // 전 코스 완주 시 1회 완주 인증서 자동 팝업
+  useEffect(() => {
+    if (isAllCompleted) {
+      const shown = sessionStorage.getItem('chro_cert_shown');
+      if (!shown) {
+        setIsCertModalOpen(true);
+        sessionStorage.setItem('chro_cert_shown', 'true');
+      }
+    }
+  }, [isAllCompleted]);
 
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
@@ -656,6 +735,8 @@ const Dashboard: React.FC = () => {
         pqSubmitted={pqSubmitted}
         answeredQuizCount={answeredQuizCount}
         totalQuizCount={totalQuizCount}
+        isAllCompleted={isAllCompleted}
+        onOpenCertificate={() => setIsCertModalOpen(true)}
       />
       <BottomNav active="/" />
 
@@ -663,6 +744,15 @@ const Dashboard: React.FC = () => {
       <MyProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      {/* 👑 2026 CHRO 트레킹 전 코스 완주 인증서 모달 */}
+      <CompletionCertificateModal
+        isOpen={isCertModalOpen}
+        onClose={() => setIsCertModalOpen(false)}
+        personalScore={personalScore}
+        teamScore={teamScore}
+        totalMissions={totalMissions}
       />
     </div>
   );

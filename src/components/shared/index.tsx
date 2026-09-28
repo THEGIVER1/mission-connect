@@ -79,3 +79,66 @@ export const ALERT_STYLES = {
   warning: { border: '#F5A623', icon: '⚠️', bg: 'rgba(245,166,35,0.06)', label: '경고', labelCls: 'bg-amber-500/12 text-amber-400' },
   info:    { border: '#00B4D8', icon: '💬', bg: 'rgba(0,180,216,0.06)', label: '문의', labelCls: 'bg-cyan-500/12 text-cyan-400' },
 };
+
+// ─── 부드러운 롤링 점수 카운터 & 획득 버스트 배지 ─────────────────
+export const AnimatedScoreCounter: React.FC<{
+  value: number;
+  duration?: number;
+  className?: string;
+  showGainBurst?: boolean;
+}> = ({ value, duration = 750, className = '', showGainBurst = true }) => {
+  const [displayValue, setDisplayValue] = React.useState(value);
+  const [gainAmount, setGainAmount] = React.useState<number | null>(null);
+  const prevValueRef = React.useRef(value);
+
+  React.useEffect(() => {
+    const startValue = prevValueRef.current;
+    const endValue = value;
+    const diff = endValue - startValue;
+
+    if (diff > 0 && showGainBurst) {
+      setGainAmount(diff);
+      const timer = setTimeout(() => setGainAmount(null), 2400);
+      return () => clearTimeout(timer);
+    }
+
+    if (startValue === endValue) return;
+
+    let startTime: number | null = null;
+    let animationFrameId: number;
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      // ease-out cubic
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(startValue + diff * easeOut);
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        setDisplayValue(endValue);
+        prevValueRef.current = endValue;
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [value, duration, showGainBurst]);
+
+  return (
+    <div className="relative inline-flex items-baseline">
+      <span className={className}>{displayValue.toLocaleString()}</span>
+      {gainAmount !== null && (
+        <span className="absolute -top-3.5 -right-12 bg-amber-400 text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-lg animate-bounce border border-amber-300 pointer-events-none z-20">
+          +{gainAmount}pt ✨
+        </span>
+      )}
+    </div>
+  );
+};
+
