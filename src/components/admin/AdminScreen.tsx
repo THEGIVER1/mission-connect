@@ -17,6 +17,8 @@ import {
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import { fireConfetti } from '../../lib/confetti';
+import { soundEffects } from '../../utils/audioEffects';
+import { MCCueSheetModal } from './MCCueSheetModal';
 
 interface ParticipantRecord {
   id: string;
@@ -83,6 +85,17 @@ const AdminScreen: React.FC = () => {
   // 빔프로젝터 무대 퀴즈쇼 풀스크린 모드 상태 (3단계 점진적 힌트 오픈: 0=신비주의, 1=취미/여가, 2=버킷리스트/의외의사실, 3=정답 공개)
   const [isStageMode, setIsStageMode] = useState<boolean>(false);
   const [stageStep, setStageStep] = useState<number>(0);
+
+  // MC 진행자 큐시트 모드 상태
+  const [isCueSheetOpen, setIsCueSheetOpen] = useState<boolean>(false);
+
+  // Web Audio 효과음 음소거 상태
+  const [isMuted, setIsMuted] = useState<boolean>(soundEffects.isMuted);
+
+  const toggleSound = () => {
+    const nextMute = soundEffects.toggleMute();
+    setIsMuted(nextMute);
+  };
 
   // 최종 시상식 모드 상태 (7: 대기, 6->5->4->3->2->1: 순차 발표, 0: 전체 결과표 요약)
   const [isAwardMode, setIsAwardMode] = useState<boolean>(false);
@@ -303,10 +316,22 @@ const AdminScreen: React.FC = () => {
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
         e.preventDefault();
         setRevealedAwardRank(prev => {
-          if (prev === 7) return 6;
+          if (prev === 7) {
+            soundEffects.playDrumroll(0.6);
+            return 6;
+          }
           if (prev > 1) {
             const next = prev - 1;
-            if (next <= 3) fireConfetti({ count: next === 1 ? 130 : 70 });
+            if (next === 1) {
+              soundEffects.playChampionFanfare();
+              fireConfetti({ count: 140, spread: 100 });
+              setTimeout(() => fireConfetti({ count: 90, spread: 80 }), 500);
+            } else if (next <= 3) {
+              soundEffects.playDrumroll(0.9);
+              fireConfetti({ count: 70 });
+            } else {
+              soundEffects.playDrumroll(0.5);
+            }
             return next;
           }
           if (prev === 1) return 0; // 전체 결과표
@@ -316,6 +341,7 @@ const AdminScreen: React.FC = () => {
         e.preventDefault();
         setRevealedAwardRank(prev => (prev < 7 ? (prev === 0 ? 1 : prev + 1) : 7));
       } else if (e.key === 'c' || e.key === 'C') {
+        soundEffects.playAnswerFanfare();
         fireConfetti({ count: 90 });
       } else if (e.key === 'Escape') {
         setIsAwardMode(false);
@@ -332,7 +358,12 @@ const AdminScreen: React.FC = () => {
       if (stageStep < 3) {
         const nextStep = stageStep + 1;
         setStageStep(nextStep);
-        if (nextStep === 3) fireConfetti({ count: 90 });
+        if (nextStep === 3) {
+          soundEffects.playAnswerFanfare();
+          fireConfetti({ count: 90 });
+        } else {
+          soundEffects.playHintRevealSound();
+        }
       } else {
         if (currentCardIndex < participants.length - 1) {
           setCurrentCardIndex(prev => prev + 1);
@@ -353,12 +384,16 @@ const AdminScreen: React.FC = () => {
       setStageStep(0);
     } else if (e.key === '1') {
       setStageStep(1);
+      soundEffects.playHintRevealSound();
     } else if (e.key === '2') {
       setStageStep(2);
+      soundEffects.playHintRevealSound();
     } else if (e.key === '3') {
       setStageStep(3);
+      soundEffects.playAnswerFanfare();
       fireConfetti({ count: 90 });
     } else if (e.key === 'c' || e.key === 'C') {
+      soundEffects.playAnswerFanfare();
       fireConfetti({ count: 90 });
     } else if (e.key === 'Escape') {
       setIsStageMode(false);
@@ -752,7 +787,20 @@ const AdminScreen: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => fireConfetti({ count: 110 })}
+              onClick={toggleSound}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1 ${
+                isMuted
+                  ? 'bg-slate-800 text-slate-400 border-white/10'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow'
+              }`}
+            >
+              {isMuted ? '🔇 음소거' : '🔊 사운드 ON'}
+            </button>
+            <button
+              onClick={() => {
+                soundEffects.playAnswerFanfare();
+                fireConfetti({ count: 110 });
+              }}
               className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-sm font-bold active:scale-95 transition-all flex items-center gap-1.5 shadow"
             >
               🎉 축하 팡파레 (C)
@@ -807,9 +855,13 @@ const AdminScreen: React.FC = () => {
                     : 'bg-gradient-to-br from-[#131B2C] to-[#0E1524] border-white/15'
                 }`}
               >
-                {/* 1위 우승팀 골든 후광 효과 */}
+                {/* 1위 우승팀 골든 후광 및 듀얼 스포트라이트 빔 효과 */}
                 {revealedAwardRank === 1 && (
-                  <div className="absolute -top-24 -right-24 w-72 h-72 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+                  <>
+                    <div className="absolute -top-32 -left-20 w-96 h-96 bg-gradient-to-br from-amber-300/30 to-transparent rounded-full blur-3xl pointer-events-none animate-pulse" />
+                    <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-bl from-amber-400/30 to-transparent rounded-full blur-3xl pointer-events-none animate-pulse" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 via-transparent to-amber-400/10 pointer-events-none" />
+                  </>
                 )}
 
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-white/10 pb-6">
@@ -951,10 +1003,22 @@ const AdminScreen: React.FC = () => {
             <button
               onClick={() => {
                 setRevealedAwardRank(prev => {
-                  if (prev === 7) return 6;
+                  if (prev === 7) {
+                    soundEffects.playDrumroll(0.6);
+                    return 6;
+                  }
                   if (prev > 1) {
                     const next = prev - 1;
-                    if (next <= 3) fireConfetti({ count: next === 1 ? 130 : 70 });
+                    if (next === 1) {
+                      soundEffects.playChampionFanfare();
+                      fireConfetti({ count: 140, spread: 100 });
+                      setTimeout(() => fireConfetti({ count: 90, spread: 80 }), 500);
+                    } else if (next <= 3) {
+                      soundEffects.playDrumroll(0.9);
+                      fireConfetti({ count: 70 });
+                    } else {
+                      soundEffects.playDrumroll(0.5);
+                    }
                     return next;
                   }
                   if (prev === 1) return 0;
@@ -1049,8 +1113,26 @@ const AdminScreen: React.FC = () => {
             </span>
           </div>
 
-          {/* 3단계 힌트 오픈 인디케이터 컨트롤러 */}
+          {/* 3단계 힌트 오픈 인디케이터 컨트롤러 & MC 툴바 */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSound}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1 ${
+                isMuted
+                  ? 'bg-slate-800 text-slate-400 border-white/10'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow'
+              }`}
+              title="배경음 / 효과음 토글"
+            >
+              {isMuted ? '🔇 음소거' : '🔊 사운드 ON'}
+            </button>
+            <button
+              onClick={() => setIsCueSheetOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all flex items-center gap-1 shadow active:scale-95"
+            >
+              📋 MC 큐시트
+            </button>
+            <div className="h-4 w-px bg-white/20 mx-0.5" />
             <button
               onClick={() => setStageStep(0)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
@@ -1062,7 +1144,10 @@ const AdminScreen: React.FC = () => {
               0단계: ❓ 비밀
             </button>
             <button
-              onClick={() => setStageStep(1)}
+              onClick={() => {
+                setStageStep(1);
+                soundEffects.playHintRevealSound();
+              }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                 stageStep === 1
                   ? 'bg-sky-500/30 text-sky-300 border-sky-400 shadow-lg'
@@ -1072,7 +1157,10 @@ const AdminScreen: React.FC = () => {
               1단계: 🎯 취미·여가
             </button>
             <button
-              onClick={() => setStageStep(2)}
+              onClick={() => {
+                setStageStep(2);
+                soundEffects.playHintRevealSound();
+              }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                 stageStep === 2
                   ? 'bg-amber-500/30 text-amber-300 border-amber-400 shadow-lg'
@@ -1084,6 +1172,7 @@ const AdminScreen: React.FC = () => {
             <button
               onClick={() => {
                 setStageStep(3);
+                soundEffects.playAnswerFanfare();
                 fireConfetti({ count: 90 });
               }}
               className={`px-4 py-1.5 rounded-xl text-xs font-black border transition-all ${
@@ -1095,8 +1184,11 @@ const AdminScreen: React.FC = () => {
               3단계: 👑 정답 공개!
             </button>
             <button
-              onClick={() => fireConfetti({ count: 80 })}
-              className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold active:scale-95 ml-2"
+              onClick={() => {
+                soundEffects.playAnswerFanfare();
+                fireConfetti({ count: 80 });
+              }}
+              className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold active:scale-95 ml-1"
             >
               🎉 폭죽 (C)
             </button>
@@ -1243,7 +1335,12 @@ const AdminScreen: React.FC = () => {
                 if (stageStep < 3) {
                   const nextStep = stageStep + 1;
                   setStageStep(nextStep);
-                  if (nextStep === 3) fireConfetti({ count: 90 });
+                  if (nextStep === 3) {
+                    soundEffects.playAnswerFanfare();
+                    fireConfetti({ count: 90 });
+                  } else {
+                    soundEffects.playHintRevealSound();
+                  }
                 } else if (currentCardIndex < participants.length - 1) {
                   setCurrentCardIndex(prev => prev + 1);
                   setStageStep(0);
@@ -1256,6 +1353,21 @@ const AdminScreen: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* MC 진행자 전용 7문항 & 팁 큐시트 모달 */}
+        <MCCueSheetModal
+          isOpen={isCueSheetOpen}
+          onClose={() => setIsCueSheetOpen(false)}
+          participant={currentP}
+          nominationStat={stat}
+          currentIndex={currentCardIndex}
+          totalCount={participants.length}
+          participants={participants}
+          onSelectParticipant={(idx) => {
+            setCurrentCardIndex(idx);
+            setStageStep(0);
+          }}
+        />
       </div>
     );
   }
