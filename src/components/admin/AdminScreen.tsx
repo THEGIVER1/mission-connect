@@ -458,11 +458,10 @@ const AdminScreen: React.FC = () => {
         p.missionsCompleted ?? 0,
         info['q1_passion'] || p.truth1 || '',
         info['q2_vacation'] || '',
-        info['q3_dreamJob'] || p.lie || '',
-        info['q4_bucketList'] || '',
+        info['q3_bucketList'] || '',
+        info['q4_dreamJob'] || p.lie || '',
         info['q5_unexpectedFact'] || p.truth2 || '',
-        info['q6_growthExperience'] || '',
-        info['q7_careerChallenge'] || '',
+        info['q6_superpower'] || '',
         p.joinedAt || '',
       ];
     });
@@ -1154,7 +1153,7 @@ const AdminScreen: React.FC = () => {
                   : 'bg-black/30 text-slate-400 border-white/10'
               }`}
             >
-              1단계: 🎯 취미·여가
+              1단계: 🎯 취미·휴식·버킷
             </button>
             <button
               onClick={() => {
@@ -1167,7 +1166,7 @@ const AdminScreen: React.FC = () => {
                   : 'bg-black/30 text-slate-400 border-white/10'
               }`}
             >
-              2단계: ⭐ 버킷리스트·비밀
+              2단계: ⚡ 상상·반전·슈퍼파워
             </button>
             <button
               onClick={() => {
@@ -1240,58 +1239,69 @@ const AdminScreen: React.FC = () => {
               </div>
             )}
 
-            {/* 1단계 이상: 힌트 카드 그리드 뷰 */}
+            {/* 1단계 & 2단계 힌트 카드 그리드 뷰 (3 + 3 대칭 레이아웃) */}
             {stageStep >= 1 && (
-              <div className="grid grid-cols-2 gap-4">
-                {/* 1단계 공개 문항 (Q1, Q2) */}
-                <div className="bg-black/50 border border-sky-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg">
-                  <span className="text-xs text-sky-400 font-bold block">
-                    Q1. 요즘 가장 푹 빠져 있는 취미나 관심사
-                  </span>
-                  <p className="text-lg font-bold text-white leading-snug">
-                    "{info['q1_passion'] || currentP.truth1 || '미입력'}"
-                  </p>
+              <div className="space-y-4">
+                {/* 1단계: 일상·휴가·버킷 (3열 그리드) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div className="bg-black/60 border border-sky-500/40 rounded-2xl p-4 space-y-1.5 shadow-lg">
+                    <span className="text-xs text-sky-400 font-bold flex items-center gap-1.5">
+                      <span>🎯</span> Q1. 요즘 푹 빠진 취미/관심사
+                    </span>
+                    <p className="text-base md:text-lg font-bold text-white leading-snug">
+                      "{info['q1_passion'] || currentP.truth1 || '미입력'}"
+                    </p>
+                  </div>
+
+                  <div className="bg-black/60 border border-sky-500/40 rounded-2xl p-4 space-y-1.5 shadow-lg">
+                    <span className="text-xs text-sky-400 font-bold flex items-center gap-1.5">
+                      <span>✈️</span> Q2. 5일의 자유시간 계획
+                    </span>
+                    <p className="text-base md:text-lg font-bold text-white leading-snug">
+                      "{info['q2_vacation'] || '미입력'}"
+                    </p>
+                  </div>
+
+                  <div className="bg-black/60 border border-sky-500/40 rounded-2xl p-4 space-y-1.5 shadow-lg">
+                    <span className="text-xs text-sky-400 font-bold flex items-center gap-1.5">
+                      <span>⭐</span> Q3. 3년 내 버킷리스트
+                    </span>
+                    <p className="text-base md:text-lg font-bold text-white leading-snug">
+                      "{info['q3_bucketList'] || '미입력'}"
+                    </p>
+                  </div>
                 </div>
 
-                <div className="bg-black/50 border border-sky-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg">
-                  <span className="text-xs text-sky-400 font-bold block">
-                    Q2. 5일의 완전한 자유 시간이 주어진다면?
-                  </span>
-                  <p className="text-lg font-bold text-white leading-snug">
-                    "{info['q2_vacation'] || '미입력'}"
-                  </p>
-                </div>
-
-                {/* 2단계 이상 공개 문항 (Q3, Q4, Q5) */}
+                {/* 2단계: 상상·반전·슈퍼파워 (3열 그리드) */}
                 {stageStep >= 2 && (
-                  <>
-                    <div className="bg-black/50 border border-amber-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg animate-fade-in">
-                      <span className="text-xs text-amber-400 font-bold block">
-                        Q3. 한 번쯤 해보고 싶은 다른 직업
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 animate-fade-in">
+                    <div className="bg-black/60 border border-amber-500/50 rounded-2xl p-4 space-y-1.5 shadow-lg">
+                      <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                        <span>💼</span> Q4. 해보고 싶은 다른 직업
                       </span>
-                      <p className="text-lg font-bold text-white leading-snug">
-                        "{info['q3_dreamJob'] || currentP.lie || '미입력'}"
+                      <p className="text-base md:text-lg font-bold text-white leading-snug">
+                        "{info['q4_dreamJob'] || currentP.lie || '미입력'}"
                       </p>
                     </div>
 
-                    <div className="bg-black/50 border border-amber-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg animate-fade-in">
-                      <span className="text-xs text-amber-400 font-bold block">
-                        Q4. 3년 내 꼭 이루고 싶은 버킷리스트
+                    <div className="bg-black/60 border border-amber-500/50 rounded-2xl p-4 space-y-1.5 shadow-lg">
+                      <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                        <span>😮</span> Q5. 의외의 사실 & 숨은 이력
                       </span>
-                      <p className="text-lg font-bold text-white leading-snug">
-                        "{info['q4_bucketList'] || '미입력'}"
-                      </p>
-                    </div>
-
-                    <div className="bg-black/50 border border-amber-500/40 rounded-2xl p-5 space-y-1.5 shadow-lg col-span-2 animate-fade-in">
-                      <span className="text-xs text-amber-400 font-bold block">
-                        Q5. 동료들이 알면 깜짝 놀랄 의외의 사실
-                      </span>
-                      <p className="text-lg font-bold text-white leading-snug">
+                      <p className="text-base md:text-lg font-bold text-white leading-snug">
                         "{info['q5_unexpectedFact'] || currentP.truth2 || '미입력'}"
                       </p>
                     </div>
-                  </>
+
+                    <div className="bg-black/60 border-2 border-amber-400/80 rounded-2xl p-4 space-y-1.5 shadow-xl ring-2 ring-amber-400/30 bg-gradient-to-br from-[#20180B] to-black/80">
+                      <span className="text-xs text-amber-300 font-black flex items-center gap-1.5">
+                        <span>⚡</span> Q6. 나만의 키워드/슈퍼파워
+                      </span>
+                      <p className="text-base md:text-lg font-black text-amber-300 leading-snug">
+                        "{info['q6_superpower'] || '미입력'}"
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -1411,7 +1421,7 @@ const AdminScreen: React.FC = () => {
           <strong className="text-amber-400 font-bold">{participants.length}명</strong>
         </div>
         <div>
-          <span>💡 7문항: </span>
+          <span>💡 6문항: </span>
           <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
         </div>
         <button
@@ -2080,11 +2090,10 @@ const AdminScreen: React.FC = () => {
                     <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-300 bg-black/30 p-2.5 rounded-xl">
                       <p>• <strong>1. 취미/관심사:</strong> {info['q1_passion'] || p.truth1 || '-'}</p>
                       <p>• <strong>2. 5일 자유시간:</strong> {info['q2_vacation'] || '-'}</p>
-                      <p>• <strong>3. 원하는 직업:</strong> {info['q3_dreamJob'] || p.lie || '-'}</p>
-                      <p>• <strong>4. 버킷리스트:</strong> {info['q4_bucketList'] || '-'}</p>
+                      <p>• <strong>3. 3년 버킷리스트:</strong> {info['q3_bucketList'] || '-'}</p>
+                      <p>• <strong>4. 원하는 직업:</strong> {info['q4_dreamJob'] || p.lie || '-'}</p>
                       <p>• <strong>5. 의외의 사실:</strong> {info['q5_unexpectedFact'] || p.truth2 || '-'}</p>
-                      <p>• <strong>6. 성장 경험:</strong> {info['q6_growthExperience'] || '-'}</p>
-                      <p>• <strong>7. 새로운 도전:</strong> {info['q7_careerChallenge'] || '-'}</p>
+                      <p>• <strong>6. 키워드/슈퍼파워:</strong> {info['q6_superpower'] || '-'}</p>
                     </div>
                   </div>
                 );

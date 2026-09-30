@@ -60,7 +60,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
             type="button"
             onClick={onOpenProfile}
             className="text-[10px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
-            title="7개 질문 답변 확인 및 수정"
+            title="6개 질문 답변 확인 및 수정"
           >
             <span>👤</span>
             <span className="font-bold">내 답변 수정</span>
@@ -404,7 +404,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               MY PROFILE & SURVEY
             </span>
             <h3 className="text-[15px] font-bold text-white">
-              내 정보 및 7문항 답변 수정
+              내 정보 및 6문항 답변 수정
             </h3>
           </div>
           <button
@@ -436,7 +436,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
           </span>
         </div>
 
-        {/* 7개 문항 리스트 */}
+        {/* 6개 문항 리스트 */}
         <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="py-12 text-center text-slate-400 text-[13px]">
@@ -740,7 +740,7 @@ const Dashboard: React.FC = () => {
       />
       <BottomNav active="/" />
 
-      {/* 내 프로필 및 7문항 답변 실시간 수정 모달 */}
+      {/* 내 프로필 및 6문항 답변 실시간 수정 모달 */}
       <MyProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}

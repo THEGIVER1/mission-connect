@@ -25,7 +25,7 @@ const TeamSelect: React.FC = () => {
   const [company, setCompany] = useState(participantCompany || '');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(myTeam?.id || null);
 
-  // 「나의 정보 7개 질문」 답변 상태 관리 (로컬 드래프트 우선 복원)
+  // 「나의 정보 6개 질문」 답변 상태 관리 (로컬 드래프트 우선 복원)
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('my_info_answers_draft');
@@ -138,8 +138,8 @@ const TeamSelect: React.FC = () => {
         myInfo: answers,
         // 하위 호환 필드
         truth1: answers['q1_passion'] || '',
-        truth2: answers['q5_unexpectedFact'] || answers['q4_bucketList'] || '',
-        lie: answers['q3_dreamJob'] || '',
+        truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
+        lie: answers['q4_dreamJob'] || answers['q6_superpower'] || '',
         score: initialScore,
         missionsCompleted: initialCompleted,
         peopleQuestCompleted: isPqDone,
@@ -399,13 +399,13 @@ const TeamSelect: React.FC = () => {
               className="w-full py-3.5 rounded-xl font-bold text-[15px] text-white
                 bg-red-500 active:scale-98 transition-all shadow-md shadow-red-500/20"
             >
-              다음 → 나의 정보 7문항 입력
+              다음 → 나의 정보 6문항 입력
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: 나의 정보 입력 (7개 질문 - 실시간 자동 저장 적용) */}
+      {/* STEP 2: 나의 정보 입력 (6개 질문 - 실시간 자동 저장 적용) */}
       {step === 'myinfo' && (
         <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
@@ -421,7 +421,7 @@ const TeamSelect: React.FC = () => {
             </p>
           </div>
 
-          {/* 7개 질문 카드 리스트 */}
+          {/* 6개 질문 카드 리스트 */}
           <div className="space-y-4">
             {MY_INFO_QUESTIONS.map((q, idx) => {
               const val = answers[q.id] || '';
