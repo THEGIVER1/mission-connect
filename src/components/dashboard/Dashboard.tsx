@@ -354,7 +354,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     setAnswers(prev => ({ ...prev, [qId]: val }));
   };
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     if (!participantId) return;
     setIsSaving(true);
     setSaveSuccess(false);
@@ -366,23 +366,44 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     const patchPayload = {
       myInfo: answers,
       truth1: answers['q1_passion'] || '',
-      truth2: answers['q5_unexpectedFact'] || answers['q4_bucketList'] || '',
-      lie: answers['q3_dreamJob'] || '',
+      truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
+      lie: answers['q4_dreamJob'] || answers['q6_superpower'] || '',
       updatedAt: new Date().toISOString(),
     };
 
+    const savePromises = async () => {
+      // 1) REST API PATCH (최대 1.5초)
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 1500);
+        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patchPayload),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+      } catch (err) {
+        console.warn('REST 저장 경고:', err);
+      }
+
+      // 2) Firebase RTDB SDK update (최대 1.5초)
+      try {
+        const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+        await Promise.race([
+          update(pRef, patchPayload),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('SDK Timeout')), 1500))
+        ]);
+      } catch (err) {
+        console.warn('SDK 저장 경고:', err);
+      }
+    };
+
     try {
-      // 1) REST API PATCH
-      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchPayload),
-      });
-
-      // 2) Firebase RTDB SDK update
-      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-      await update(pRef, patchPayload);
-
+      await Promise.race([
+        savePromises(),
+        new Promise(resolve => setTimeout(resolve, 800))
+      ]);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {

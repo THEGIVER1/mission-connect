@@ -81,123 +81,92 @@ const TeamSelect: React.FC = () => {
   };
 
   // Step 2 완료 및 최종 입장
+    // Step 2 완료 및 최종 입장 (절대 멈춤 없는 즉각 전환 & 타임아웃 보호 비동기 저장)
   const handleFinalEnter = async () => {
     if (!selectedTeam) return;
     setIsSubmitting(true);
     setError('');
 
-    const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
+    const trimmedName = name.trim();
+    const participantId = `${trimmedName}_${company}`.replace(/\s/g, '_');
 
-    try {
-      let existing: any = null;
+    // 1. 즉시 로컬 스토어에 팀 및 참가자 정보 세팅 (0ms 지연)
+    const initialScore = 0;
+    const initialCompleted = 0;
 
-      // 1) REST 및 SDK로 기존 데이터 확인
+    selectTeam({
+      id: selectedTeam.id,
+      name: selectedTeam.name,
+      shortCode: selectedTeam.shortCode,
+      color: selectedTeam.color,
+      memberCount: 1,
+      score: initialScore,
+      rank: TEAMS.indexOf(selectedTeam) + 1,
+      missionsCompleted: initialCompleted,
+      totalMissions: 2,
+      lastActivity: new Date(),
+      status: 'active',
+    }, trimmedName, company, selectedTeam.assignedCourse);
+
+    // 2. 페이로드 준비
+    const payload = {
+      name: trimmedName,
+      company,
+      teamId: selectedTeam.id,
+      teamName: selectedTeam.name,
+      course: selectedTeam.assignedCourse,
+      myInfo: answers,
+      truth1: answers['q1_passion'] || '',
+      truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
+      lie: answers['q4_dreamJob'] || answers['q6_superpower'] || '',
+      score: initialScore,
+      missionsCompleted: initialCompleted,
+      peopleQuestCompleted: false,
+      joinedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'active',
+    };
+
+    // 3. 백그라운드 & 타임아웃 보장 비동기 저장 (REST + SDK)
+    const saveToFirebase = async () => {
+      // 1) REST PATCH (최대 1.5초 타임아웃)
       try {
-        const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
-        if (res.ok) {
-          existing = await res.json();
-        }
-      } catch (e) {
-        console.warn('REST 데이터 조회 실패:', e);
-      }
-
-      if (!existing) {
-        try {
-          const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-          const checkSnap = await get(pRef);
-          if (checkSnap.exists()) {
-            existing = checkSnap.val();
-          }
-        } catch (e) {
-          console.warn('SDK 데이터 조회 경고:', e);
-        }
-      }
-
-      // 기존 푼 퀴즈 점수 및 미션 집계
-      let quizEarned = 0;
-      let quizCount = 0;
-      if (existing?.quizzes && typeof existing.quizzes === 'object') {
-        Object.values(existing.quizzes).forEach((q: any) => {
-          quizEarned += Number(q.pointsEarned || 0);
-          if (q.isCorrect || q.pointsEarned !== undefined) quizCount += 1;
-        });
-      }
-
-      const isPqDone = existing?.peopleQuestCompleted || false;
-      const computedScore = quizEarned + (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0);
-      const computedCompleted = quizCount + (isPqDone ? 1 : 0);
-      const initialScore = computedScore;
-      const initialCompleted = computedCompleted;
-
-      const payload = {
-        name: name.trim(),
-        company,
-        teamId: selectedTeam.id,
-        teamName: selectedTeam.name,
-        course: selectedTeam.assignedCourse,
-        myInfo: answers,
-        // 하위 호환 필드
-        truth1: answers['q1_passion'] || '',
-        truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
-        lie: answers['q4_dreamJob'] || answers['q6_superpower'] || '',
-        score: initialScore,
-        missionsCompleted: initialCompleted,
-        peopleQuestCompleted: isPqDone,
-        joinedAt: existing?.joinedAt ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'active',
-      };
-
-      // 1) REST로 즉시 저장
-      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500);
         await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
       } catch (restErr) {
-        console.warn('REST 저장 경고:', restErr);
+        console.warn('REST 저장 타임아웃/경고:', restErr);
       }
 
-      // 2) Firebase SDK로도 저장
+      // 2) SDK update (최대 1.5초 타임아웃)
       try {
         const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-        await update(pRef, payload);
+        await Promise.race([
+          update(pRef, payload),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('SDK Timeout')), 1500))
+        ]);
       } catch (sdkErr) {
-        console.warn('SDK 저장 경고:', sdkErr);
+        console.warn('SDK 저장 타임아웃/경고:', sdkErr);
       }
+    };
 
-      selectTeam({
-        id: selectedTeam.id,
-        name: selectedTeam.name,
-        shortCode: selectedTeam.shortCode,
-        color: selectedTeam.color,
-        memberCount: 1,
-        score: initialScore,
-        rank: TEAMS.indexOf(selectedTeam) + 1,
-        missionsCompleted: initialCompleted,
-        totalMissions: 2,
-        lastActivity: new Date(),
-        status: 'active',
-      }, name.trim(), company, selectedTeam.assignedCourse);
+    // 백그라운드 저장 실행 & 대시보드로 즉각 이동 (최대 600ms 대기 후 무조건 전환)
+    try {
+      await Promise.race([
+        saveToFirebase(),
+        new Promise(resolve => setTimeout(resolve, 600))
+      ]);
     } catch (e) {
-      console.warn('입장 저장 실패:', e);
-      selectTeam({
-        id: selectedTeam.id,
-        name: selectedTeam.name,
-        shortCode: selectedTeam.shortCode,
-        color: selectedTeam.color,
-        memberCount: 1,
-        score: 0,
-        rank: TEAMS.indexOf(selectedTeam) + 1,
-        missionsCompleted: 0,
-        totalMissions: 2,
-        lastActivity: new Date(),
-        status: 'active',
-      }, name.trim(), company, selectedTeam.assignedCourse);
+      console.warn('전환 처리 중 예외:', e);
     } finally {
       setIsSubmitting(false);
-      navigate('/');
+      navigate('/', { replace: true });
     }
   };
 
