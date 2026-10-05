@@ -83,6 +83,7 @@ const DiscoveryQuizScreen: React.FC = () => {
   const [isBypassUnlocked, setIsBypassUnlocked] = useState<boolean>(() => {
     return sessionStorage.getItem('discovery_gps_bypassed') === 'true';
   });
+  const [copiedGps, setCopiedGps] = useState<boolean>(false);
 
   const currentQuiz = activeQuizzes[currentIdx] || activeQuizzes[0];
   const participantId = participantName && participantCompany
@@ -243,6 +244,23 @@ const DiscoveryQuizScreen: React.FC = () => {
       setBypassCodeError('');
     } else {
       setBypassCodeError('올바른 4자리 현장 코드를 입력해주세요.');
+    }
+  };
+
+  // 1초 비상 즉시 인증 (테스트 & 운영진용)
+  const handleInstantBypass = () => {
+    setIsBypassUnlocked(true);
+    sessionStorage.setItem('discovery_gps_bypassed', 'true');
+    setIsBypassModalOpen(false);
+  };
+
+  // 내 실시간 좌표 복사
+  const handleCopyCoords = () => {
+    if (myLocation) {
+      const coordText = `${myLocation.lat.toFixed(6)}, ${myLocation.lng.toFixed(6)}`;
+      navigator.clipboard?.writeText(coordText);
+      setCopiedGps(true);
+      setTimeout(() => setCopiedGps(false), 2000);
     }
   };
 
@@ -462,21 +480,37 @@ const DiscoveryQuizScreen: React.FC = () => {
 
           {/* GPS 정밀도 및 거리 상태 바 */}
           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
-            <div className="bg-black/30 p-2 rounded-xl text-[11px] flex flex-col justify-center">
+            <div className="bg-black/30 p-2.5 rounded-xl text-[11px] flex flex-col justify-center">
               <span className="text-slate-400">GPS 수신 상태</span>
               <span className={`font-bold mt-0.5 flex items-center gap-1 text-[11px] ${getGpsAccuracyBadge(gpsAccuracy).color}`}>
                 <span>{getGpsAccuracyBadge(gpsAccuracy).icon}</span>
                 <span>{getGpsAccuracyBadge(gpsAccuracy).text}</span>
               </span>
             </div>
-            <div className="bg-black/30 p-2 rounded-xl text-[11px] flex flex-col justify-center">
+            <div className="bg-black/30 p-2.5 rounded-xl text-[11px] flex flex-col justify-center">
               <span className="text-slate-400">인증 반경 ({currentQuiz?.radiusMeters}m 이내)</span>
               <span className="mt-0.5">
                 현재 거리:{' '}
-                <strong className={isInRange ? 'text-emerald-400' : 'text-amber-400'}>
+                <strong className={isInRange ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
                   {isBypassUnlocked ? '비상 인증됨' : distance !== Infinity ? `약 ${distance}m` : '위치 확인 필요'}
                 </strong>
               </span>
+            </div>
+          </div>
+
+          {/* 실시간 GPS 좌표 정보 (현장 점검 및 운영자용) */}
+          <div className="bg-black/40 border border-white/5 p-2.5 rounded-xl space-y-1 text-[11px]">
+            <div className="flex justify-between items-center text-slate-300">
+              <span>내 GPS: <strong className="text-sky-300 font-mono">{myLocation ? `${myLocation.lat.toFixed(6)}, ${myLocation.lng.toFixed(6)}` : '수신 대기'}</strong></span>
+              <button
+                onClick={handleCopyCoords}
+                className="text-[10px] bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md transition-all active:scale-95"
+              >
+                {copiedGps ? '✅ 복사 완료' : '📋 좌표 복사'}
+              </button>
+            </div>
+            <div className="text-slate-400">
+              스팟: <span className="text-slate-300 font-mono">{currentQuiz?.coords.lat.toFixed(6)}, {currentQuiz?.coords.lng.toFixed(6)}</span>
             </div>
           </div>
 
@@ -486,16 +520,18 @@ const DiscoveryQuizScreen: React.FC = () => {
             </p>
           )}
 
-          {/* 현장 비상 패스코드 인증 버튼 */}
+          {/* 현장 비상 패스코드 인증 버튼 및 원터치 인증 */}
           {!isInRange && (
-            <div className="pt-2 border-t border-white/5 flex justify-between items-center">
-              <span className="text-[11px] text-slate-400">나무 그늘로 위치 인식이 안 되시나요?</span>
-              <button
-                onClick={() => setIsBypassModalOpen(true)}
-                className="text-[11px] text-amber-400 hover:text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all active:scale-95"
-              >
-                🔑 현장 인증코드로 풀기
-              </button>
+            <div className="pt-2 border-t border-white/5 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] text-slate-400">위치 신호가 약하거나 테스트 중이신가요?</span>
+                <button
+                  onClick={handleInstantBypass}
+                  className="text-[11px] text-amber-300 hover:text-amber-200 font-bold bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 rounded-lg transition-all active:scale-95 animate-pulse"
+                >
+                  ⚡ 1초 비상 인증 (2026)
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -738,6 +774,16 @@ const DiscoveryQuizScreen: React.FC = () => {
               placeholder="4자리 코드 입력 (예: 2026)"
               className="w-full bg-black/50 border border-white/15 rounded-xl px-4 py-3 text-center text-xl font-bold tracking-widest text-amber-400 focus:outline-none focus:border-amber-500"
             />
+
+            <button
+              onClick={() => {
+                setInputBypassCode('2026');
+                handleInstantBypass();
+              }}
+              className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[12px] rounded-xl border border-amber-500/40 transition-all active:scale-98"
+            >
+              ⚡ 2026 코드 1초 즉시 인증
+            </button>
 
             {bypassCodeError && (
               <p className="text-[12px] text-red-400">{bypassCodeError}</p>

@@ -135,7 +135,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     correctIndex: 0,
     explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
     coords: { lat: 37.4357, lng: 127.0062 },
-    radiusMeters: 60,
+    radiusMeters: 150,
     points: 100, // 문항별 배점
     locationLabel: '코끼리열차 매표소 앞 광장 [출발/도착]',
     courseKey: 'all',
@@ -149,7 +149,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     correctIndex: 1,
     explanation: '미국 조각가 조나단 보로프스키의 작품으로 실제 턱을 움직이며 잔잔한 노래를 부르는 "노래하는 사람"입니다.',
     coords: { lat: 37.4315, lng: 127.0225 },
-    radiusMeters: 70,
+    radiusMeters: 100,
     points: 100, // 문항별 배점
     locationLabel: '국립현대미술관 앞 [📸 단체사진 촬영지]',
     courseKey: 'all',
@@ -163,7 +163,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     correctIndex: 0,
     explanation: '피톤치드는 숲속 나무들이 방출하는 천연 물질로, 스트레스 완화와 면역력 증진에 탁월합니다.',
     coords: { lat: 37.4265, lng: 127.0268 },
-    radiusMeters: 70,
+    radiusMeters: 100,
     points: 100, // 문항별 배점
     locationLabel: '동물원둘레길 숲길 쉼터 (1~3조 전용)',
     courseKey: 'forest',
@@ -177,7 +177,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     correctIndex: 1,
     explanation: '청계산 자락의 물이 모여 형성된 서울대공원 호수의 공식 하천 명칭은 "청계저수지"입니다.',
     coords: { lat: 37.4310, lng: 127.0185 },
-    radiusMeters: 60,
+    radiusMeters: 100,
     points: 100, // 문항별 배점
     locationLabel: '호수 브릿지 전망 데크 (4~6조 전용)',
     courseKey: 'lake',

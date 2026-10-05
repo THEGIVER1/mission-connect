@@ -967,6 +967,7 @@ const MapScreen: React.FC = () => {
   const [selectedQuizId, setSelectedQuizId] = useState<string>('dq_elephant');
   const [isLocating, setIsLocating] = useState(false);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [copiedGps, setCopiedGps] = useState<boolean>(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -1014,6 +1015,15 @@ const MapScreen: React.FC = () => {
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
+  };
+
+  const handleCopyCoords = () => {
+    if (myLocation) {
+      const coordText = `${myLocation.lat.toFixed(6)}, ${myLocation.lng.toFixed(6)}`;
+      navigator.clipboard?.writeText(coordText);
+      setCopiedGps(true);
+      setTimeout(() => setCopiedGps(false), 2000);
+    }
   };
 
   useEffect(() => {
@@ -1381,6 +1391,22 @@ const MapScreen: React.FC = () => {
               <strong className={`text-[12px] mt-0.5 ${isInRangeOfSelected ? 'text-emerald-400 font-bold' : 'text-amber-400'}`}>
                 {distance !== null ? `약 ${distance}m` : 'GPS 측정 중'}
               </strong>
+            </div>
+          </div>
+
+          {/* 실시간 GPS 좌표 정보 (현장 점검용) */}
+          <div className="bg-black/40 border border-white/5 p-2 rounded-xl text-[10.5px] space-y-0.5">
+            <div className="flex justify-between items-center text-slate-300">
+              <span>내 GPS: <strong className="text-sky-300 font-mono">{myLocation ? `${myLocation.lat.toFixed(6)}, ${myLocation.lng.toFixed(6)}` : '수신 대기'}</strong></span>
+              <button
+                onClick={handleCopyCoords}
+                className="text-[10px] bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md transition-all active:scale-95"
+              >
+                {copiedGps ? '✅ 복사됨' : '📋 좌표 복사'}
+              </button>
+            </div>
+            <div className="text-slate-400">
+              스팟: <span className="text-slate-300 font-mono">{selectedQuiz?.coords.lat.toFixed(6)}, {selectedQuiz?.coords.lng.toFixed(6)}</span>
             </div>
           </div>
         </div>
