@@ -134,7 +134,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     options: ['1984년', '1988년', '1992년', '1996년'],
     correctIndex: 0,
     explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
-    coords: { lat: 37.4365, lng: 127.0142 },
+    coords: { lat: 37.434610, lng: 127.009518 },
     radiusMeters: 200,
     points: 100, // 문항별 배점
     locationLabel: '빵명장 서울대공원점 앞 [첫 집결지/출발/도착]',
@@ -208,7 +208,7 @@ export const ACTIVE_VENUE = {
   sessionKey: 'trekking2026',
   departurePoint: {
     name: '빵명장 서울대공원점 앞 [첫 집결지/출발/도착]',
-    coords: { lat: 37.4365, lng: 127.0142 },
+    coords: { lat: 37.434610, lng: 127.009518 },
   },
   photoSpot: {
     name: '국립현대미술관 과천관 앞 [📸 단체사진]',
