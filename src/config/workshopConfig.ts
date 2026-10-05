@@ -126,18 +126,18 @@ export const PEOPLE_QUEST_POINTS_PER_MEMBER = 100; // 배점 변경 시 이 값�
 // 5. Activity 2: Discovery Quiz (조당 3문항: 공통 2개 + 코스 전용 1개)
 // ─────────────────────────────────────────────────────────────────
 export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
-  // [공통 1] 코끼리열차 매표소 앞 광장 (출발 및 도착 기점)
+  // [공통 1] 빵명장 서울대공원점 앞 (첫 집결지 · 출발 및 도착 기점)
   {
     id: 'dq_elephant',
-    title: '코끼리열차의 역사',
-    questionText: '서울대공원의 상징인 코끼리열차가 최초로 개통 및 운행을 시작한 연도는 언제일까요? (매표소 안내판 참고)',
+    title: '빵명장 서울대공원점 (첫 집결지)',
+    questionText: '서울대공원 첫 집결지인 빵명장 및 코끼리열차와 관련된 문제입니다. 서울대공원의 상징인 코끼리열차가 최초로 개통 및 운행을 시작한 연도는 언제일까요? (안내판 참고)',
     options: ['1984년', '1988년', '1992년', '1996년'],
     correctIndex: 0,
     explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
-    coords: { lat: 37.4357, lng: 127.0062 },
-    radiusMeters: 150,
+    coords: { lat: 37.4365, lng: 127.0142 },
+    radiusMeters: 200,
     points: 100, // 문항별 배점
-    locationLabel: '코끼리열차 매표소 앞 광장 [출발/도착]',
+    locationLabel: '빵명장 서울대공원점 앞 [첫 집결지/출발/도착]',
     courseKey: 'all',
   },
   // [공통 2] 국립현대미술관 과천관 앞 (📸 단체사진 촬영지 & 공통 퀴즈)
@@ -207,8 +207,8 @@ export const ACTIVE_VENUE = {
   eventName: '2026 CHRO Trekking',
   sessionKey: 'trekking2026',
   departurePoint: {
-    name: '코끼리열차 매표소 앞 광장 [출발/도착]',
-    coords: { lat: 37.4357, lng: 127.0062 },
+    name: '빵명장 서울대공원점 앞 [첫 집결지/출발/도착]',
+    coords: { lat: 37.4365, lng: 127.0142 },
   },
   photoSpot: {
     name: '국립현대미술관 과천관 앞 [📸 단체사진]',

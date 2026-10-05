@@ -1777,7 +1777,7 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: '⏰ 트레킹 마감 15분 전 안내',
-                    message: '트레킹 미션 종료 15분 전입니다. 코끼리열차 매표소(출발지)로 안전하게 복귀해 주시기 바랍니다.',
+                    message: '트레킹 미션 종료 15분 전입니다. 빵명장 서울대공원점(첫 집결지)으로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
@@ -1878,8 +1878,8 @@ const AdminScreen: React.FC = () => {
               </p>
               <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 space-y-1">
                 <p>📸 <strong>공통 단체사진 스팟:</strong> {ACTIVE_VENUE.photoSpot.name} (두 코스 모두 통과)</p>
-                <p>🦁 <strong>1~3조 (동물원둘레길):</strong> 코끼리열차 매표소 + 미술관 + 동물원둘레길 쉼터 (3문항)</p>
-                <p>🌊 <strong>4~6조 (호수둘레길):</strong> 코끼리열차 매표소 + 미술관 + 호수 브릿지 데크 (3문항)</p>
+                <p>🦁 <strong>1~3조 (동물원둘레길):</strong> 빵명장 서울대공원점 + 미술관 + 동물원둘레길 쉼터 (3문항)</p>
+                <p>🌊 <strong>4~6조 (호수둘레길):</strong> 빵명장 서울대공원점 + 미술관 + 호수 브릿지 데크 (3문항)</p>
               </div>
             </div>
 

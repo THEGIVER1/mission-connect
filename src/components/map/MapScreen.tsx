@@ -26,30 +26,18 @@ function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 // ─────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────
-// 코스별 실제 GPS 정밀 좌표 트랙 (기점: 위도 37.4357, 경도 127.0062 집결지)
+// 코스별 실제 GPS 정밀 좌표 트랙 (기점: 위도 37.4365, 경도 127.0142 빵명장 서울대공원점 집결지)
 // - LAKE_TRACK: 청계저수지 파란 호수 수변 테두리를 100% 따르는 2.8km 순환선
 // - ZOO_TRACK: 서울대공원 동물원 시설 외곽과 산림 경계를 완벽히 도는 4.5km 순환선
 // ─────────────────────────────────────────────────────────────────
 const LAKE_TRACK: [number, number][] = [
   [
-    37.4357,
-    127.0062
+    37.4365,
+    127.0142
   ],
   [
-    37.43565,
-    127.008
-  ],
-  [
-    37.4355,
-    127.0098
-  ],
-  [
-    37.4353,
-    127.0118
-  ],
-  [
-    37.4349,
-    127.014
+    37.4358,
+    127.0146
   ],
   [
     37.43525,
@@ -160,43 +148,23 @@ const LAKE_TRACK: [number, number][] = [
     127.0128
   ],
   [
-    37.4353,
-    127.0118
-  ],
-  [
     37.4355,
-    127.0098
+    127.0135
   ],
   [
-    37.43565,
-    127.008
-  ],
-  [
-    37.4357,
-    127.0062
+    37.4365,
+    127.0142
   ]
 ];
 
 const ZOO_TRACK: [number, number][] = [
   [
-    37.4357,
-    127.0062
+    37.4365,
+    127.0142
   ],
   [
-    37.43565,
-    127.008
-  ],
-  [
-    37.4355,
-    127.0098
-  ],
-  [
-    37.4353,
-    127.0118
-  ],
-  [
-    37.4348,
-    127.014
+    37.4358,
+    127.0146
   ],
   [
     37.4352,
@@ -943,20 +911,12 @@ const ZOO_TRACK: [number, number][] = [
     127.013
   ],
   [
-    37.4353,
-    127.0118
-  ],
-  [
     37.4355,
-    127.0098
+    127.0135
   ],
   [
-    37.43565,
-    127.008
-  ],
-  [
-    37.4357,
-    127.0062
+    37.4365,
+    127.0142
   ]
 ];
 
@@ -1106,14 +1066,14 @@ const MapScreen: React.FC = () => {
       lineJoin: 'round',
     }).addTo(layer);
 
-    // 2) 코끼리열차 매표소 [출발 & 도착] 기점 마커
+    // 2) 빵명장 서울대공원점 [첫 집결지 · 출발 & 도착] 기점 마커
     const departureIcon = L.divIcon({
       className: 'custom-departure-pin',
       html: `
         <div style="
           background: rgba(15, 23, 42, 0.95);
-          color: #38BDF8;
-          border: 2px solid #38BDF8;
+          color: #FACC15;
+          border: 2px solid #FACC15;
           padding: 5px 10px;
           border-radius: 20px;
           font-size: 11px;
@@ -1124,12 +1084,12 @@ const MapScreen: React.FC = () => {
           align-items: center;
           gap: 5px;
         ">
-          <span>🚊</span>
-          <span>코끼리열차 매표소 [출발/도착]</span>
+          <span>🥖</span>
+          <span>빵명장 [첫 집결지/출발]</span>
         </div>
       `,
-      iconSize: [170, 32],
-      iconAnchor: [85, 16],
+      iconSize: [165, 32],
+      iconAnchor: [82, 16],
     });
 
     L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
@@ -1259,7 +1219,7 @@ const MapScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               SATELLITE <span className="text-sky-400">TREKKING MAP</span>
             </span>
-            <p className="text-[10px] text-slate-400">매표소 기점 순환 회귀 코스 지도</p>
+            <p className="text-[10px] text-slate-400">빵명장 첫 집결지 순환 회귀 코스 지도</p>
           </div>
           <span className="text-[11px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
