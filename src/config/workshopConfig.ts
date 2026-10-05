@@ -134,7 +134,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     options: ['1984년', '1988년', '1992년', '1996년'],
     correctIndex: 0,
     explanation: '서울대공원 코끼리열차는 서울대공원 개원과 함께 1984년 첫 운행을 시작했습니다.',
-    coords: { lat: 37.4347, lng: 127.0132 },
+    coords: { lat: 37.4357, lng: 127.0062 },
     radiusMeters: 60,
     points: 100, // 문항별 배점
     locationLabel: '코끼리열차 매표소 앞 광장 [출발/도착]',
@@ -208,7 +208,7 @@ export const ACTIVE_VENUE = {
   sessionKey: 'trekking2026',
   departurePoint: {
     name: '코끼리열차 매표소 앞 광장 [출발/도착]',
-    coords: { lat: 37.4347, lng: 127.0132 },
+    coords: { lat: 37.4357, lng: 127.0062 },
   },
   photoSpot: {
     name: '국립현대미술관 과천관 앞 [📸 단체사진]',
