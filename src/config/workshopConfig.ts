@@ -162,7 +162,7 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [
     options: ['피톤치드(Phytoncide)', '플라보노이드', '카테킨', '글루코사민'],
     correctIndex: 0,
     explanation: '피톤치드는 숲속 나무들이 방출하는 천연 물질로, 스트레스 완화와 면역력 증진에 탁월합니다.',
-    coords: { lat: 37.4265, lng: 127.0255 },
+    coords: { lat: 37.4265, lng: 127.0268 },
     radiusMeters: 70,
     points: 100, // 문항별 배점
     locationLabel: '동물원둘레길 숲길 쉼터 (1~3조 전용)',
