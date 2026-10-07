@@ -38,30 +38,20 @@ const QUESTION_PROMPTS: { [key: string]: { title: string; prompt: string; icon: 
     prompt: '🎤 MC 팁: "이 취미에 푹 빠지게 된 특별한 계기나 가장 기억에 남는 에피소드가 있으신가요?"',
     icon: '🎯',
   },
-  q2_vacation: {
-    title: 'Q2. 5일의 자유 시간 (1단계)',
-    prompt: '🎤 MC 팁: "5일의 완전한 자유가 생긴다면 가장 먼저 떠나고 싶은 장소는 어디인가요?"',
-    icon: '✈️',
-  },
   q3_bucketList: {
-    title: 'Q3. 3년 내 버킷리스트 (1단계)',
+    title: 'Q2. 3년 내 버킷리스트 (1단계)',
     prompt: '🎤 MC 팁: "이 버킷리스트를 이루기 위해 올해 계획 중이신 첫 번째 실행 단계가 있으신가요?"',
     icon: '⭐',
   },
   q4_dreamJob: {
-    title: 'Q4. 해보고 싶은 다른 직업 (2단계)',
+    title: 'Q3. 해보고 싶은 다른 직업 (2단계)',
     prompt: '🎤 MC 팁: "만약 이 직업을 선택하셨다면 지금 어떤 모습으로 활동하고 계실 것 같나요?"',
     icon: '💼',
   },
   q5_unexpectedFact: {
-    title: 'Q5. 의외의 사실 & 숨은 이력 (2단계)',
+    title: 'Q4. 의외의 사실 & 숨은 이력 (2단계)',
     prompt: '🎤 MC 팁: "주변 동료들이 이 사실을 처음 알았을 때 반응이 어떠셨나요?"',
     icon: '😮',
-  },
-  q6_superpower: {
-    title: 'Q6. 나만의 키워드 / 슈퍼파워 (2단계)',
-    prompt: '🎤 MC 팁: "이 키워드를 본인의 슈퍼파워로 꼽으신 특별한 이유나 재미있는 일화가 있으신가요?"',
-    icon: '⚡',
   },
 };
 
@@ -96,7 +86,7 @@ export const MCCueSheetModal: React.FC<MCCueSheetModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                현장 참가자의 6문항 전체 답변 및 낮 피플퀘스트 추천 코멘트, 맞춤 인터뷰 질문 팁
+                현장 참가자의 4문항 전체 답변 및 낮 피플퀘스트 추천 코멘트, 맞춤 인터뷰 질문 팁
               </p>
             </div>
           </div>
@@ -173,10 +163,10 @@ export const MCCueSheetModal: React.FC<MCCueSheetModalProps> = ({
             </div>
           )}
 
-          {/* 6문항 상세 답변 & 인터뷰 팁 리스트 */}
+          {/* 4문항 상세 답변 & 인터뷰 팁 리스트 */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
-              📝 참가자 작성 7문항 전체 답변 & 인터뷰 유도 팁
+              📝 참가자 작성 4문항 전체 답변 & 인터뷰 유도 팁
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

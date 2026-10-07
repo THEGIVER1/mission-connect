@@ -24,11 +24,9 @@ interface UnifiedRecommendation {
 
 const TOPIC_OPTIONS = [
   '최근 가장 푹 빠진 취미/관심사',
-  '5일 자유시간에 하고 싶은 일',
   '3년 내 꼭 이루고 싶은 버킷리스트',
   '해보고 싶은 다른 직업',
   '의외의 특별한 사실이나 숨은 이력',
-  '나를 표현하는 키워드/슈퍼파워',
 ];
 
 const PeopleQuestScreen: React.FC = () => {

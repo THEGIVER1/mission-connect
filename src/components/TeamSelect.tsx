@@ -118,7 +118,7 @@ const TeamSelect: React.FC = () => {
       myInfo: answers,
       truth1: answers['q1_passion'] || '',
       truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
-      lie: answers['q4_dreamJob'] || answers['q6_superpower'] || '',
+      lie: answers['q4_dreamJob'] || '',
       score: initialScore,
       missionsCompleted: initialCompleted,
       peopleQuestCompleted: false,
@@ -245,7 +245,7 @@ const TeamSelect: React.FC = () => {
             ${step === 'myinfo' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
             2
           </div>
-          <span className={`text-[11px] ${step === 'myinfo' ? 'text-white font-bold' : 'text-slate-500'}`}>나의 정보 입력 (7문항)</span>
+          <span className={`text-[11px] ${step === 'myinfo' ? 'text-white font-bold' : 'text-slate-500'}`}>나의 정보 입력 (4문항)</span>
         </div>
       </div>
 
@@ -275,7 +275,7 @@ const TeamSelect: React.FC = () => {
                     onClick={() => setStep('myinfo')}
                     className="flex-1 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 text-[12px] font-bold rounded-xl"
                   >
-                    ✏️ 7문항 답변 수정/입력
+                    ✏️ 4문항 답변 수정/입력
                   </button>
                   <button
                     type="button"
@@ -368,13 +368,13 @@ const TeamSelect: React.FC = () => {
               className="w-full py-3.5 rounded-xl font-bold text-[15px] text-white
                 bg-red-500 active:scale-98 transition-all shadow-md shadow-red-500/20"
             >
-              다음 → 나의 정보 6문항 입력
+              다음 → 나의 정보 4문항 입력
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: 나의 정보 입력 (6개 질문 - 실시간 자동 저장 적용) */}
+      {/* STEP 2: 나의 정보 입력 (4개 질문 - 실시간 자동 저장 적용) */}
       {step === 'myinfo' && (
         <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
@@ -390,7 +390,7 @@ const TeamSelect: React.FC = () => {
             </p>
           </div>
 
-          {/* 6개 질문 카드 리스트 */}
+          {/* 4개 질문 카드 리스트 */}
           <div className="space-y-4">
             {MY_INFO_QUESTIONS.map((q, idx) => {
               const val = answers[q.id] || '';
