@@ -212,11 +212,21 @@ const TeamSelect: React.FC = () => {
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100">
 
       {/* 상단 브랜딩 헤더 */}
-      <div className="relative bg-[#13192A] px-5 pt-8 pb-5 text-center">
+      <div className="relative bg-[#13192A] px-5 pt-7 pb-4 text-center">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
-        <p style={{ color: '#005EB8', fontSize: '32px', fontWeight: '900', letterSpacing: '3px', fontStyle: 'italic', marginBottom: '4px' }}>
-          DOOSAN
-        </p>
+        <div className="flex items-center justify-between mb-1">
+          <div className="w-12" />
+          <p style={{ color: '#005EB8', fontSize: '30px', fontWeight: '900', letterSpacing: '3px', fontStyle: 'italic' }}>
+            DOOSAN
+          </p>
+          <button
+            onClick={() => navigate('/admin')}
+            className="text-[10px] bg-[#1A2235] hover:bg-[#232D42] text-slate-300 border border-white/10 px-2 py-1 rounded-lg font-bold transition-all shadow"
+            title="운영본부 관리자 콘솔"
+          >
+            ⚙️ 관리자
+          </button>
+        </div>
         <p className="text-[12px] text-white tracking-[4px] font-bold uppercase mb-2">
           2026 CHRO TREKKING
         </p>

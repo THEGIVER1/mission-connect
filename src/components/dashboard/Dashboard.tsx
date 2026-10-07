@@ -58,6 +58,15 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
         <div className="flex items-center gap-1.5">
           <button
             type="button"
+            onClick={() => navigate('/admin')}
+            className="text-[10px] bg-[#1A2235] hover:bg-[#232D45] text-slate-300 border border-white/10 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
+            title="운영본부 관리자 콘솔"
+          >
+            <span>⚙️</span>
+            <span className="font-bold">관리자</span>
+          </button>
+          <button
+            type="button"
             onClick={onOpenProfile}
             className="text-[10px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
             title="4개 질문 답변 확인 및 수정"

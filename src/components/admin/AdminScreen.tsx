@@ -1351,107 +1351,154 @@ const AdminScreen: React.FC = () => {
   // VIEW 3: 일반 모바일 / 데스크톱 관리자 콘솔 화면
   // ─────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-[440px] mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
+    <div className="max-w-5xl mx-auto bg-[#0D1117] min-h-screen pb-16 font-['Noto_Sans_KR'] text-slate-100 flex flex-col">
       {/* 헤더 */}
-      <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative">
+      <header className="bg-[#13192A] border-b border-white/8 px-4 md:px-6 pt-4 pb-4 relative">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
-            className="w-9 h-9 rounded-xl bg-[#1A2235] border border-white/8 flex items-center justify-center text-white text-base"
+            className="px-3 py-1.5 rounded-xl bg-[#1A2235] hover:bg-[#232D42] border border-white/8 flex items-center gap-1.5 text-slate-300 text-xs font-bold transition-all"
           >
-            ←
+            ← 참여자 화면으로
           </button>
           <div className="text-center">
-            <span className="font-bebas text-xl tracking-widest text-white">
+            <span className="font-bebas text-xl md:text-2xl tracking-widest text-white">
               ADMIN · <span className="text-red-500">CONTROL CENTER</span>
             </span>
-            <p className="text-[10px] text-slate-400">2026 CHRO Trekking 운영본부</p>
+            <p className="text-[11px] text-slate-400">2026 CHRO Trekking 운영본부 통합 관리자 콘솔</p>
           </div>
           <button
             onClick={fetchData}
-            className="w-9 h-9 rounded-xl bg-[#1A2235] border border-white/8 flex items-center justify-center text-slate-300 active:scale-95"
+            className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 flex items-center gap-1.5 text-red-300 text-xs font-bold active:scale-95 transition-all"
             title="새로고침"
           >
-            🔄
+            🔄 새로고침
           </button>
         </div>
       </header>
 
       {/* 종합 현황 인포 바 */}
-      <div className="bg-[#101626] border-b border-white/8 px-4 py-2 flex items-center justify-between text-[11px] text-slate-300">
-        <div className="flex items-center gap-1.5">
+      <div className="bg-[#101626] border-b border-white/8 px-4 md:px-6 py-2.5 flex items-center justify-between text-xs text-slate-300">
+        <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="실시간 동기화 작동 중" />
-          <span>👥 참여: </span>
+          <span>👥 등록 참가자: </span>
           <strong className="text-amber-400 font-bold">{participants.length}명</strong>
         </div>
         <div>
-          <span>💡 4문항: </span>
+          <span>💡 4문항 입력 완료: </span>
           <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
         </div>
         <button
           onClick={handleResetSessionData}
-          className="px-2 py-0.5 rounded bg-red-900/40 text-red-300 border border-red-500/30 text-[10px] font-bold hover:bg-red-800/60 transition-all flex items-center gap-1"
+          className="px-2.5 py-1 rounded bg-red-900/40 text-red-300 border border-red-500/30 text-[11px] font-bold hover:bg-red-800/60 transition-all flex items-center gap-1"
           title="파일럿 테스트용 세션 전체 초기화"
         >
           🧹 데이터 리셋
         </button>
       </div>
 
+      {/* 📥 운영본부 엑셀(CSV) 즉시 다운로드 센터 (상단 고정 배치) */}
+      <div className="m-4 md:m-6 bg-gradient-to-r from-[#172033] via-[#1A253C] to-[#172033] border-2 border-red-500/40 rounded-2xl p-4 md:p-5 shadow-2xl space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">📊</span>
+            <div>
+              <h3 className="text-sm md:text-base font-black text-white flex items-center gap-2">
+                운영본부 엑셀(CSV) 다운로드 센터
+                <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">1-Click 즉시 다운</span>
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                참가자 등록 현황 및 4문항 답변 원문, 조별 피플퀘스트 추천 마스터 데이터를 실시간 엑셀로 추출합니다.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs px-3 py-1 bg-green-500/20 text-green-300 border border-green-500/30 rounded-full font-bold">
+            🟢 실시간 연동 완료 ({participants.length}명)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+          <button
+            onClick={handleExportMasterMergedCSV}
+            className="px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-black text-xs md:text-[13px] rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-all"
+          >
+            <span>📥</span>
+            <span>저녁 퀴즈 마스터 결합 엑셀</span>
+          </button>
+
+          <button
+            onClick={handleExportMyInfoCSV}
+            className="px-4 py-3 bg-[#1F2C47] hover:bg-[#2A3B5F] text-sky-300 border border-sky-500/40 font-bold text-xs md:text-[13px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+          >
+            <span>📋</span>
+            <span>참가자 4문항 원문 엑셀</span>
+          </button>
+
+          <button
+            onClick={handleExportPeopleQuestCSV}
+            className="px-4 py-3 bg-[#26283D] hover:bg-[#343753] text-amber-300 border border-amber-500/40 font-bold text-xs md:text-[13px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+          >
+            <span>💬</span>
+            <span>조별 피플퀘스트 추천 엑셀</span>
+          </button>
+        </div>
+      </div>
+
       {/* 6개 탭 네비게이션 */}
-      <div className="bg-[#101626] border-b border-white/8 p-1.5 grid grid-cols-6 gap-1 text-[10.5px] font-bold">
+      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-3 md:grid-cols-6 gap-2 text-xs font-bold">
         <button
           onClick={() => setActiveTab('quizMaster')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2.5 rounded-xl transition-all text-center ${
+            activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
           🎯 퀴즈쇼
         </button>
         <button
           onClick={() => setActiveTab('teams')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'teams' ? 'bg-amber-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2.5 rounded-xl transition-all text-center ${
+            activeTab === 'teams' ? 'bg-amber-500 text-slate-950 font-black shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
           🏆 시상식
         </button>
         <button
           onClick={() => setActiveTab('broadcast')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'broadcast' ? 'bg-emerald-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2.5 rounded-xl transition-all text-center ${
+            activeTab === 'broadcast' ? 'bg-emerald-500 text-slate-950 font-black shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
           📢 공지발송
         </button>
         <button
           onClick={() => setActiveTab('discoveryQuizzes')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'discoveryQuizzes' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2.5 rounded-xl transition-all text-center ${
+            activeTab === 'discoveryQuizzes' ? 'bg-sky-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
           🧭 현장퀴즈
         </button>
         <button
           onClick={() => setActiveTab('myInfoList')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'myInfoList' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2.5 rounded-xl transition-all text-center ${
+            activeTab === 'myInfoList' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          💡 나의정보
+          💡 나의정보 (4문항)
         </button>
         <button
           onClick={() => setActiveTab('peopleQuest')}
-          className={`py-2 rounded-lg transition-all text-center ${
-            activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2.5 rounded-xl transition-all text-center ${
+            activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          💬 추천
+          💬 조별추천
         </button>
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+      <div className="p-4 md:p-6 space-y-4 flex-1 overflow-y-auto">
 
         {/* TAB 1: 저녁 퀴즈 마스터 모드 */}
         {activeTab === 'quizMaster' && (
