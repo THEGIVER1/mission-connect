@@ -108,7 +108,13 @@ const TeamSelect: React.FC = () => {
       status: 'active',
     }, trimmedName, company, selectedTeam.assignedCourse);
 
-    // 2. 페이로드 준비
+    // 2. localStorage에 즉시 답변 드래프트 영구 저장
+    try {
+      localStorage.setItem('my_info_answers_draft', JSON.stringify(answers));
+      localStorage.setItem('participant_registered_id', participantId);
+    } catch {}
+
+    // 3. 페이로드 준비
     const payload = {
       name: trimmedName,
       company,
@@ -127,47 +133,28 @@ const TeamSelect: React.FC = () => {
       status: 'active',
     };
 
-    // 3. 백그라운드 & 타임아웃 보장 비동기 저장 (REST + SDK)
-    const saveToFirebase = async () => {
-      // 1) REST PATCH (최대 1.5초 타임아웃)
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
-        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-      } catch (restErr) {
-        console.warn('REST 저장 타임아웃/경고:', restErr);
-      }
-
-      // 2) SDK update (최대 1.5초 타임아웃)
-      try {
-        const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-        await Promise.race([
-          update(pRef, payload),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('SDK Timeout')), 1500))
-        ]);
-      } catch (sdkErr) {
-        console.warn('SDK 저장 타임아웃/경고:', sdkErr);
-      }
-    };
-
-    // 백그라운드 저장 실행 & 대시보드로 즉각 이동 (최대 600ms 대기 후 무조건 전환)
+    // 4. Firebase RTDB에 안전하게 저장
     try {
-      await Promise.race([
-        saveToFirebase(),
-        new Promise(resolve => setTimeout(resolve, 600))
-      ]);
-    } catch (e) {
-      console.warn('전환 처리 중 예외:', e);
-    } finally {
-      setIsSubmitting(false);
-      navigate('/', { replace: true });
+      // 1) REST PATCH
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (restErr) {
+      console.warn('REST 저장 경고:', restErr);
     }
+
+    try {
+      // 2) SDK update 병행
+      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+      await update(pRef, payload);
+    } catch (sdkErr) {
+      console.warn('SDK 저장 경고:', sdkErr);
+    }
+
+    setIsSubmitting(false);
+    navigate('/', { replace: true });
   };
 
   const forestTeams = TEAMS.filter(t => t.assignedCourse === 'forest');

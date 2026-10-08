@@ -364,53 +364,41 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     } catch {}
 
     const patchPayload = {
+      name: participantName ? participantName.trim() : '',
+      company: participantCompany || '',
+      teamId: myTeam?.id || 'team1',
+      teamName: myTeam?.name || '1조',
+      course: myTeam?.assignedCourse || 'forest',
       myInfo: answers,
       truth1: answers['q1_passion'] || '',
       truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
       lie: answers['q4_dreamJob'] || '',
+      status: 'active',
       updatedAt: new Date().toISOString(),
     };
 
-    const savePromises = async () => {
-      // 1) REST API PATCH (최대 1.5초)
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 1500);
-        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patchPayload),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-      } catch (err) {
-        console.warn('REST 저장 경고:', err);
-      }
-
-      // 2) Firebase RTDB SDK update (최대 1.5초)
-      try {
-        const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-        await Promise.race([
-          update(pRef, patchPayload),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('SDK Timeout')), 1500))
-        ]);
-      } catch (err) {
-        console.warn('SDK 저장 경고:', err);
-      }
-    };
+    try {
+      // 1) REST API PATCH
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patchPayload),
+      });
+    } catch (err) {
+      console.warn('REST 저장 경고:', err);
+    }
 
     try {
-      await Promise.race([
-        savePromises(),
-        new Promise(resolve => setTimeout(resolve, 800))
-      ]);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      // 2) Firebase RTDB SDK update
+      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
+      await update(pRef, patchPayload);
     } catch (err) {
-      console.warn('프로필 저장 경고:', err);
-    } finally {
-      setIsSaving(false);
+      console.warn('SDK 저장 경고:', err);
     }
+
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+    setIsSaving(false);
   };
 
   if (!isOpen) return null;
@@ -732,16 +720,37 @@ const Dashboard: React.FC = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
 
-  // 전 코스 완주 시 1회 완주 인증서 자동 팝업
+  // 6. 참가자 프로필 및 4문항 자동 동기화 보장 (네트워크 지연으로 TeamSelect에서 누락된 경우 자동 복구)
   useEffect(() => {
-    if (isAllCompleted) {
-      const shown = sessionStorage.getItem('chro_cert_shown');
-      if (!shown) {
-        setIsCertModalOpen(true);
-        sessionStorage.setItem('chro_cert_shown', 'true');
-      }
-    }
-  }, [isAllCompleted]);
+    if (!participantName || !participantCompany || !myTeam) return;
+    const pId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+
+    let localAnswers: Record<string, string> = {};
+    try {
+      const saved = localStorage.getItem('my_info_answers_draft');
+      if (saved) localAnswers = JSON.parse(saved);
+    } catch {}
+
+    const payload = {
+      name: participantName.trim(),
+      company: participantCompany,
+      teamId: myTeam.id,
+      teamName: myTeam.name,
+      course: myTeam.assignedCourse || 'forest',
+      myInfo: localAnswers,
+      truth1: localAnswers['q1_passion'] || '',
+      truth2: localAnswers['q5_unexpectedFact'] || localAnswers['q3_bucketList'] || '',
+      lie: localAnswers['q4_dreamJob'] || '',
+      status: 'active',
+      updatedAt: new Date().toISOString(),
+    };
+
+    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(err => console.warn('Dashboard 자동 프로필 동기화 경고:', err));
+  }, [participantName, participantCompany, myTeam, dbUrl]);
 
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">

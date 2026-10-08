@@ -185,7 +185,10 @@ const AdminScreen: React.FC = () => {
 
   // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
   const participants: ParticipantRecord[] = useMemo(() => {
-    return individuals.map(ind => {
+    const list: ParticipantRecord[] = [];
+    const mappedKeys = new Set<string>();
+
+    individuals.forEach(ind => {
       const raw =
         rawParticipantsMap[ind.id] ||
         rawParticipantsMap[`${ind.name}_${ind.company}`.replace(/\s/g, '_')] ||
@@ -199,9 +202,13 @@ const AdminScreen: React.FC = () => {
         ) ||
         {};
 
+      mappedKeys.add(ind.id);
+      mappedKeys.add(`${ind.name.trim()}_${ind.company || ''}`.replace(/\s/g, '_'));
+      if (raw.id) mappedKeys.add(raw.id);
+
       const myInfo = raw.myInfo || {};
 
-      return {
+      list.push({
         id: ind.id,
         name: ind.name,
         company: ind.company || raw.company || '',
@@ -222,8 +229,52 @@ const AdminScreen: React.FC = () => {
         truth2: raw.truth2 || myInfo.q5_unexpectedFact || '',
         lie: raw.lie || myInfo.q4_dreamJob || myInfo.q3_dreamJob || '',
         joinedAt: raw.joinedAt,
-      };
+      });
     });
+
+    // rawParticipantsMap에 있으나 individuals에 아직 없는 경우도 100% 포괄 추가
+    if (rawParticipantsMap && typeof rawParticipantsMap === 'object') {
+      Object.entries(rawParticipantsMap).forEach(([key, raw]: [string, any]) => {
+        if (!raw || !raw.name) return;
+        const nameTrimmed = String(raw.name).trim();
+        const comp = String(raw.company || '');
+        const keyId = raw.id || key;
+        const altKey = `${nameTrimmed}_${comp}`.replace(/\s/g, '_');
+
+        if (mappedKeys.has(keyId) || mappedKeys.has(altKey) || list.some(p => p.name === nameTrimmed && p.company === comp)) {
+          return;
+        }
+
+        const myInfo = raw.myInfo || {};
+        const pTeamId = normalizeTeamId(raw.teamId);
+        const teamConfig = WORKSHOP_TEAMS.find(t => t.id === pTeamId);
+
+        list.push({
+          id: keyId,
+          name: nameTrimmed,
+          company: comp,
+          teamId: pTeamId,
+          teamName: raw.teamName || teamConfig?.name || '1조',
+          course: raw.course || teamConfig?.assignedCourse || 'forest',
+          score: raw.score ?? 0,
+          missionsCompleted: raw.missionsCompleted ?? 0,
+          myInfo: {
+            q1_passion: myInfo.q1_passion || raw.q1_passion || raw.truth1 || '',
+            q3_bucketList: myInfo.q3_bucketList || raw.q3_bucketList || raw.q4_bucketList || '',
+            q4_dreamJob: myInfo.q4_dreamJob || raw.q4_dreamJob || raw.q3_dreamJob || raw.lie || '',
+            q5_unexpectedFact: myInfo.q5_unexpectedFact || raw.q5_unexpectedFact || raw.truth2 || '',
+            ...myInfo,
+          },
+          quizzes: raw.quizzes || {},
+          truth1: raw.truth1 || myInfo.q1_passion || '',
+          truth2: raw.truth2 || myInfo.q5_unexpectedFact || '',
+          lie: raw.lie || myInfo.q4_dreamJob || '',
+          joinedAt: raw.joinedAt,
+        });
+      });
+    }
+
+    return list;
   }, [individuals, rawParticipantsMap]);
 
   // 3. 실시간 조별 순위 및 팀원 목록 (개인 점수 합산 100% 일치)
