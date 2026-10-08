@@ -1066,7 +1066,7 @@ const MapScreen: React.FC = () => {
       lineJoin: 'round',
     }).addTo(layer);
 
-    // 2) 빵명장 서울대공원점 [첫 집결지 · 출발 & 도착] 기점 마커
+    // 2) 빵명장 서울대공원점 [첫 집결지 · 출발 & 도착 & 단체사진] 기점 마커
     const departureIcon = L.divIcon({
       className: 'custom-departure-pin',
       html: `
@@ -1085,23 +1085,23 @@ const MapScreen: React.FC = () => {
           gap: 5px;
         ">
           <span>🥖</span>
-          <span>빵명장 [첫 집결지/출발]</span>
+          <span>빵명장 [출발/도착/📸단체사진]</span>
         </div>
       `,
-      iconSize: [165, 32],
-      iconAnchor: [82, 16],
+      iconSize: [210, 32],
+      iconAnchor: [105, 16],
     });
 
     L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
       icon: departureIcon,
     }).addTo(layer);
 
-    // 3) 단체사진 촬영지 배지 (국립현대미술관 과천관 앞)
-    const photoSpotIcon = L.divIcon({
-      className: 'custom-photo-spot-pin',
+    // 3) 테마가든 단체사진 미션 스팟 마커
+    const themeGardenIcon = L.divIcon({
+      className: 'custom-theme-garden-pin',
       html: `
         <div style="
-          background: rgba(227, 24, 55, 0.95);
+          background: rgba(219, 39, 119, 0.95);
           color: #FFFFFF;
           border: 2px solid #FFFFFF;
           padding: 4px 9px;
@@ -1109,21 +1109,21 @@ const MapScreen: React.FC = () => {
           font-size: 11px;
           font-weight: 800;
           white-space: nowrap;
-          box-shadow: 0 4px 14px rgba(227, 24, 55, 0.6);
+          box-shadow: 0 4px 14px rgba(219, 39, 119, 0.6);
           display: flex;
           align-items: center;
           gap: 4px;
         ">
-          <span>📸</span>
-          <span>단체사진 촬영지 (미술관 앞)</span>
+          <span>🌹</span>
+          <span>테마가든 미션 스팟 (장미원)</span>
         </div>
       `,
-      iconSize: [180, 28],
-      iconAnchor: [90, 42],
+      iconSize: [195, 28],
+      iconAnchor: [97, 42],
     });
 
-    L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
-      icon: photoSpotIcon,
+    L.marker([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], {
+      icon: themeGardenIcon,
     }).addTo(layer);
 
     // 4) Discovery Quiz 마커 (선택된 코스에 해당하는 3개 핀만 노출)

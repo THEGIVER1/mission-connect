@@ -1,6 +1,7 @@
 import {
   WORKSHOP_TEAMS,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
+  THEME_GARDEN_MISSION,
   PRE_REGISTERED_PARTICIPANTS,
 } from '../config/workshopConfig';
 import type { Team } from '../types';
@@ -23,6 +24,7 @@ export interface CurrentUserContext {
   teamId: string | null;
   answeredQuizIds?: string[];
   isPeopleQuestSubmitted?: boolean;
+  isThemeGardenSubmitted?: boolean;
 }
 
 const EMOJIS = ['🔥', '💡', '🤝', '⚖️', '🏆', '🌟', '💪', '🎯'];
@@ -61,9 +63,6 @@ export function createParticipantId(name: string | undefined | null, company: st
 
 /**
  * 특정 조의 People Quest가 제출 완료(submitted)되었는지 안전하게 판별
- * - teamId ('team1', '1조', etc.)
- * - peopleQuestsData 객체의 키를 normalizeTeamId로 전수 검사
- * - val.teamId 또는 val.teamName이 일치하고 val.status === 'submitted' 인 경우도 지원
  */
 export function isPqSubmittedForTeam(
   teamId: string | undefined | null,
@@ -72,14 +71,36 @@ export function isPqSubmittedForTeam(
   if (!teamId || !peopleQuestsData || typeof peopleQuestsData !== 'object') return false;
   const targetNorm = normalizeTeamId(teamId);
 
-  // 1. 직접 키 조회 (정규화 키 및 원본 키)
   if (peopleQuestsData[targetNorm]?.status === 'submitted') return true;
   if (peopleQuestsData[teamId]?.status === 'submitted') return true;
 
-  // 2. 전체 entries 순회하여 키 정규화 및 내부 teamId 필드 검사
   for (const [key, val] of Object.entries(peopleQuestsData)) {
     if (!val || typeof val !== 'object') continue;
     if (val.status === 'submitted') {
+      if (normalizeTeamId(key) === targetNorm) return true;
+      if (val.teamId && normalizeTeamId(val.teamId) === targetNorm) return true;
+      if (val.teamName && normalizeTeamId(val.teamName) === targetNorm) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * 특정 조의 테마가든 단체사진이 제출 완료되었는지 판별
+ */
+export function isThemeGardenDoneForTeam(
+  teamId: string | undefined | null,
+  themeGardenPhotosData: Record<string, any> = {}
+): boolean {
+  if (!teamId || !themeGardenPhotosData || typeof themeGardenPhotosData !== 'object') return false;
+  const targetNorm = normalizeTeamId(teamId);
+
+  if (themeGardenPhotosData[targetNorm]?.photoUrl || themeGardenPhotosData[targetNorm]?.status === 'submitted') return true;
+  if (themeGardenPhotosData[teamId]?.photoUrl || themeGardenPhotosData[teamId]?.status === 'submitted') return true;
+
+  for (const [key, val] of Object.entries(themeGardenPhotosData)) {
+    if (!val || typeof val !== 'object') continue;
+    if (val.photoUrl || val.status === 'submitted') {
       if (normalizeTeamId(key) === targetNorm) return true;
       if (val.teamId && normalizeTeamId(val.teamId) === targetNorm) return true;
       if (val.teamName && normalizeTeamId(val.teamName) === targetNorm) return true;
@@ -119,13 +140,15 @@ export function getPqForTeam(
  *
  * [점수 규칙]
  * 1. People Quest: 조별 미션. 조에서 1명 추천 제출 시 해당 조 모든 조원에게 +100pt 부여.
- * 2. Discovery Quiz: 개인 미션. 각 개인이 맞힌 문항당 +100pt 부여.
- * 3. 조별 총점: 해당 조에 소속된 모든 조원의 점수 합산 (수학적 100% 일치 보장).
+ * 2. 테마가든 미션: 조별 미션. 조별 단체사진 업로드 시 해당 조 모든 조원에게 +100pt 부여.
+ * 3. Discovery Quiz: 개인 미션. 각 개인이 맞힌 문항당 +100pt 부여.
+ * 4. 조별 총점: 해당 조에 소속된 모든 조원의 점수 합산 (수학적 100% 일치 보장).
  */
 export function calculateLeaderboardData(
   participantsData: Record<string, any> = {},
   peopleQuestsData: Record<string, any> = {},
-  currentUser?: CurrentUserContext
+  currentUser?: CurrentUserContext,
+  themeGardenPhotosData: Record<string, any> = {}
 ): {
   individuals: IndividualItem[];
   teams: Team[];
@@ -133,12 +156,15 @@ export function calculateLeaderboardData(
   const listMap = new Map<string, IndividualItem>();
   const normalizedMyTeamId = normalizeTeamId(currentUser?.teamId);
 
-  // 1. 사전 등록 명단이 있을 경우 초기화 (동적 모드에서는 빈 배열)
+  // 1. 사전 등록 명단이 있을 경우 초기화
   PRE_REGISTERED_PARTICIPANTS.forEach((p, i) => {
     const pTeamId = normalizeTeamId(p.teamId);
     const isTeamPqDone = isPqSubmittedForTeam(pTeamId, peopleQuestsData) || (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
+    const isThemeDone = isThemeGardenDoneForTeam(pTeamId, themeGardenPhotosData) || (pTeamId === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
+    
     const basePqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-    const basePqMissions = isTeamPqDone ? 1 : 0;
+    const baseThemePoints = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
+    const baseMissions = (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
     const uniqueKey = p.id || `${p.name.trim()}_${p.company || ''}_${pTeamId}`.replace(/\s/g, '_');
 
     listMap.set(uniqueKey, {
@@ -147,8 +173,8 @@ export function calculateLeaderboardData(
       team: WORKSHOP_TEAMS.find(t => t.id === pTeamId)?.name ?? '1조',
       teamId: pTeamId,
       company: p.company,
-      pts: basePqPoints,
-      missions: basePqMissions,
+      pts: basePqPoints + baseThemePoints,
+      missions: baseMissions,
       emoji: EMOJIS[i % EMOJIS.length],
       rank: 1,
     });
@@ -177,17 +203,21 @@ export function calculateLeaderboardData(
         });
       }
 
-      // 조별 People Quest 완료 여부 판정 (RTDB 완료 OR 참가자 플래그 OR 현재 사용자 로컬 제출)
+      // 조별 People Quest 완료 여부 판정
       const isTeamPqDone =
         isPqSubmittedForTeam(pTeamId, peopleQuestsData) ||
         p.peopleQuestCompleted === true ||
         (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
 
-      const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const pqMissions = isTeamPqDone ? 1 : 0;
+      // 조별 테마가든 미션 완료 여부 판정
+      const isThemeDone =
+        isThemeGardenDoneForTeam(pTeamId, themeGardenPhotosData) ||
+        (pTeamId === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
 
-      const totalPts = quizPoints + pqPoints;
-      const totalMissions = quizMissions + pqMissions;
+      const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
+      const themePoints = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
+      const totalPts = quizPoints + pqPoints + themePoints;
+      const totalMissions = quizMissions + (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
       const uniqueKey = p.id ? sanitizeFirebaseKey(p.id) : createParticipantId(trimmedName, p.company);
 
       listMap.set(uniqueKey, {
@@ -211,13 +241,14 @@ export function calculateLeaderboardData(
     const existing = listMap.get(myUniqueKey) || Array.from(listMap.values()).find(ind => ind.name === myTrimmedName && ind.company === (currentUser.company || ''));
     const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normalizedMyTeamId);
     const isTeamPqDone = isPqSubmittedForTeam(normalizedMyTeamId, peopleQuestsData) || !!currentUser.isPeopleQuestSubmitted;
+    const isThemeDone = isThemeGardenDoneForTeam(normalizedMyTeamId, themeGardenPhotosData) || !!currentUser.isThemeGardenSubmitted;
 
     if (!existing) {
-      // RTDB에 아직 없는 신규 접속자: 로컬 점수(0pt 또는 풀이)로 등록
       const localQuizPts = (currentUser.answeredQuizIds?.length ?? 0) * 100;
       const localPqPts = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const totalPts = localQuizPts + localPqPts;
-      const totalMissions = (currentUser.answeredQuizIds?.length ?? 0) + (isTeamPqDone ? 1 : 0);
+      const localThemePts = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
+      const totalPts = localQuizPts + localPqPts + localThemePts;
+      const totalMissions = (currentUser.answeredQuizIds?.length ?? 0) + (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
 
       listMap.set(myUniqueKey, {
         id: myUniqueKey,
@@ -247,6 +278,7 @@ export function calculateLeaderboardData(
     const totalScore = teamMembers.reduce((sum, m) => sum + m.pts, 0);
     const totalMissions = teamMembers.reduce((sum, m) => sum + m.missions, 0);
     const isPqDone = isPqSubmittedForTeam(teamConfig.id, peopleQuestsData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
+    const isThemeDone = isThemeGardenDoneForTeam(teamConfig.id, themeGardenPhotosData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
 
     return {
       id: teamConfig.id,
@@ -254,9 +286,9 @@ export function calculateLeaderboardData(
       shortCode: teamConfig.shortCode,
       color: teamConfig.color,
       score: totalScore,
-      missionsCompleted: Math.max(totalMissions, isPqDone ? 1 : 0),
+      missionsCompleted: Math.max(totalMissions, (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0)),
       memberCount: teamMembers.length,
-      totalMissions: 2,
+      totalMissions: 4, // 1 튜토리얼/그라운드룰, 1 테마가든, 1 피플퀘스트, 3 디스커버리 퀴즈 등
       lastActivity: new Date(),
       status: 'active' as const,
       rank: 1,

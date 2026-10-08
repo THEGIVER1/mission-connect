@@ -68,13 +68,38 @@ interface BroadcastNoticeData {
   timestamp: string;
 }
 
-type AdminTab = 'quizMaster' | 'discoveryQuizzes' | 'broadcast' | 'teams' | 'myInfoList' | 'peopleQuest';
+interface GroundRuleRecord {
+  teamId: string;
+  teamName: string;
+  roles?: Record<string, string>;
+  selectedRuleIds?: string[];
+  selectedRuleTexts?: string[];
+  customRules?: string[];
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+interface ThemeGardenPhotoRecord {
+  teamId: string;
+  teamName: string;
+  photoUrl: string;
+  uploadedBy: string;
+  uploadedCompany?: string;
+  uploadedAt: string;
+  status: 'submitted';
+  caption?: string;
+}
+
+type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'discoveryQuizzes' | 'broadcast' | 'quizMaster';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<AdminTab>('quizMaster');
+  const [activeTab, setActiveTab] = useState<AdminTab>('teams');
   const [rawParticipantsMap, setRawParticipantsMap] = useState<Record<string, any>>({});
   const [peopleQuests, setPeopleQuests] = useState<Record<string, PeopleQuestRecord>>({});
+  const [groundRules, setGroundRules] = useState<Record<string, GroundRuleRecord>>({});
+  const [themeGardenPhotos, setThemeGardenPhotos] = useState<Record<string, ThemeGardenPhotoRecord>>({});
+  const [adminZoomPhotoUrl, setAdminZoomPhotoUrl] = useState<string | null>(null);
   const [currentBroadcast, setCurrentBroadcast] = useState<BroadcastNoticeData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -129,6 +154,16 @@ const AdminScreen: React.FC = () => {
     } else {
       setPeopleQuests({});
     }
+    if (data.groundRules && typeof data.groundRules === 'object') {
+      setGroundRules(data.groundRules);
+    } else {
+      setGroundRules({});
+    }
+    if (data.themeGardenPhotos && typeof data.themeGardenPhotos === 'object') {
+      setThemeGardenPhotos(data.themeGardenPhotos);
+    } else {
+      setThemeGardenPhotos({});
+    }
     if (data.broadcastNotice && data.broadcastNotice.active) {
       setCurrentBroadcast(data.broadcastNotice);
     } else {
@@ -182,8 +217,8 @@ const AdminScreen: React.FC = () => {
 
   // 1. 실시간 랭킹 및 통합 점수 계산 (대시보드·리더보드와 100% 동일한 점수 계산기 연동)
   const { individuals, teams: calculatedTeams } = useMemo(() => {
-    return calculateLeaderboardData(rawParticipantsMap, peopleQuests);
-  }, [rawParticipantsMap, peopleQuests]);
+    return calculateLeaderboardData(rawParticipantsMap, peopleQuests, undefined, themeGardenPhotos);
+  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos]);
 
   // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
   const participants: ParticipantRecord[] = useMemo(() => {
@@ -1512,55 +1547,79 @@ const AdminScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 6개 탭 네비게이션 */}
-      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-3 md:grid-cols-6 gap-2 text-xs font-bold">
-        <button
-          onClick={() => setActiveTab('quizMaster')}
-          className={`py-2.5 rounded-xl transition-all text-center ${
-            activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
-          }`}
-        >
-          🎯 퀴즈쇼
-        </button>
+      {/* 8개 관리자 탭 네비게이션 */}
+      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs font-bold">
         <button
           onClick={() => setActiveTab('teams')}
-          className={`py-2.5 rounded-xl transition-all text-center ${
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
             activeTab === 'teams' ? 'bg-amber-500 text-slate-950 font-black shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          🏆 시상식
+          <span>🏆</span>
+          <span>조별순위</span>
         </button>
         <button
-          onClick={() => setActiveTab('broadcast')}
-          className={`py-2.5 rounded-xl transition-all text-center ${
-            activeTab === 'broadcast' ? 'bg-emerald-500 text-slate-950 font-black shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          onClick={() => setActiveTab('groundRules')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'groundRules' ? 'bg-sky-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          📢 공지발송
+          <span>🤝</span>
+          <span>그라운드룰</span>
         </button>
         <button
-          onClick={() => setActiveTab('discoveryQuizzes')}
-          className={`py-2.5 rounded-xl transition-all text-center ${
-            activeTab === 'discoveryQuizzes' ? 'bg-sky-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          onClick={() => setActiveTab('themeGardenGallery')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'themeGardenGallery' ? 'bg-pink-600 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          🧭 현장퀴즈
-        </button>
-        <button
-          onClick={() => setActiveTab('myInfoList')}
-          className={`py-2.5 rounded-xl transition-all text-center ${
-            activeTab === 'myInfoList' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
-          }`}
-        >
-          💡 나의정보 (4문항)
+          <span>🌹</span>
+          <span>테마가든사진</span>
         </button>
         <button
           onClick={() => setActiveTab('peopleQuest')}
-          className={`py-2.5 rounded-xl transition-all text-center ${
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
             activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          💬 조별추천
+          <span>💬</span>
+          <span>피플퀘스트</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('myInfoList')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'myInfoList' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          }`}
+        >
+          <span>💡</span>
+          <span>4문항원문</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('discoveryQuizzes')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'discoveryQuizzes' ? 'bg-sky-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          }`}
+        >
+          <span>🧭</span>
+          <span>현장퀴즈</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('broadcast')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'broadcast' ? 'bg-emerald-500 text-slate-950 font-black shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          }`}
+        >
+          <span>📢</span>
+          <span>공지발송</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('quizMaster')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'quizMaster' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          }`}
+        >
+          <span>🎯</span>
+          <span>퀴즈쇼</span>
         </button>
       </div>
 
@@ -1786,6 +1845,199 @@ const AdminScreen: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: 조별 그라운드룰 & 역할 분담 관리 */}
+        {activeTab === 'groundRules' && (
+          <div className="space-y-4">
+            <div className="bg-[#1A2235] border border-sky-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold text-sky-400 flex items-center gap-1.5">
+                  🤝 6개 조 그라운드룰 & 역할 분담 현황
+                </span>
+                <span className="text-[11px] bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full font-bold">
+                  1:30~2:00 오프닝
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+                출발 전 각 조가 의논하여 확정한 <strong>역할 분담(타임키퍼, 페이스메이커 등)</strong> 및 <strong>30분 개인 힐링 시간 등 그라운드룰 약속</strong> 현황입니다.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {WORKSHOP_TEAMS.map(team => {
+                const gr = groundRules[team.id];
+                const roles = gr?.roles || {};
+                const ruleTexts = gr?.selectedRuleTexts || [];
+                const customRules = gr?.customRules || [];
+                const hasRules = gr && (Object.keys(roles).length > 0 || ruleTexts.length > 0 || customRules.length > 0);
+
+                return (
+                  <div key={team.id} className="bg-[#182035] border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow"
+                              style={{ background: team.color }}>
+                          {team.shortCode}
+                        </span>
+                        <div>
+                          <strong className="text-[14px] text-white">{team.name}</strong>
+                          <span className="text-[11px] text-slate-400 ml-1.5">({team.courseName} · {team.courseDistance})</span>
+                        </div>
+                      </div>
+                      <span className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
+                        hasRules
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-white/5 text-slate-400 border-white/10'
+                      }`}>
+                        {hasRules ? '✅ 설정 완료' : '대기 중'}
+                      </span>
+                    </div>
+
+                    {/* 역할 분담 */}
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-sky-400 block">👥 조별 역할 배분</span>
+                      <div className="grid grid-cols-2 gap-1.5 text-[11.5px]">
+                        <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+                          <span className="text-slate-400 block text-[10px]">⏱️ 타임키퍼</span>
+                          <strong className="text-white">{roles['timekeeper'] || '(미정)'}</strong>
+                        </div>
+                        <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+                          <span className="text-slate-400 block text-[10px]">🚶 페이스메이커</span>
+                          <strong className="text-white">{roles['pacemaker'] || '(미정)'}</strong>
+                        </div>
+                        <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+                          <span className="text-slate-400 block text-[10px]">📸 포토그래퍼</span>
+                          <strong className="text-white">{roles['photographer'] || '(미정)'}</strong>
+                        </div>
+                        <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+                          <span className="text-slate-400 block text-[10px]">💊 비타민/리액션</span>
+                          <strong className="text-white">{roles['vitamin'] || '(미정)'}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 확정된 그라운드룰 약속 */}
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-amber-400 block">🌿 우리 조의 약속 (그라운드룰)</span>
+                      {ruleTexts.length > 0 || customRules.length > 0 ? (
+                        <div className="space-y-1 bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11.5px] text-slate-200">
+                          {ruleTexts.map((rt, i) => (
+                            <p key={i} className="flex items-start gap-1">
+                              <span className="text-emerald-400 font-bold">✓</span>
+                              <span>{rt}</span>
+                            </p>
+                          ))}
+                          {customRules.map((cr, i) => (
+                            <p key={i} className="flex items-start gap-1 text-sky-200">
+                              <span className="text-sky-400 font-bold">★</span>
+                              <span>{cr}</span>
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500 italic bg-black/20 p-2 rounded-lg">
+                          아직 설정된 그라운드룰이 없습니다.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 업데이트 정보 */}
+                    {gr?.updatedAt && (
+                      <div className="text-[10px] text-slate-500 text-right pt-1 border-t border-white/5">
+                        작성자: {gr.updatedBy || '익명'} ({new Date(gr.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: 테마가든 단체사진 갤러리 */}
+        {activeTab === 'themeGardenGallery' && (
+          <div className="space-y-4">
+            <div className="bg-[#1A2235] border border-pink-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold text-pink-400 flex items-center gap-1.5">
+                  🌹 테마가든 조별 단체사진 실시간 갤러리
+                </span>
+                <span className="text-[11px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
+                  2:00~4:30 메인 미션
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+                각 조가 테마가든 장미원/호수 수변 스팟에서 촬영하여 업로드한 단체사진입니다. 클릭하여 원본으로 크게 확대할 수 있습니다.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {WORKSHOP_TEAMS.map(team => {
+                const photo = themeGardenPhotos[team.id];
+                const isUploaded = photo && photo.photoUrl;
+
+                return (
+                  <div key={team.id} className="bg-[#182035] border border-white/10 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between">
+                    <div className="p-3 border-b border-white/10 flex items-center justify-between bg-black/20">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                              style={{ background: team.color }}>
+                          {team.shortCode}
+                        </span>
+                        <strong className="text-[13px] text-white">{team.name}</strong>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isUploaded
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-white/5 text-slate-400 border-white/10'
+                      }`}>
+                        {isUploaded ? '✅ 업로드 완료' : '대기 중'}
+                      </span>
+                    </div>
+
+                    {isUploaded ? (
+                      <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
+                        <div
+                          onClick={() => setAdminZoomPhotoUrl(photo.photoUrl)}
+                          className="relative rounded-xl overflow-hidden border border-white/10 cursor-pointer group bg-black/50"
+                        >
+                          <img
+                            src={photo.photoUrl}
+                            alt={`${team.name} 테마가든 사진`}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-bold bg-black/60 px-3 py-1 rounded-full border border-white/20">
+                              🔍 크게 보기
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-[12px] font-bold text-white truncate">
+                            "{photo.caption || '우리 조 단체사진'}"
+                          </p>
+                          <div className="flex justify-between items-center text-[10.5px] text-slate-400">
+                            <span>등록자: <strong className="text-slate-200">{photo.uploadedBy}</strong></span>
+                            <span>{new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-10 text-center space-y-2 bg-black/20 flex-1 flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl text-slate-500">
+                          📷
+                        </div>
+                        <p className="text-[12px] text-slate-400 font-medium">사진 촬영 및 업로드 대기 중</p>
+                        <p className="text-[10px] text-slate-500">테마가든 스팟에서 업로드 시 즉시 반영됩니다.</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -2255,6 +2507,28 @@ const AdminScreen: React.FC = () => {
         )}
 
       </div>
+
+      {/* 테마가든 사진 확대 모달 */}
+      {adminZoomPhotoUrl && (
+        <div
+          onClick={() => setAdminZoomPhotoUrl(null)}
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center">
+            <img
+              src={adminZoomPhotoUrl}
+              alt="확대 사진"
+              className="max-w-full max-h-[82vh] object-contain rounded-2xl shadow-2xl border border-white/20"
+            />
+            <button
+              onClick={() => setAdminZoomPhotoUrl(null)}
+              className="mt-3 px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-xs font-bold transition-all"
+            >
+              닫기 ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
