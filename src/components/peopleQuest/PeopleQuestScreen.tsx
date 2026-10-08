@@ -8,7 +8,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   WORKSHOP_TEAMS,
 } from '../../config/workshopConfig';
-import { normalizeTeamId, isPqSubmittedForTeam, getPqForTeam } from '../../utils/scoreCalculator';
+import { normalizeTeamId, isPqSubmittedForTeam, getPqForTeam, createParticipantId, sanitizeFirebaseKey } from '../../utils/scoreCalculator';
 import { PreRegisteredPerson } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
 import { ref, set, get, update, onValue } from 'firebase/database';
@@ -363,7 +363,7 @@ const PeopleQuestScreen: React.FC = () => {
         });
 
         if (participantName && participantCompany) {
-          const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+          const participantId = createParticipantId(participantName, participantCompany);
           // 기존 참가자 퀴즈 점수 조회
           const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
           let existingData: any = null;
@@ -400,21 +400,21 @@ const PeopleQuestScreen: React.FC = () => {
         console.warn('REST PQ 제출 경고:', restErr);
       }
 
-      // 3) Firebase RTDB SDK 저장 (웹소켓 브로드캐스트)
+      // 3) Firebase RTDB SDK 저장 (비동기 처리)
       try {
         const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${teamId}`);
-        await set(pqRef, payload);
+        set(pqRef, payload).catch(e => console.warn('SDK set PQ 경고:', e));
 
         if (participantName && participantCompany) {
-          const participantId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+          const participantId = createParticipantId(participantName, participantCompany);
           const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-          await update(pRef, {
+          update(pRef, {
             name: participantName.trim(),
             company: participantCompany,
             teamId,
             teamName: myTeam.name,
             peopleQuestCompleted: true,
-          });
+          }).catch(e => console.warn('SDK update PQ 참가자 경고:', e));
         }
       } catch (sdkErr) {
         console.warn('SDK PQ 제출 경고:', sdkErr);

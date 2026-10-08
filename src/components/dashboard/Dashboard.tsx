@@ -19,6 +19,8 @@ import {
   normalizeTeamId,
   isPqSubmittedForTeam,
   getPqForTeam,
+  createParticipantId,
+  sanitizeFirebaseKey,
 } from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
@@ -345,7 +347,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     } catch {}
 
     if (currName) {
-      const pId = `${currName.trim()}_${currCompany}`.replace(/\s/g, '_');
+      const pId = createParticipantId(currName, currCompany);
       fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json?t=${Date.now()}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -382,7 +384,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     setSaveSuccess(false);
     setErrorMessage('');
 
-    const targetPId = `${finalName}_${finalCompany}`.replace(/\s/g, '_');
+    const targetPId = createParticipantId(finalName, finalCompany);
 
     // 1) 로컬 스토리지 & Zustand 스토어 즉시 갱신
     try {
@@ -418,10 +420,10 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       updatedAt: new Date().toISOString(),
     };
 
-    // 2) REST API PATCH (최대 3.5초 타임아웃)
+    // 2) REST API PATCH (최대 3초 타임아웃)
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3500);
+      const timer = setTimeout(() => controller.abort(), 3000);
       await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(targetPId)}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -433,15 +435,12 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       console.warn('REST 저장 경고:', err);
     }
 
-    // 3) Firebase RTDB SDK update (최대 2초 타임아웃 경합)
+    // 3) Firebase RTDB SDK update 백그라운드 푸시
     try {
       const pRef = ref(rtdb, `sessions/trekking2026/participants/${targetPId}`);
-      await Promise.race([
-        update(pRef, patchPayload),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('SDK Timeout')), 2000))
-      ]);
+      update(pRef, patchPayload).catch(e => console.warn('SDK update 백그라운드 경고:', e));
     } catch (err) {
-      console.warn('SDK 저장 경고:', err);
+      console.warn('SDK ref 경고:', err);
     }
 
     setSaveSuccess(true);
@@ -449,7 +448,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     setTimeout(() => {
       setSaveSuccess(false);
       onClose();
-    }, 1200);
+    }, 1000);
   };
 
   if (!isOpen) return null;
@@ -643,7 +642,7 @@ const Dashboard: React.FC = () => {
 
   const teamId = normalizeTeamId(myTeam?.id);
   const participantId = participantName && participantCompany
-    ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
+    ? createParticipantId(participantName, participantCompany)
     : 'anonymous';
 
   const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
@@ -803,7 +802,7 @@ const Dashboard: React.FC = () => {
   // 6. 참가자 프로필 및 4문항 자동 동기화 보장 (네트워크 지연으로 TeamSelect에서 누락된 경우 자동 복구)
   useEffect(() => {
     if (!participantName || !participantCompany || !myTeam) return;
-    const pId = `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_');
+    const pId = createParticipantId(participantName, participantCompany);
 
     let localAnswers: Record<string, string> = {};
     try {
@@ -830,7 +829,7 @@ const Dashboard: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }).catch(err => console.warn('Dashboard 자동 프로필 동기화 경고:', err));
-  }, [participantName, participantCompany, myTeam, dbUrl]);
+  }, [participantName, participantCompany, myTeam?.id, dbUrl]);
 
   return (
     <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">

@@ -8,7 +8,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   getCourseQuizTotalPoints,
 } from '../../config/workshopConfig';
-import { normalizeTeamId } from '../../utils/scoreCalculator';
+import { normalizeTeamId, createParticipantId, sanitizeFirebaseKey } from '../../utils/scoreCalculator';
 import { DiscoveryQuizItem } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
 import { ref, get, set, update, onValue } from 'firebase/database';
@@ -87,7 +87,7 @@ const DiscoveryQuizScreen: React.FC = () => {
 
   const currentQuiz = activeQuizzes[currentIdx] || activeQuizzes[0];
   const participantId = participantName && participantCompany
-    ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
+    ? createParticipantId(participantName, participantCompany)
     : 'anonymous';
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
@@ -340,13 +340,13 @@ const DiscoveryQuizScreen: React.FC = () => {
       console.warn('REST 퀴즈 결과 저장 경고:', restErr);
     }
 
-    // 2) Firebase RTDB SDK 저장 (실시간 웹소켓 푸시 트리거)
+    // 2) Firebase RTDB SDK 저장 (실시간 웹소켓 푸시 트리거 - 비동기 처리)
     try {
       const qRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}/quizzes/${currentQuiz.id}`);
-      await set(qRef, newResult);
+      set(qRef, newResult).catch(e => console.warn('SDK set 퀴즈 결과 경고:', e));
 
       const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-      await update(pRef, {
+      update(pRef, {
         name: participantName?.trim() || '',
         company: participantCompany || '',
         teamId: normalizeTeamId(myTeam?.id),
@@ -355,7 +355,7 @@ const DiscoveryQuizScreen: React.FC = () => {
         score: totalPersonalScore,
         missionsCompleted: totalMissions,
         updatedAt: nowIso,
-      });
+      }).catch(e => console.warn('SDK update 프로필 경고:', e));
     } catch (sdkErr) {
       console.warn('SDK 퀴즈 결과 저장 경고:', sdkErr);
     }

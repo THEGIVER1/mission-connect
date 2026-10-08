@@ -45,6 +45,21 @@ export function normalizeTeamId(raw: string | undefined | null): string {
 }
 
 /**
+ * Firebase RTDB 키로 안전하게 사용할 수 있도록 특수문자 및 공백을 정규화
+ * 금지 문자: . # $ [ ] / ( ) 및 공백
+ */
+export function sanitizeFirebaseKey(raw: string | undefined | null): string {
+  if (!raw) return 'anonymous';
+  return String(raw).trim().replace(/[.#$[\]/()]/g, '_').replace(/\s+/g, '_');
+}
+
+export function createParticipantId(name: string | undefined | null, company: string | undefined | null): string {
+  const cleanName = sanitizeFirebaseKey(name || '익명');
+  const cleanComp = sanitizeFirebaseKey(company || '소속');
+  return `${cleanName}_${cleanComp}`;
+}
+
+/**
  * 특정 조의 People Quest가 제출 완료(submitted)되었는지 안전하게 판별
  * - teamId ('team1', '1조', etc.)
  * - peopleQuestsData 객체의 키를 normalizeTeamId로 전수 검사
@@ -173,7 +188,7 @@ export function calculateLeaderboardData(
 
       const totalPts = quizPoints + pqPoints;
       const totalMissions = quizMissions + pqMissions;
-      const uniqueKey = p.id || `${trimmedName}_${p.company || ''}`.replace(/\s/g, '_');
+      const uniqueKey = p.id ? sanitizeFirebaseKey(p.id) : createParticipantId(trimmedName, p.company);
 
       listMap.set(uniqueKey, {
         id: uniqueKey,
@@ -192,7 +207,7 @@ export function calculateLeaderboardData(
   // 3. 현재 로그인된 사용자가 RTDB에 아직 반영 전인 경우(즉시 반영)
   if (currentUser?.name && currentUser.name.trim()) {
     const myTrimmedName = currentUser.name.trim();
-    const myUniqueKey = `${myTrimmedName}_${currentUser.company || ''}`.replace(/\s/g, '_');
+    const myUniqueKey = createParticipantId(myTrimmedName, currentUser.company);
     const existing = listMap.get(myUniqueKey) || Array.from(listMap.values()).find(ind => ind.name === myTrimmedName && ind.company === (currentUser.company || ''));
     const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normalizedMyTeamId);
     const isTeamPqDone = isPqSubmittedForTeam(normalizedMyTeamId, peopleQuestsData) || !!currentUser.isPeopleQuestSubmitted;

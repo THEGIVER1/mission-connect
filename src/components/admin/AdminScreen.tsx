@@ -13,6 +13,8 @@ import {
   normalizeTeamId,
   isPqSubmittedForTeam,
   getPqForTeam,
+  createParticipantId,
+  sanitizeFirebaseKey,
 } from '../../utils/scoreCalculator';
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
@@ -189,8 +191,10 @@ const AdminScreen: React.FC = () => {
     const mappedKeys = new Set<string>();
 
     individuals.forEach(ind => {
+      const pId = createParticipantId(ind.name, ind.company);
       const raw =
         rawParticipantsMap[ind.id] ||
+        rawParticipantsMap[pId] ||
         rawParticipantsMap[`${ind.name}_${ind.company}`.replace(/\s/g, '_')] ||
         Object.values(rawParticipantsMap).find(
           (p: any) =>
@@ -203,13 +207,14 @@ const AdminScreen: React.FC = () => {
         {};
 
       mappedKeys.add(ind.id);
+      mappedKeys.add(pId);
       mappedKeys.add(`${ind.name.trim()}_${ind.company || ''}`.replace(/\s/g, '_'));
       if (raw.id) mappedKeys.add(raw.id);
 
       const myInfo = raw.myInfo || {};
 
       list.push({
-        id: ind.id,
+        id: ind.id || pId,
         name: ind.name,
         company: ind.company || raw.company || '',
         teamId: ind.teamId,
@@ -239,7 +244,7 @@ const AdminScreen: React.FC = () => {
         const nameTrimmed = String(raw.name).trim();
         const comp = String(raw.company || '');
         const keyId = raw.id || key;
-        const altKey = `${nameTrimmed}_${comp}`.replace(/\s/g, '_');
+        const altKey = createParticipantId(nameTrimmed, comp);
 
         if (mappedKeys.has(keyId) || mappedKeys.has(altKey) || list.some(p => p.name === nameTrimmed && p.company === comp)) {
           return;
@@ -352,9 +357,20 @@ const AdminScreen: React.FC = () => {
     return map;
   }, [peopleQuests]);
 
-  // 7개 문항 답변을 작성한 참가자 수
+  // 4개 문항 답변을 작성한 참가자 수
   const answeredParticipants = useMemo(() => {
-    return participants.filter(p => p.myInfo && Object.keys(p.myInfo).length > 0);
+    return participants.filter(p => {
+      const info = p.myInfo || {};
+      return Boolean(
+        (info.q1_passion && String(info.q1_passion).trim().length > 0) ||
+        (info.q3_bucketList && String(info.q3_bucketList).trim().length > 0) ||
+        (info.q4_dreamJob && String(info.q4_dreamJob).trim().length > 0) ||
+        (info.q5_unexpectedFact && String(info.q5_unexpectedFact).trim().length > 0) ||
+        (p.truth1 && String(p.truth1).trim().length > 0) ||
+        (p.truth2 && String(p.truth2).trim().length > 0) ||
+        (p.lie && String(p.lie).trim().length > 0)
+      );
+    });
   }, [participants]);
 
   // 키보드 단축키 핸들러 (무대 퀴즈쇼 모드 및 시상식 모드)

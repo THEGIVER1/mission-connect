@@ -10,6 +10,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   WorkshopTeamConfig,
 } from '../config/workshopConfig';
+import { createParticipantId, sanitizeFirebaseKey } from '../utils/scoreCalculator';
 
 const COMPANIES = WORKSHOP_COMPANIES;
 const TEAMS = WORKSHOP_TEAMS;
@@ -25,7 +26,7 @@ const TeamSelect: React.FC = () => {
   const [company, setCompany] = useState(participantCompany || '');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(myTeam?.id || null);
 
-  // 「나의 정보 6개 질문」 답변 상태 관리 (로컬 드래프트 우선 복원)
+  // 「나의 정보 4개 질문」 답변 상태 관리 (로컬 드래프트 우선 복원)
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('my_info_answers_draft');
@@ -45,8 +46,8 @@ const TeamSelect: React.FC = () => {
   // 1. 기존 RTDB 데이터 불러오기 (서버 데이터 우선 병합)
   useEffect(() => {
     if (!name || !company) return;
-    const participantId = `${name.trim()}_${company}`.replace(/\s/g, '_');
-    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`)
+    const participantId = createParticipantId(name, company);
+    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json?t=${Date.now()}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d && d.myInfo && Object.keys(d.myInfo).length > 0) {
@@ -80,15 +81,14 @@ const TeamSelect: React.FC = () => {
     setStep('myinfo');
   };
 
-  // Step 2 완료 및 최종 입장
-    // Step 2 완료 및 최종 입장 (절대 멈춤 없는 즉각 전환 & 타임아웃 보호 비동기 저장)
+  // Step 2 완료 및 최종 입장 (절대 멈춤 없는 즉각 전환 & 타임아웃 보호 비동기 저장)
   const handleFinalEnter = async () => {
     if (!selectedTeam) return;
     setIsSubmitting(true);
     setError('');
 
     const trimmedName = name.trim();
-    const participantId = `${trimmedName}_${company}`.replace(/\s/g, '_');
+    const participantId = createParticipantId(trimmedName, company);
 
     // 1. 즉시 로컬 스토어에 팀 및 참가자 정보 세팅 (0ms 지연)
     const initialScore = 0;
@@ -133,24 +133,27 @@ const TeamSelect: React.FC = () => {
       status: 'active',
     };
 
-    // 4. Firebase RTDB에 안전하게 저장
+    // 4. Firebase RTDB에 안전하게 저장 (REST PATCH 3초 타임아웃)
     try {
-      // 1) REST PATCH
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3000);
       await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
     } catch (restErr) {
       console.warn('REST 저장 경고:', restErr);
     }
 
+    // 5. SDK 백그라운드 푸시 (비동기 처리)
     try {
-      // 2) SDK update 병행
       const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-      await update(pRef, payload);
+      update(pRef, payload).catch(e => console.warn('SDK update 백그라운드 경고:', e));
     } catch (sdkErr) {
-      console.warn('SDK 저장 경고:', sdkErr);
+      console.warn('SDK ref 경고:', sdkErr);
     }
 
     setIsSubmitting(false);
