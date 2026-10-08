@@ -7,6 +7,7 @@ import { onValue, ref, update } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';
 import {
   ACTIVE_VENUE,
+  WORKSHOP_COMPANIES,
   WORKSHOP_TEAMS,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   getCourseTotalMaxPoints,
@@ -312,23 +313,30 @@ const ActivitySection: React.FC<{
 
 // ─── 내 프로필 & 4문항 답변 조회 및 실시간 수정 모달 ─────────────
 const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { participantName, participantCompany, myTeam } = useAppStore();
+  const { participantName, participantCompany, myTeam, selectTeam } = useAppStore();
+  
+  const [modalName, setModalName] = useState(participantName || '');
+  const [modalCompany, setModalCompany] = useState(participantCompany || '㈜두산');
+  const [modalTeamId, setModalTeamId] = useState(myTeam?.id || 'team1');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
-  const participantId = participantName && participantCompany
-    ? `${participantName.trim()}_${participantCompany}`.replace(/\s/g, '_')
-    : 'anonymous';
+  const [errorMessage, setErrorMessage] = useState('');
 
   const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
 
   useEffect(() => {
-    if (!isOpen || !participantId) return;
+    if (!isOpen) return;
     setIsLoading(true);
     setSaveSuccess(false);
+    setErrorMessage('');
+
+    const currName = participantName || modalName || '';
+    const currCompany = participantCompany || modalCompany || '㈜두산';
+    if (participantName) setModalName(participantName);
+    if (participantCompany) setModalCompany(participantCompany);
+    if (myTeam?.id) setModalTeamId(myTeam.id);
 
     let localAnswers: Record<string, string> = {};
     try {
@@ -336,39 +344,72 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       if (saved) localAnswers = JSON.parse(saved);
     } catch {}
 
-    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json?t=${Date.now()}`)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data && data.myInfo && typeof data.myInfo === 'object') {
-          setAnswers({ ...localAnswers, ...data.myInfo });
-        } else {
-          setAnswers(localAnswers);
-        }
-      })
-      .catch(() => setAnswers(localAnswers))
-      .finally(() => setIsLoading(false));
-  }, [isOpen, participantId, dbUrl]);
+    if (currName) {
+      const pId = `${currName.trim()}_${currCompany}`.replace(/\s/g, '_');
+      fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json?t=${Date.now()}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.myInfo && typeof data.myInfo === 'object') {
+            setAnswers({ ...localAnswers, ...data.myInfo });
+          } else {
+            setAnswers(localAnswers);
+          }
+        })
+        .catch(() => setAnswers(localAnswers))
+        .finally(() => setIsLoading(false));
+    } else {
+      setAnswers(localAnswers);
+      setIsLoading(false);
+    }
+  }, [isOpen, participantName, participantCompany, myTeam?.id, dbUrl]);
 
   const handleTextChange = (qId: string, val: string) => {
     if (val.length > 100) return;
     setAnswers(prev => ({ ...prev, [qId]: val }));
   };
 
-    const handleSave = async () => {
-    if (!participantId) return;
+  const handleSave = async () => {
+    const finalName = (modalName || participantName || '').trim();
+    const finalCompany = modalCompany || participantCompany || '㈜두산';
+    const finalTeam = WORKSHOP_TEAMS.find(t => t.id === modalTeamId) || myTeam || WORKSHOP_TEAMS[0];
+
+    if (!finalName) {
+      setErrorMessage('이름을 입력해주세요.');
+      return;
+    }
+
     setIsSaving(true);
     setSaveSuccess(false);
+    setErrorMessage('');
 
+    const targetPId = `${finalName}_${finalCompany}`.replace(/\s/g, '_');
+
+    // 1) 로컬 스토리지 & Zustand 스토어 즉시 갱신
     try {
       localStorage.setItem('my_info_answers_draft', JSON.stringify(answers));
+      localStorage.setItem('participant_registered_id', targetPId);
     } catch {}
 
+    selectTeam({
+      id: finalTeam.id,
+      name: finalTeam.name,
+      shortCode: finalTeam.shortCode,
+      color: finalTeam.color,
+      memberCount: 1,
+      score: myTeam?.score ?? 0,
+      rank: myTeam?.rank ?? 1,
+      missionsCompleted: myTeam?.missionsCompleted ?? 0,
+      totalMissions: 2,
+      lastActivity: new Date(),
+      status: 'active',
+    }, finalName, finalCompany, finalTeam.assignedCourse);
+
     const patchPayload = {
-      name: participantName ? participantName.trim() : '',
-      company: participantCompany || '',
-      teamId: myTeam?.id || 'team1',
-      teamName: myTeam?.name || '1조',
-      course: myTeam?.assignedCourse || 'forest',
+      name: finalName,
+      company: finalCompany,
+      teamId: finalTeam.id,
+      teamName: finalTeam.name,
+      course: finalTeam.assignedCourse,
       myInfo: answers,
       truth1: answers['q1_passion'] || '',
       truth2: answers['q5_unexpectedFact'] || answers['q3_bucketList'] || '',
@@ -377,40 +418,50 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       updatedAt: new Date().toISOString(),
     };
 
+    // 2) REST API PATCH (최대 3.5초 타임아웃)
     try {
-      // 1) REST API PATCH
-      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`, {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3500);
+      await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(targetPId)}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patchPayload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
     } catch (err) {
       console.warn('REST 저장 경고:', err);
     }
 
+    // 3) Firebase RTDB SDK update (최대 2초 타임아웃 경합)
     try {
-      // 2) Firebase RTDB SDK update
-      const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
-      await update(pRef, patchPayload);
+      const pRef = ref(rtdb, `sessions/trekking2026/participants/${targetPId}`);
+      await Promise.race([
+        update(pRef, patchPayload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SDK Timeout')), 2000))
+      ]);
     } catch (err) {
       console.warn('SDK 저장 경고:', err);
     }
 
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
     setIsSaving(false);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      onClose();
+    }, 1200);
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#13192A] border border-white/15 w-full max-w-[370px] max-h-[90vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+      <div className="bg-[#13192A] border border-white/15 w-full max-w-[380px] max-h-[90vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden animate-fade-in">
         {/* 모달 상단 헤더 */}
         <div className="bg-[#182035] border-b border-white/10 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
           <div>
             <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
-              MY PROFILE & SURVEY
+              MY PROFILE & 4-SURVEY
             </span>
             <h3 className="text-[15px] font-bold text-white">
               내 정보 및 4문항 답변 수정
@@ -424,28 +475,50 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
           </button>
         </div>
 
-        {/* 참가자 요약 배지 */}
-        <div className="bg-[#101626] px-5 py-2.5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow"
-                  style={{ background: teamConfig?.color || '#E31837' }}>
-              {teamConfig?.shortCode || '--'}
-            </span>
+        {/* 프로필 기본 정보 (이름, 소속, 조 선택) */}
+        <div className="bg-[#101626] p-3.5 border-b border-white/5 space-y-2.5 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-[13px] font-bold text-white leading-tight">
-                {participantName} <span className="text-slate-400 text-[11px] font-normal">({participantCompany})</span>
-              </p>
-              <p className="text-[10px] text-slate-400">
-                {teamConfig?.name} · {teamConfig?.courseName}
-              </p>
+              <label className="text-[10.5px] text-slate-400 block mb-1 font-medium">참가자 이름 *</label>
+              <input
+                type="text"
+                value={modalName}
+                onChange={e => setModalName(e.target.value)}
+                placeholder="이름 입력"
+                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[12.5px] font-bold focus:outline-none focus:border-sky-500"
+              />
+            </div>
+            <div>
+              <label className="text-[10.5px] text-slate-400 block mb-1 font-medium">소속 회사 *</label>
+              <select
+                value={modalCompany}
+                onChange={e => setModalCompany(e.target.value)}
+                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2 py-1.5 text-white text-[12.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
+              >
+                {WORKSHOP_COMPANIES.map(c => (
+                  <option key={c} value={c} style={{ background: '#1A2235' }}>{c}</option>
+                ))}
+              </select>
             </div>
           </div>
-          <span className="text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
-            실시간 동기화
-          </span>
+
+          <div>
+            <label className="text-[10.5px] text-slate-400 block mb-1 font-medium">소속 조 변경</label>
+            <select
+              value={modalTeamId}
+              onChange={e => setModalTeamId(e.target.value)}
+              className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[12.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
+            >
+              {WORKSHOP_TEAMS.map(t => (
+                <option key={t.id} value={t.id} style={{ background: '#1A2235' }}>
+                  {t.emoji} {t.name} ({t.courseName} · {t.courseDistance})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* 6개 문항 리스트 */}
+        {/* 4개 문항 리스트 */}
         <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="py-12 text-center text-slate-400 text-[13px]">
@@ -455,7 +528,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
           ) : (
             <>
               <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 leading-relaxed">
-                💡 입력하신 답변은 트레킹 대화 및 <strong>저녁 퀴즈쇼 힌트</strong>로 활용됩니다. 언제든 수정 후 <strong>[저장하기]</strong>를 누르시면 실시간 업데이트됩니다.
+                💡 입력하신 답변은 트레킹 대화 및 <strong>저녁 퀴즈쇼 힌트</strong>로 실시간 연동됩니다.
               </div>
 
               {MY_INFO_QUESTIONS.map((q, idx) => {
@@ -488,11 +561,18 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
         {/* 모달 하단 액션 */}
         <div className="bg-[#182035] border-t border-white/10 p-4 space-y-2 flex-shrink-0">
-          {saveSuccess && (
-            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[12px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
-              ✅ 답변이 성공적으로 저장되었습니다!
+          {errorMessage && (
+            <div className="bg-red-500/20 border border-red-500/40 text-red-300 text-[12px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
+              ⚠️ {errorMessage}
             </div>
           )}
+
+          {saveSuccess && (
+            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[12px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
+              ✅ 정보와 4문항 답변이 성공적으로 저장되었습니다!
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={onClose}
@@ -505,7 +585,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               disabled={isSaving || isLoading}
               className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold text-[13px] rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
-              <span>{isSaving ? '저장 중...' : '저장하기 💾'}</span>
+              <span>{isSaving ? '저장 처리 중...' : '저장하기 💾'}</span>
             </button>
           </div>
         </div>
