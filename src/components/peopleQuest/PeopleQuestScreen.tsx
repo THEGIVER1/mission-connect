@@ -12,7 +12,7 @@ import { normalizeTeamId, isPqSubmittedForTeam, getPqForTeam, createParticipantI
 import { PreRegisteredPerson } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
 import { ref, set, get, update, onValue } from 'firebase/database';
-import { rtdb } from '../../lib/firebase';
+import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 
 interface UnifiedRecommendation {
   recommendedPersonId: string;
@@ -67,7 +67,7 @@ const PeopleQuestScreen: React.FC = () => {
   const [manualCompany, setManualCompany] = useState<string>('㈜두산');
 
   const teamId = normalizeTeamId(myTeam?.id);
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

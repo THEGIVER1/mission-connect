@@ -17,7 +17,7 @@ import {
   sanitizeFirebaseKey,
 } from '../../utils/scoreCalculator';
 import { onValue, ref, update } from 'firebase/database';
-import { rtdb } from '../../lib/firebase';
+import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import { fireConfetti } from '../../lib/confetti';
 import { soundEffects } from '../../utils/audioEffects';
 import { MCCueSheetModal } from './MCCueSheetModal';
@@ -115,7 +115,7 @@ const AdminScreen: React.FC = () => {
   const [adminSubmittedQuizzes, setAdminSubmittedQuizzes] = useState<Record<string, boolean>>({});
   const [showAnswerDirectly, setShowAnswerDirectly] = useState<boolean>(true);
 
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   const processAdminData = useCallback((data: any) => {
     if (!data || typeof data !== 'object') return;

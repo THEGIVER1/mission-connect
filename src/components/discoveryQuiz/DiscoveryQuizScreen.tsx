@@ -12,7 +12,7 @@ import { normalizeTeamId, createParticipantId, sanitizeFirebaseKey } from '../..
 import { DiscoveryQuizItem } from '../../types';
 import { fireConfetti } from '../../lib/confetti';
 import { ref, get, set, update, onValue } from 'firebase/database';
-import { rtdb } from '../../lib/firebase';
+import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 
 function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -90,7 +90,7 @@ const DiscoveryQuizScreen: React.FC = () => {
     ? createParticipantId(participantName, participantCompany)
     : 'anonymous';
 
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   // 1. Firebase에서 내가 이미 푼 퀴즈 결과 불러오기 (세션 리셋 및 실시간 리스너 연동)
   useEffect(() => {

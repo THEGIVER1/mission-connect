@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { LiveBadge, Card, ScoreBar, AnimatedScoreCounter } from '../shared';
 import { CompletionCertificateModal } from '../common/CompletionCertificateModal';
 import { onValue, ref, update } from 'firebase/database';
-import { rtdb } from '../../lib/firebase';
+import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
   ACTIVE_VENUE,
   WORKSHOP_COMPANIES,
@@ -326,7 +326,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -647,7 +647,7 @@ const Dashboard: React.FC = () => {
 
   const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
   const totalQuizCount = activeCourseQuizzes.length;
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   // 1. RTDB 데이터를 단일 진실 공급원(Single Source of Truth)으로 삼는 100% 통합 점수 계산
   const { individuals, teams } = useMemo(() => {

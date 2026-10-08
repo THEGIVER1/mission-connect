@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { ref, get, update } from 'firebase/database';
-import { rtdb } from '../lib/firebase';
+import { rtdb, FIREBASE_DB_URL } from '../lib/firebase';
 import {
   WORKSHOP_COMPANIES,
   WORKSHOP_TEAMS,
@@ -41,7 +41,7 @@ const TeamSelect: React.FC = () => {
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
   const selectedTeam = TEAMS.find(t => t.id === selectedTeamId) || null;
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   // 1. 기존 RTDB 데이터 불러오기 (서버 데이터 우선 병합)
   useEffect(() => {
@@ -57,7 +57,7 @@ const TeamSelect: React.FC = () => {
       .catch(() => {});
   }, [name, company, dbUrl]);
 
-  // 2. 실시간 입력 디바운스 로컬 자동 저장 (작성 도중 유실 원천 방어)
+  // 2. 실시간 입력 디바운스 로컬 & 서버 자동 저장 (작성 도중 유실 원천 방어)
   const handleAnswerChange = (qId: string, value: string) => {
     if (value.length > 100) return;
     setAnswers(prev => {
@@ -68,6 +68,29 @@ const TeamSelect: React.FC = () => {
       } catch (e) {
         console.warn('로컬 드래프트 저장 실패:', e);
       }
+
+      // 백그라운드 REST 즉시 동기화
+      if (name.trim() && company) {
+        const pId = createParticipantId(name.trim(), company);
+        fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            company,
+            teamId: selectedTeam?.id || myTeam?.id || 'team1',
+            teamName: selectedTeam?.name || myTeam?.name || '1조',
+            course: selectedTeam?.assignedCourse || myTeam?.assignedCourse || 'forest',
+            myInfo: updated,
+            truth1: updated['q1_passion'] || '',
+            truth2: updated['q5_unexpectedFact'] || updated['q3_bucketList'] || '',
+            lie: updated['q4_dreamJob'] || '',
+            status: 'active',
+            updatedAt: new Date().toISOString(),
+          }),
+        }).catch(() => {});
+      }
+
       return updated;
     });
   };

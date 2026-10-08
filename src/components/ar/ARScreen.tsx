@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
 import { ACTIVE_VENUE } from '../../config/workshopConfig';
+import { FIREBASE_DB_URL } from '../../lib/firebase';
+import { createParticipantId } from '../../utils/scoreCalculator';
 
 type ArTarget = {
   id: string;
@@ -117,12 +119,12 @@ const ARScreen: React.FC = () => {
   const participantCompany = useAppStore((s) => s.participantCompany);
   const updateTeamScore = useAppStore((s) => s.updateTeamScore);
   const participantId = participantName && participantCompany
-    ? `${participantName}_${participantCompany}`.replace(/\s/g, '_')
+    ? createParticipantId(participantName, participantCompany)
     : myTeam?.id ?? 'anonymous';
 
   // 기존 발견한 AR 타겟 Firebase RTDB에서 불러오기
   useEffect(() => {
-    const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+    const dbUrl = FIREBASE_DB_URL;
     async function fetchExistingFinds() {
       try {
         const res = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/arFinds.json`);
@@ -242,7 +244,7 @@ const ARScreen: React.FC = () => {
         );
 
         // Firebase RTDB REST API 저장
-        const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+        const dbUrl = FIREBASE_DB_URL;
         try {
           // 1. AR 발견 기록 저장
           await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}/arFinds/${target.id}.json`, {

@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { BottomNav } from '../dashboard/Dashboard';
 import { LiveBadge, ScoreBar, AnimatedScoreCounter } from '../shared';
 import { onValue, ref } from 'firebase/database';
-import { rtdb } from '../../lib/firebase';
+import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
   WORKSHOP_TEAMS,
   DISCOVERY_QUIZZES,
@@ -564,7 +564,7 @@ const Leaderboard: React.FC = () => {
 
   const [participantsData, setParticipantsData] = useState<Record<string, any>>({});
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
-  const dbUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://doosan-teambuilding-default-rtdb.firebaseio.com';
+  const dbUrl = FIREBASE_DB_URL;
 
   const isMyTeamPqSubmitted = useMemo(() => {
     return isPqSubmittedForTeam(myTeamId, peopleQuestsData) || isPeopleQuestSubmitted;
