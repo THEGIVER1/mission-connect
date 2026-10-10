@@ -138,11 +138,10 @@ export function getPqForTeam(
 /**
  * 대시보드, 실시간 순위(리더보드), 관리자 화면 모두에 100% 동일한 점수를 보장하는 통합 계산 엔진
  *
- * [점수 규칙]
+ * [점수 규칙 - 2대 핵심 미션 (스팟 퀴즈 제외)]
  * 1. People Quest: 조별 미션. 조에서 1명 추천 제출 시 해당 조 모든 조원에게 +100pt 부여.
  * 2. 테마가든 미션: 조별 미션. 조별 단체사진 업로드 시 해당 조 모든 조원에게 +100pt 부여.
- * 3. Discovery Quiz: 개인 미션. 각 개인이 맞힌 문항당 +100pt 부여.
- * 4. 조별 총점: 해당 조에 소속된 모든 조원의 점수 합산 (수학적 100% 일치 보장).
+ * 3. 조별 총점: 해당 조에 소속된 모든 조원의 점수 합산 (수학적 100% 일치 보장).
  */
 export function calculateLeaderboardData(
   participantsData: Record<string, any> = {},
@@ -188,21 +187,6 @@ export function calculateLeaderboardData(
       const pTeamId = normalizeTeamId(p.teamId);
       const teamConfig = WORKSHOP_TEAMS.find(t => t.id === pTeamId);
 
-      let quizPoints = 0;
-      let quizMissions = 0;
-      if (p.quizzes && typeof p.quizzes === 'object') {
-        Object.values(p.quizzes).forEach((q: any) => {
-          if (q.pointsEarned !== undefined) {
-            quizPoints += Number(q.pointsEarned);
-          } else if (q.isCorrect) {
-            quizPoints += 100;
-          }
-          if (q.isCorrect || q.pointsEarned !== undefined) {
-            quizMissions += 1;
-          }
-        });
-      }
-
       // 조별 People Quest 완료 여부 판정
       const isTeamPqDone =
         isPqSubmittedForTeam(pTeamId, peopleQuestsData) ||
@@ -216,8 +200,8 @@ export function calculateLeaderboardData(
 
       const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
       const themePoints = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
-      const totalPts = quizPoints + pqPoints + themePoints;
-      const totalMissions = quizMissions + (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
+      const totalPts = pqPoints + themePoints;
+      const totalMissions = (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
       const uniqueKey = p.id ? sanitizeFirebaseKey(p.id) : createParticipantId(trimmedName, p.company);
 
       listMap.set(uniqueKey, {
@@ -244,11 +228,10 @@ export function calculateLeaderboardData(
     const isThemeDone = isThemeGardenDoneForTeam(normalizedMyTeamId, themeGardenPhotosData) || !!currentUser.isThemeGardenSubmitted;
 
     if (!existing) {
-      const localQuizPts = (currentUser.answeredQuizIds?.length ?? 0) * 100;
       const localPqPts = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
       const localThemePts = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
-      const totalPts = localQuizPts + localPqPts + localThemePts;
-      const totalMissions = (currentUser.answeredQuizIds?.length ?? 0) + (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
+      const totalPts = localPqPts + localThemePts;
+      const totalMissions = (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
 
       listMap.set(myUniqueKey, {
         id: myUniqueKey,
@@ -288,7 +271,7 @@ export function calculateLeaderboardData(
       score: totalScore,
       missionsCompleted: Math.max(totalMissions, (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0)),
       memberCount: teamMembers.length,
-      totalMissions: 4, // 1 튜토리얼/그라운드룰, 1 테마가든, 1 피플퀘스트, 3 디스커버리 퀴즈 등
+      totalMissions: 2, // 1 테마가든 단체사진, 1 피플퀘스트 동료추천
       lastActivity: new Date(),
       status: 'active' as const,
       rank: 1,

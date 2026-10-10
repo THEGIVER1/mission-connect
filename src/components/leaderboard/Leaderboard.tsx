@@ -7,14 +7,15 @@ import { onValue, ref } from 'firebase/database';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
   WORKSHOP_TEAMS,
-  DISCOVERY_QUIZZES,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
+  THEME_GARDEN_MISSION,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
   IndividualItem,
   normalizeTeamId,
   isPqSubmittedForTeam,
+  isThemeGardenDoneForTeam,
   getPqForTeam,
 } from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
@@ -177,7 +178,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
           const isMe = team.id === myTeamId;
           const teamConfig = WORKSHOP_TEAMS.find(t => t.id === team.id);
           const diff = rankDiffs[team.id];
-          const isFullCompleted = (team.missionsCompleted || 0) >= 4;
+          const isFullCompleted = (team.missionsCompleted || 0) >= 2;
 
           return (
             <div
@@ -260,14 +261,17 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
 // ─────────────────────────────────────────────────────────────────
 // 탭 2: 미션별 현황 (동적 배점 연동 & 실시간 인원수 집계)
 // ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// 탭 2: 미션별 현황 (2대 핵심 액티비티 실시간 현황)
+// ─────────────────────────────────────────────────────────────────
 const MissionTab: React.FC<{
   peopleQuests: Record<string, any>;
-  participants: Record<string, any>;
-}> = ({ peopleQuests, participants }) => {
-  const answeredQuizIds = useAppStore((s) => s.answeredQuizIds || []);
+  themeGardenPhotos: Record<string, any>;
+}> = ({ peopleQuests, themeGardenPhotos }) => {
   const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
+  const isThemeGardenSubmitted = useAppStore((s) => s.isThemeGardenSubmitted);
   const myTeam = useAppStore((s) => s.myTeam);
-  const participantName = useAppStore((s) => s.participantName);
+  const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
 
   // People Quest 제출 완료 팀 수
   const pqCompletedTeams = useMemo(() => {
@@ -278,44 +282,14 @@ const MissionTab: React.FC<{
     });
   }, [peopleQuests, myTeam?.id, isPeopleQuestSubmitted]);
 
-  // 각 Discovery Quiz 문항별 완료 참가자 수 집계
-  const quizStats = useMemo(() => {
-    const pList = Object.values(participants);
-    return DISCOVERY_QUIZZES.map((quiz, idx) => {
-      let completedCount = 0;
-      let correctCount = 0;
-      let isMyAnswered = false;
-      let isMyCorrect = false;
-
-      pList.forEach((p: any) => {
-        if (p?.quizzes && p.quizzes[quiz.id]) {
-          completedCount += 1;
-          if (p.quizzes[quiz.id].isCorrect) correctCount += 1;
-          if (participantName && (p.name || '').trim() === participantName.trim()) {
-            isMyAnswered = true;
-            isMyCorrect = !!p.quizzes[quiz.id].isCorrect;
-          }
-        }
-      });
-
-      // 내 로컬 상태 낙관적 보정
-      if (answeredQuizIds.includes(quiz.id)) {
-        isMyAnswered = true;
-        if (!isMyCorrect) isMyCorrect = true; // 기본 정답 가산
-        if (completedCount === 0) completedCount = 1;
-        if (correctCount === 0) correctCount = 1;
-      }
-
-      return {
-        quiz,
-        idx,
-        completedCount,
-        correctCount,
-        isMyAnswered,
-        isMyCorrect,
-      };
+  // 테마가든 사진 업로드 완료 팀 수
+  const themeCompletedTeams = useMemo(() => {
+    return WORKSHOP_TEAMS.filter(t => {
+      const isDone = isThemeGardenDoneForTeam(t.id, themeGardenPhotos);
+      const isMyTeamDone = t.id === normalizeTeamId(myTeam?.id) && isThemeGardenSubmitted;
+      return isDone || isMyTeamDone;
     });
-  }, [participants, answeredQuizIds, participantName]);
+  }, [themeGardenPhotos, myTeam?.id, isThemeGardenSubmitted]);
 
   return (
     <div className="px-4 pb-28 space-y-4 pt-2">
@@ -399,63 +373,126 @@ const MissionTab: React.FC<{
         </div>
       </div>
 
-      {/* Activity 2: Discovery Quiz */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
-            🧭 Activity 2: Discovery Quiz 현장 퀴즈 ({DISCOVERY_QUIZZES.length}문항)
+      {/* Activity 2: 테마가든 단체사진 미션 */}
+      <div className="bg-[#1A2235] border border-pink-500/30 rounded-2xl p-4 shadow-lg space-y-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🌹</span>
+            <div>
+              <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block">Activity 2 · 현장 인증 (2:00~4:30)</span>
+              <h3 className="text-[15px] font-bold text-white">테마가든 시그니처 단체사진 미션</h3>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold text-amber-400">
+            +{THEME_GARDEN_MISSION.pointsPerMember}pt/인
           </span>
-          <span className="text-[11px] text-sky-400 font-bold">개인별 각자 풀이 (+100pt)</span>
         </div>
 
-        {quizStats.map(({ quiz, idx, completedCount, correctCount, isMyAnswered, isMyCorrect }) => {
-          const courseLabel = quiz.courseKey === 'all'
-            ? '전체 공통'
-            : quiz.courseKey === 'forest'
-            ? '1~3조 동물원둘레길'
-            : '4~6조 호수둘레길';
+        <p className="text-[12px] text-slate-300 leading-relaxed">
+          테마가든 지정 장소를 찾아 조원 전원과 단체사진을 촬영 후 업로드합니다. 업로드 시 <strong>조원 전원에게 +{THEME_GARDEN_MISSION.pointsPerMember}pt</strong>가 부여됩니다.
+        </p>
 
-          return (
-            <div key={quiz.id} className="bg-[#1A2235] border border-white/8 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-bold text-sky-400">
-                    QUIZ {idx + 1}. {quiz.title}
-                  </span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                    quiz.courseKey === 'all'
-                      ? 'bg-slate-700 text-slate-300'
-                      : quiz.courseKey === 'forest'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                  }`}>
-                    {courseLabel}
-                  </span>
+        {/* 진행률 바 */}
+        <div>
+          <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+            <span>6개 조 사진 업로드 완료율</span>
+            <span className="text-pink-400 font-bold">
+              {themeCompletedTeams.length} / {WORKSHOP_TEAMS.length}개 조 업로드 ({Math.round((themeCompletedTeams.length / WORKSHOP_TEAMS.length) * 100)}%)
+            </span>
+          </div>
+          <div className="h-2 bg-black/40 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-pink-600 to-rose-400 rounded-full transition-all duration-700"
+              style={{ width: `${(themeCompletedTeams.length / WORKSHOP_TEAMS.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* 6개 조 사진 업로드 갤러리/현황 그리드 */}
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          {WORKSHOP_TEAMS.map(team => {
+            const photoRec = themeGardenPhotos[team.id] || themeGardenPhotos[normalizeTeamId(team.id)];
+            const isMyTeam = team.id === normalizeTeamId(myTeam?.id);
+            const isDone = isThemeGardenDoneForTeam(team.id, themeGardenPhotos) || (isMyTeam && isThemeGardenSubmitted);
+
+            return (
+              <div
+                key={team.id}
+                className={`p-2.5 rounded-xl border text-left text-[11px] transition-all flex flex-col justify-between ${
+                  isDone
+                    ? 'bg-pink-950/20 border-pink-500/40 text-pink-200'
+                    : 'bg-black/20 border-white/5 text-slate-500'
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="font-bold text-white flex items-center gap-1">
+                      {team.emoji} {team.name}
+                      {isMyTeam && <span className="text-[9px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                      isDone ? 'bg-pink-500/30 text-pink-300' : 'text-slate-500'
+                    }`}>
+                      {isDone ? '업로드 완료 ✓' : '미업로드'}
+                    </span>
+                  </div>
+
+                  {photoRec?.photoUrl ? (
+                    <div
+                      onClick={() => setZoomPhotoUrl(photoRec.photoUrl)}
+                      className="relative rounded-lg overflow-hidden border border-pink-500/40 cursor-pointer group mb-1 h-20 bg-black/50"
+                    >
+                      <img
+                        src={photoRec.photoUrl}
+                        alt={`${team.name} 단체사진`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-1">
+                        <span className="text-[9px] text-white font-medium truncate">
+                          {photoRec.caption || '단체사진'}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-16 rounded-lg bg-black/30 border border-dashed border-white/10 flex flex-col items-center justify-center text-slate-500 text-[10px] mb-1">
+                      <span className="text-sm mb-0.5">📸</span>
+                      <span>촬영 진행 중</span>
+                    </div>
+                  )}
                 </div>
-                <span className="text-[11px] text-amber-400 font-bold">+{quiz.points}pt</span>
-              </div>
 
-              <p className="text-[12px] text-slate-300 leading-snug">{quiz.questionText}</p>
-
-              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400 border-t border-white/5">
-                <div className="flex items-center gap-3">
-                  <span>참가자 풀이: <strong className="text-white">{completedCount}명</strong></span>
-                  <span>정답: <strong className="text-green-400">{correctCount}명</strong></span>
-                </div>
-                {isMyAnswered ? (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                    isMyCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {isMyCorrect ? '내 결과: 정답 ✓' : '내 결과: 오답 ✕'}
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-slate-500">내 결과: 미풀이</span>
+                {photoRec?.uploadedBy && (
+                  <p className="text-[9.5px] text-slate-400 truncate">
+                    등록: {photoRec.uploadedBy}
+                  </p>
                 )}
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+
+      {/* 사진 전체화면 확대 모달 */}
+      {zoomPhotoUrl && (
+        <div
+          onClick={() => setZoomPhotoUrl(null)}
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 animate-fade-in select-none"
+        >
+          <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col items-center">
+            <img
+              src={zoomPhotoUrl}
+              alt="확대 사진"
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/20"
+            />
+            <button
+              onClick={() => setZoomPhotoUrl(null)}
+              className="mt-3 px-5 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-xs font-bold"
+            >
+              ✕ 닫기
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -471,7 +508,7 @@ const IndividualTab: React.FC<{
           개인 미션 기여 순위 (전체 {individuals.length}명)
         </p>
         <p className="text-[10px] text-slate-400 mt-0.5">
-          개인 획득 점수 = 디스커버리 퀴즈 정답(+100pt/문항) + 조별 피플퀘스트 완료(+100pt)
+          개인 획득 점수 = 테마가든 조별사진 완료(+100pt) + 조별 피플퀘스트 완료(+100pt)
         </p>
       </div>
 
@@ -486,7 +523,6 @@ const IndividualTab: React.FC<{
       ) : (
         individuals.map((p) => {
           const isMe = !!participantName && p.name.trim() === participantName.trim();
-          const isTop3 = p.rank <= 3;
           return (
             <div
               key={p.id || p.name}
@@ -523,7 +559,7 @@ const IndividualTab: React.FC<{
                   {p.company && (
                     <span className="text-[10px] text-slate-500">({p.company})</span>
                   )}
-                  {p.missions >= 4 && (
+                  {p.missions >= 2 && (
                     <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded">
                       👑 완주
                     </span>
@@ -564,6 +600,7 @@ const Leaderboard: React.FC = () => {
 
   const [participantsData, setParticipantsData] = useState<Record<string, any>>({});
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
+  const [themeGardenPhotosData, setThemeGardenPhotosData] = useState<Record<string, any>>({});
   const dbUrl = FIREBASE_DB_URL;
 
   const isMyTeamPqSubmitted = useMemo(() => {
@@ -581,11 +618,13 @@ const Leaderboard: React.FC = () => {
         teamId: myTeamId || null,
         answeredQuizIds,
         isPeopleQuestSubmitted: isMyTeamPqSubmitted,
-      }
+      },
+      themeGardenPhotosData
     );
   }, [
     participantsData,
     peopleQuestsData,
+    themeGardenPhotosData,
     participantName,
     participantCompany,
     myTeamId,
@@ -611,9 +650,11 @@ const Leaderboard: React.FC = () => {
             }
             setParticipantsData(data.participants || {});
             setPeopleQuestsData(data.peopleQuest || {});
+            setThemeGardenPhotosData(data.themeGardenPhotos || {});
           } else {
             setParticipantsData({});
             setPeopleQuestsData({});
+            setThemeGardenPhotosData({});
           }
         }
       } catch (err) {
@@ -633,6 +674,7 @@ const Leaderboard: React.FC = () => {
           if (!snapshot.exists()) {
             setParticipantsData({});
             setPeopleQuestsData({});
+            setThemeGardenPhotosData({});
             return;
           }
           const data = snapshot.val();
@@ -642,9 +684,11 @@ const Leaderboard: React.FC = () => {
             }
             setParticipantsData(data.participants || {});
             setPeopleQuestsData(data.peopleQuest || {});
+            setThemeGardenPhotosData(data.themeGardenPhotos || {});
           } else {
             setParticipantsData({});
             setPeopleQuestsData({});
+            setThemeGardenPhotosData({});
           }
         },
         (error) => {
@@ -714,7 +758,7 @@ const Leaderboard: React.FC = () => {
       {/* 탭 본문 콘텐츠 */}
       <div className="flex-1 overflow-y-auto">
         {tab === 'team'       && <TeamTab teams={computedTeams} myTeamId={myTeamId} />}
-        {tab === 'mission'    && <MissionTab peopleQuests={peopleQuestsData} participants={participantsData} />}
+        {tab === 'mission'    && <MissionTab peopleQuests={peopleQuestsData} themeGardenPhotos={themeGardenPhotosData} />}
         {tab === 'individual' && <IndividualTab individuals={individuals} participantName={participantName} />}
       </div>
 

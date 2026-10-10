@@ -14,7 +14,6 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   THEME_GARDEN_MISSION,
   getCourseTotalMaxPoints,
-  DISCOVERY_QUIZZES,
   MY_INFO_QUESTIONS,
 } from '../../config/workshopConfig';
 import {
@@ -79,7 +78,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
       {/* 이벤트 & 팀/코스 칩 */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <span className="flex items-center gap-1 text-[11px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
-          🌲 빵명장 기점 순환
+          🏪 세븐일레븐 집결
         </span>
         {teamConfig && (
           <span className="flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-0.5"
@@ -183,14 +182,12 @@ const ScoreCard: React.FC<{
   );
 };
 
-// ─── 워크샵 타임라인 & 단계별 미션 섹션 ───────────────────────
+// ─── 워크샵 타임라인 & 단계별 미션 섹션 (스팟 퀴즈 제외 2대 핵심 액티비티) ────────
 const ActivitySection: React.FC<{
   hasTutorialDone: boolean;
   hasGroundRulesDone: boolean;
   themeGardenDone: boolean;
   pqSubmitted: boolean;
-  answeredQuizCount: number;
-  totalQuizCount: number;
   isAllCompleted: boolean;
   onOpenTutorialModal: () => void;
   onOpenThemeGardenModal: () => void;
@@ -200,8 +197,6 @@ const ActivitySection: React.FC<{
   hasGroundRulesDone,
   themeGardenDone,
   pqSubmitted,
-  answeredQuizCount,
-  totalQuizCount,
   isAllCompleted,
   onOpenTutorialModal,
   onOpenThemeGardenModal,
@@ -228,7 +223,7 @@ const ActivitySection: React.FC<{
               🎉 축하합니다! 모든 미션을 완주하셨습니다!
             </h3>
             <p className="text-[11px] text-slate-300 mt-0.5">
-              테마가든 사진, 피플퀘스트, 스팟 퀴즈를 모두 완료하여 완주 증서가 발급되었습니다.
+              테마가든 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.
             </p>
           </div>
           <button
@@ -245,8 +240,8 @@ const ActivitySection: React.FC<{
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[12px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
-            <span>🚩</span>
-            <span>STEP 1 · 1:30~2:00 [빵명장 앞 공터]</span>
+            <span>🏪</span>
+            <span>STEP 1 · 1:30~2:00 [세븐일레븐 앞 테이블]</span>
           </span>
           <span className="text-[10px] text-slate-400">오프닝 & 준비</span>
         </div>
@@ -280,7 +275,7 @@ const ActivitySection: React.FC<{
           </div>
 
           <p className="text-[11.5px] text-slate-300 leading-relaxed mb-2.5">
-            빵명장 대표 빵 가격 맞히기 퀴즈로 앱을 테스트하고, 조별 역할(타임키퍼 등) 및 <strong>30분 개인 힐링 시간</strong> 등의 규칙을 정해보세요.
+            세븐일레븐 앞 야외 테이블에서 빵명장 빵 가격 퀴즈로 앱을 테스트하고, 조별 역할(타임키퍼 등) 및 <strong>30분 개인 힐링 시간</strong> 등의 규칙을 정해보세요.
           </p>
 
           <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/5">
@@ -292,14 +287,14 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 2: 트레킹 & 테마가든 미션 (2:00~4:30) */}
+      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:30) */}
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[12px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
             <span>🚶</span>
             <span>STEP 2 · 2:00~4:30 [테마가든 & 트레킹 코스]</span>
           </span>
-          <span className="text-[10px] text-slate-400">미션 수행</span>
+          <span className="text-[10px] text-slate-400">2대 핵심 미션</span>
         </div>
 
         {/* 미션 1: 테마가든 단체사진 미션 */}
@@ -315,7 +310,7 @@ const ActivitySection: React.FC<{
               </span>
               <div>
                 <span className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider block">
-                  테마가든 메인 미션 · 조원 전원 +100pt
+                  테마가든 미션 · 조원 전원 +100pt
                 </span>
                 <h3 className="text-[15px] font-bold text-white group-hover:text-pink-300 transition-colors">
                   지정 힌트 스팟 찾기 & 단체사진 업로드
@@ -376,45 +371,6 @@ const ActivitySection: React.FC<{
             <span className="text-slate-400">조별 1명 추천 시 조원당 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
             <span className="text-red-400 font-bold flex items-center gap-0.5">
               추천 작성 →
-            </span>
-          </div>
-        </button>
-
-        {/* 미션 3: Discovery Quiz */}
-        <button
-          type="button"
-          onClick={() => navigate('/discovery-quiz')}
-          className="w-full text-left bg-gradient-to-br from-[#1A2235] to-[#121B2C] border border-sky-500/30 hover:border-sky-500/60 rounded-2xl p-4 shadow-lg active:scale-98 transition-all relative overflow-hidden"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-base">
-                🧭
-              </span>
-              <div>
-                <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">Discovery Quiz · 문항당 +100pt</span>
-                <h3 className="text-[15px] font-bold text-white">현장 스팟 퀴즈 (3문항)</h3>
-              </div>
-            </div>
-            <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
-              answeredQuizCount >= totalQuizCount
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : answeredQuizCount > 0
-                ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                : 'bg-white/5 text-slate-400 border-white/10'
-            }`}>
-              {answeredQuizCount >= totalQuizCount ? `✅ ${totalQuizCount}/${totalQuizCount} 완주` : answeredQuizCount > 0 ? `진행 중 (${answeredQuizCount}/${totalQuizCount})` : 'GPS 탐색'}
-            </span>
-          </div>
-
-          <p className="text-[11.5px] text-slate-300 leading-relaxed mb-2.5">
-            코스 내 지정 장소에 도착해 현장 안내판과 시설 정보를 확인하고 가볍게 퀴즈를 풀어보세요.
-          </p>
-
-          <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">코스 지도와 연동된 현장 퀴즈</span>
-            <span className="text-sky-400 font-bold flex items-center gap-0.5">
-              퀴즈 풀기 →
             </span>
           </div>
         </button>
@@ -536,7 +492,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       score: myTeam?.score ?? 0,
       rank: myTeam?.rank ?? 1,
       missionsCompleted: myTeam?.missionsCompleted ?? 0,
-      totalMissions: 4,
+      totalMissions: 2,
       lastActivity: new Date(),
       status: 'active',
     }, finalName, finalCompany, finalTeam.assignedCourse);
@@ -773,8 +729,6 @@ const Dashboard: React.FC = () => {
     ? createParticipantId(participantName, participantCompany)
     : 'anonymous';
 
-  const activeCourseQuizzes = DISCOVERY_QUIZZES.filter(q => q.courseKey === 'all' || q.courseKey === selectedCourse);
-  const totalQuizCount = activeCourseQuizzes.length;
   const dbUrl = FIREBASE_DB_URL;
 
   // 1. RTDB 데이터를 단일 진실 공급원(Single Source of Truth)으로 삼는 100% 통합 점수 계산
@@ -842,13 +796,6 @@ const Dashboard: React.FC = () => {
     return !!(myP?.tutorial?.completed);
   }, [rawSessionData, participantId]);
 
-  const answeredQuizCount = useMemo(() => {
-    if (!myIndividual) return 0;
-    const baseMissions = myIndividual.missions;
-    const extraDeductions = (pqSubmitted ? 1 : 0) + (themeGardenDone ? 1 : 0);
-    return Math.max(0, baseMissions - extraDeductions);
-  }, [myIndividual, pqSubmitted, themeGardenDone]);
-
   const maxScore = useMemo(() => {
     return Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
   }, [teams, selectedCourse]);
@@ -862,15 +809,6 @@ const Dashboard: React.FC = () => {
 
     if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
       resetLocalProgress(data.lastResetAt);
-    }
-
-    const myP = data.participants?.[participantId] ||
-      (participantName ? Object.values(data.participants || {}).find((p: any) => (p?.name || '').trim() === participantName.trim()) : null);
-
-    if (!myP || !myP.quizzes || Object.keys(myP.quizzes).length === 0) {
-      if (answeredQuizIds.length > 0) {
-        setAnsweredQuizIds([]);
-      }
     }
 
     const pqRecord = getPqForTeam(teamId, data.peopleQuest || {});
@@ -942,7 +880,7 @@ const Dashboard: React.FC = () => {
   }, [teamId, participantId, dbUrl, lastResetAt]);
 
   const totalMissions = (myIndividual?.missions || 0);
-  const isAllCompleted = (answeredQuizCount >= totalQuizCount && pqSubmitted && themeGardenDone) || (totalMissions >= (totalQuizCount + 2));
+  const isAllCompleted = (pqSubmitted && themeGardenDone) || (totalMissions >= 2);
 
   // 6. 참가자 프로필 자동 동기화
   useEffect(() => {
@@ -990,8 +928,6 @@ const Dashboard: React.FC = () => {
         hasGroundRulesDone={hasGroundRulesDone}
         themeGardenDone={themeGardenDone}
         pqSubmitted={pqSubmitted}
-        answeredQuizCount={answeredQuizCount}
-        totalQuizCount={totalQuizCount}
         isAllCompleted={isAllCompleted}
         onOpenTutorialModal={() => setIsTutorialModalOpen(true)}
         onOpenThemeGardenModal={() => setIsThemeGardenModalOpen(true)}

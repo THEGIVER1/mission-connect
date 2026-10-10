@@ -90,7 +90,7 @@ interface ThemeGardenPhotoRecord {
   caption?: string;
 }
 
-type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'discoveryQuizzes' | 'broadcast' | 'quizMaster';
+type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'broadcast' | 'quizMaster';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -133,12 +133,6 @@ const AdminScreen: React.FC = () => {
   const [broadcastMessage, setBroadcastMessage] = useState<string>('');
   const [broadcastType, setBroadcastType] = useState<'info' | 'urgent' | 'photo' | 'dinner'>('info');
   const [isSendingBroadcast, setIsSendingBroadcast] = useState<boolean>(false);
-
-  // Discovery 퀴즈 관리/테스트 상태
-  const [adminSelectedQuizId, setAdminSelectedQuizId] = useState<string>(DISCOVERY_QUIZZES[0].id);
-  const [adminTestAnswers, setAdminTestAnswers] = useState<Record<string, number | null>>({});
-  const [adminSubmittedQuizzes, setAdminSubmittedQuizzes] = useState<Record<string, boolean>>({});
-  const [showAnswerDirectly, setShowAnswerDirectly] = useState<boolean>(true);
 
   const dbUrl = FIREBASE_DB_URL;
 
@@ -845,7 +839,6 @@ const AdminScreen: React.FC = () => {
   };
 
   const currentP = participants[currentCardIndex] || participants[0];
-  const activeDiscoveryQuiz = DISCOVERY_QUIZZES.find(q => q.id === adminSelectedQuizId) || DISCOVERY_QUIZZES[0];
 
   // ─────────────────────────────────────────────────────────────────
   // VIEW 1: 빔프로젝터 최종 시상식 모드 (16:9 와이드 풀스크린)
@@ -1547,8 +1540,8 @@ const AdminScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 8개 관리자 탭 네비게이션 */}
-      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs font-bold">
+      {/* 7개 관리자 탭 네비게이션 */}
+      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs font-bold">
         <button
           onClick={() => setActiveTab('teams')}
           className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
@@ -1593,15 +1586,6 @@ const AdminScreen: React.FC = () => {
         >
           <span>💡</span>
           <span>4문항원문</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('discoveryQuizzes')}
-          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
-            activeTab === 'discoveryQuizzes' ? 'bg-sky-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
-          }`}
-        >
-          <span>🧭</span>
-          <span>현장퀴즈</span>
         </button>
         <button
           onClick={() => setActiveTab('broadcast')}
@@ -2094,13 +2078,13 @@ const AdminScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSendBroadcast({
-                    title: '📸 미술관 앞 단체사진 집결 안내',
-                    message: '5분 뒤 국립현대미술관 앞에서 단체사진 촬영이 진행됩니다. 모든 조원들은 미술관 앞으로 모여주세요!',
+                    title: '📸 빵명장 앞 전체 단체사진 집결 안내',
+                    message: '트레킹 복귀 후 4시 30분 빵명장 서울대공원점 앞에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 빵명장 앞으로 모여주세요!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
                 >
-                  <span>📸 <strong>[단체사진]</strong> 5분 뒤 미술관 앞 집결</span>
+                  <span>📸 <strong>[단체사진]</strong> 4:30 빵명장 앞 집결</span>
                   <span className="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
@@ -2108,12 +2092,12 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: '⏰ 트레킹 마감 15분 전 안내',
-                    message: '트레킹 미션 종료 15분 전입니다. 빵명장 서울대공원점(첫 집결지)으로 안전하게 복귀해 주시기 바랍니다.',
+                    message: '트레킹 미션 종료 15분 전입니다. 세븐일레븐 앞 야외 테이블 및 빵명장(출발/종료지)으로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
                 >
-                  <span>⏰ <strong>[마감 15분 전]</strong> 출발지로 복귀 안내</span>
+                  <span>⏰ <strong>[마감 15분 전]</strong> 복귀지(세븐일레븐/빵명장) 복귀</span>
                   <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
@@ -2185,200 +2169,6 @@ const AdminScreen: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* TAB 4: Discovery 현장 퀴즈 관리 & 실시간 풀이 테스트 */}
-        {activeTab === 'discoveryQuizzes' && (
-          <div className="space-y-4">
-            {/* 상단 안내 배너 */}
-            <div className="bg-[#1A2235] border border-sky-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] font-bold text-sky-400 flex items-center gap-1.5">
-                  🧭 Discovery 현장 퀴즈 관리 센터
-                </span>
-                <button
-                  onClick={() => setShowAnswerDirectly(!showAnswerDirectly)}
-                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40"
-                >
-                  {showAnswerDirectly ? '정답 보기 ON' : '정답 숨김'}
-                </button>
-              </div>
-              <p className="text-[12px] text-slate-300 leading-relaxed">
-                현장 비상 패스코드: <strong className="text-amber-400 font-mono text-sm bg-black/40 px-2 py-0.5 rounded">{EMERGENCY_GPS_BYPASS_CODE}</strong> (GPS 음영지역 안내용)
-              </p>
-              <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 space-y-1">
-                <p>📸 <strong>공통 단체사진 스팟:</strong> {ACTIVE_VENUE.photoSpot.name} (두 코스 모두 통과)</p>
-                <p>🦁 <strong>1~3조 (동물원둘레길):</strong> 빵명장 서울대공원점 + 미술관 + 동물원둘레길 쉼터 (3문항)</p>
-                <p>🌊 <strong>4~6조 (호수둘레길):</strong> 빵명장 서울대공원점 + 미술관 + 호수 브릿지 데크 (3문항)</p>
-              </div>
-            </div>
-
-            {/* 4개 퀴즈 문항 탭 선택 바 */}
-            <div className="grid grid-cols-2 gap-2">
-              {DISCOVERY_QUIZZES.map((quiz, idx) => {
-                const isSel = quiz.id === adminSelectedQuizId;
-                const stat = discoveryStats[quiz.id] || { totalSolves: 0, correctCount: 0 };
-                const courseBadge = quiz.courseKey === 'all' ? '공통' : quiz.courseKey === 'forest' ? '동물원둘레길 (1~3조)' : '호수둘레길 (4~6조)';
-
-                return (
-                  <button
-                    key={quiz.id}
-                    onClick={() => setAdminSelectedQuizId(quiz.id)}
-                    className={`p-3 rounded-2xl border text-left transition-all ${
-                      isSel
-                        ? 'bg-sky-950/40 border-sky-400 shadow-md shadow-sky-500/20'
-                        : 'bg-[#1A2235] border-white/8 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isSel ? 'bg-sky-400 text-slate-900' : 'bg-white/10 text-slate-300'
-                      }`}>
-                        문항 #{idx + 1} ({courseBadge})
-                      </span>
-                      <span className="text-[10px] text-amber-400 font-bold">+{quiz.points}pt</span>
-                    </div>
-                    <h4 className="text-[13px] font-bold text-white truncate mt-1">
-                      {quiz.title}
-                    </h4>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      실시간 풀이: <strong className="text-green-400">{stat.totalSolves}명</strong> ({stat.correctCount}명 정답)
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* 선택된 퀴즈 상세 풀이 & 관리 카드 */}
-            {activeDiscoveryQuiz && (
-              <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-sky-500/30 rounded-3xl p-5 shadow-2xl space-y-4">
-                <div className="flex justify-between items-start border-b border-white/10 pb-3">
-                  <div>
-                    <span className="text-[11px] text-sky-400 font-bold uppercase tracking-wider block">
-                      DISCOVERY QUIZ DETAIL & TEST
-                    </span>
-                    <h3 className="text-[18px] font-extrabold text-white mt-0.5">
-                      {activeDiscoveryQuiz.title}
-                    </h3>
-                    <p className="text-[12px] text-slate-300 mt-0.5">
-                      📍 위치: <strong className="text-sky-300">{activeDiscoveryQuiz.locationLabel}</strong>
-                    </p>
-                  </div>
-                  <span className="bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full">
-                    반경 {activeDiscoveryQuiz.radiusMeters}m
-                  </span>
-                </div>
-
-                {/* 문제 내용 */}
-                <div className="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-2">
-                  <span className="text-[11px] font-bold text-amber-400 block">
-                    [문제 내용]
-                  </span>
-                  <p className="text-[14px] font-bold text-white leading-relaxed">
-                    {activeDiscoveryQuiz.questionText}
-                  </p>
-                </div>
-
-                {/* 보기 리스트 (운영자 즉시 테스트 가능) */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-slate-400 block">
-                    [보기 선택 및 테스트 풀이]
-                  </span>
-                  {activeDiscoveryQuiz.options.map((opt, oIdx) => {
-                    const selected = adminTestAnswers[activeDiscoveryQuiz.id] === oIdx;
-                    const isCorrectAnswer = oIdx === activeDiscoveryQuiz.correctIndex;
-                    const submitted = adminSubmittedQuizzes[activeDiscoveryQuiz.id];
-
-                    let btnClass = 'bg-black/30 border-white/10 text-slate-200';
-                    if (submitted) {
-                      if (isCorrectAnswer) {
-                        btnClass = 'bg-green-500/20 border-green-500 text-green-300 font-bold';
-                      } else if (selected) {
-                        btnClass = 'bg-red-500/20 border-red-500 text-red-300';
-                      } else {
-                        btnClass = 'bg-black/20 border-white/5 text-slate-500 opacity-60';
-                      }
-                    } else if (showAnswerDirectly && isCorrectAnswer) {
-                      btnClass = 'bg-green-950/40 border-green-500/60 text-green-300';
-                    } else if (selected) {
-                      btnClass = 'bg-sky-500/20 border-sky-400 text-sky-300 font-bold';
-                    }
-
-                    return (
-                      <button
-                        key={oIdx}
-                        type="button"
-                        onClick={() => {
-                          setAdminTestAnswers(prev => ({ ...prev, [activeDiscoveryQuiz.id]: oIdx }));
-                          setAdminSubmittedQuizzes(prev => ({ ...prev, [activeDiscoveryQuiz.id]: false }));
-                        }}
-                        className={`w-full p-3.5 rounded-xl border text-left text-[13px] flex items-center justify-between transition-all ${btnClass}`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold">
-                            {oIdx + 1}
-                          </span>
-                          <span>{opt}</span>
-                        </div>
-                        {showAnswerDirectly && isCorrectAnswer && !submitted && (
-                          <span className="text-[11px] font-bold text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
-                            정답 ✓
-                          </span>
-                        )}
-                        {submitted && isCorrectAnswer && (
-                          <span className="text-green-400 font-bold text-[12px]">정답 ✓</span>
-                        )}
-                        {submitted && selected && !isCorrectAnswer && (
-                          <span className="text-red-400 font-bold text-[12px]">오답 ✕</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* 테스트 답안 제출 버튼 */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      if (adminTestAnswers[activeDiscoveryQuiz.id] === undefined) {
-                        alert('보기를 먼저 선택해주세요.');
-                        return;
-                      }
-                      setAdminSubmittedQuizzes(prev => ({ ...prev, [activeDiscoveryQuiz.id]: true }));
-                    }}
-                    className="flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[13px] rounded-xl shadow active:scale-98 transition-all"
-                  >
-                    🧪 테스트 채점 및 해설 확인
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAdminTestAnswers(prev => ({ ...prev, [activeDiscoveryQuiz.id]: null }));
-                      setAdminSubmittedQuizzes(prev => ({ ...prev, [activeDiscoveryQuiz.id]: false }));
-                    }}
-                    className="px-3 py-3 bg-[#1A2235] text-slate-400 hover:text-white text-[12px] font-bold rounded-xl border border-white/10"
-                  >
-                    초기화
-                  </button>
-                </div>
-
-                {/* 해설 박스 */}
-                {(adminSubmittedQuizzes[activeDiscoveryQuiz.id] || showAnswerDirectly) && (
-                  <div className="bg-black/50 border border-sky-500/30 rounded-2xl p-4 space-y-1.5 animate-fade-in">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[13px] font-bold text-amber-400">💡 정답 해설 & 현장 안내:</span>
-                    </div>
-                    <p className="text-[12.5px] text-slate-200 leading-relaxed">
-                      {activeDiscoveryQuiz.explanation}
-                    </p>
-                    <div className="pt-2 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                      <span>GPS 좌표: {activeDiscoveryQuiz.coords.lat}, {activeDiscoveryQuiz.coords.lng}</span>
-                      <span>지정 배점: +{activeDiscoveryQuiz.points}pt</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
 
