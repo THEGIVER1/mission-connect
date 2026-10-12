@@ -949,7 +949,7 @@ const MapScreen: React.FC = () => {
     {
       id: 'themeGarden' as const,
       title: '테마가든 장미원 & 호수 수변 테라스',
-      badge: '🌹 2:00~4:30 메인 단체사진 미션 (+100pt)',
+      badge: '🌹 2:00~4:15 메인 단체사진 미션 (+100pt)',
       subtitle: '힌트 사진 속 스팟을 찾아 조원 전원 단체 시그니처 포즈 촬영',
       coords: ACTIVE_VENUE.themeGardenSpot.coords,
       emoji: '🌹',
@@ -958,7 +958,7 @@ const MapScreen: React.FC = () => {
     {
       id: 'finishPhoto' as const,
       title: '빵명장 서울대공원점 앞',
-      badge: '📸 4:30~5:00 복귀 / 전체 단체사진',
+      badge: '📸 4:15~5:00 복귀 / 전체 단체사진',
       subtitle: '트레킹 완료 후 전체 단체사진 촬영 후 실내 입장',
       coords: ACTIVE_VENUE.photoSpot.coords,
       emoji: '📸',

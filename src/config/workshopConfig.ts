@@ -10,7 +10,7 @@
  *    • 1~3조: 동물원둘레길 (약 4.5km 순환)
  *    • 4~6조: 호수둘레길 (약 2.8km 순환)
  * - 2대 핵심 Activity (스팟 퀴즈 제외):
- *    1) 테마가든 시그니처 단체사진 미션 (2:00~4:30, 힌트 스팟 찾기 & 단체사진 업로드, +100pt)
+ *    1) 테마가든 시그니처 단체사진 미션 (2:00~4:15, 힌트 스팟 찾기 & 단체사진 업로드, +100pt)
  *    2) People Quest (대화 및 최고의 스토리 동료 추천, +100pt)
  */
 
@@ -108,7 +108,7 @@ export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들�
 export const PEOPLE_QUEST_POINTS_PER_MEMBER = 100; // 조원당 100pt
 
 // ─────────────────────────────────────────────────────────────────
-// 5. Activity 2: 테마가든 메인 미션 (2:00~4:30 진행 중)
+// 5. Activity 2: 테마가든 메인 미션 (2:00~4:15 진행 중)
 // ─────────────────────────────────────────────────────────────────
 export interface ThemeGardenMissionConfig {
   id: string;
@@ -125,7 +125,7 @@ export interface ThemeGardenMissionConfig {
 export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
   id: 'theme_garden_photo',
   title: '🌹 테마가든 시그니처 스팟 찾기 & 조별 단체사진',
-  timeRange: '2:00 ~ 4:30 (트레킹 중)',
+  timeRange: '2:00 ~ 4:15 (트레킹 중)',
   locationName: '서울대공원 테마가든 (장미원 & 호수 수변 테라스)',
   coords: { lat: 37.4310, lng: 127.0185 },
   hintTitle: '테마가든 지정 장소 힌트',
@@ -175,7 +175,7 @@ export interface RoleOption {
 }
 
 export const GROUND_RULE_ROLE_OPTIONS: RoleOption[] = [
-  { id: 'timekeeper', title: '타임키퍼', icon: '⏱️', description: '트레킹 페이스와 4:30 빵명장 복귀 시간을 챙기는 일정 매니저' },
+  { id: 'timekeeper', title: '타임키퍼', icon: '⏱️', description: '트레킹 페이스와 4:15 빵명장 복귀 시간을 챙기는 일정 매니저' },
   { id: 'pacemaker', title: '페이스메이커', icon: '🚶', description: '가장 편안한 템포로 걸으며 조원들의 무리 없는 걷기를 리드' },
   { id: 'photographer', title: '전속 포토그래퍼', icon: '📸', description: '테마가든 미션 사진 및 조원들의 인생샷과 웃는 순간을 포착' },
   { id: 'vitamin', title: '비타민/리액션 캡틴', icon: '💊', description: '지치지 않는 긍정 에너지와 리액션으로 조의 활력을 불어넣음' },

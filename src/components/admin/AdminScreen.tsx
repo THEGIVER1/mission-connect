@@ -1950,7 +1950,7 @@ const AdminScreen: React.FC = () => {
                   🌹 테마가든 조별 단체사진 실시간 갤러리
                 </span>
                 <span className="text-[11px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
-                  2:00~4:30 메인 미션
+                  2:00~4:15 메인 미션
                 </span>
               </div>
               <p className="text-[11.5px] text-slate-300 leading-relaxed">
@@ -2079,12 +2079,12 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: '📸 빵명장 앞 전체 단체사진 집결 안내',
-                    message: '트레킹 복귀 후 4시 30분 빵명장 서울대공원점 앞에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 빵명장 앞으로 모여주세요!',
+                    message: '트레킹 복귀 후 4시 15분 빵명장 서울대공원점 앞에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 빵명장 앞으로 모여주세요!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
                 >
-                  <span>📸 <strong>[단체사진]</strong> 4:30 빵명장 앞 집결</span>
+                  <span>📸 <strong>[단체사진]</strong> 4:15 빵명장 앞 집결</span>
                   <span className="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 

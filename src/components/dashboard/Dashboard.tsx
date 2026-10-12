@@ -287,12 +287,12 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:30) */}
+      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:15) */}
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[12px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
             <span>🚶</span>
-            <span>STEP 2 · 2:00~4:30 [테마가든 & 트레킹 코스]</span>
+            <span>STEP 2 · 2:00~4:15 [테마가든 & 트레킹 코스]</span>
           </span>
           <span className="text-[10px] text-slate-400">2대 핵심 미션</span>
         </div>
@@ -376,12 +376,12 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 3: 트레킹 종료 & 빵명장 앞 단체사진 촬영 (4:30~5:00) */}
+      {/* 타임라인 단계 3: 트레킹 종료 & 빵명장 앞 단체사진 촬영 (4:15~5:00) */}
       <div className="space-y-1.5 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[12px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
             <span>🏁</span>
-            <span>STEP 3 · 4:30~5:00 [빵명장 앞 & 실내]</span>
+            <span>STEP 3 · 4:15~5:00 [빵명장 앞 & 실내]</span>
           </span>
           <span className="text-[10px] text-slate-400">종료 & 시상</span>
         </div>
@@ -397,7 +397,7 @@ const ActivitySection: React.FC<{
             </span>
           </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            4:30까지 <strong>빵명장 서울대공원점 앞</strong>으로 복귀하여 전체 단체사진을 촬영한 뒤 실내로 입장합니다. (실내 퀴즈쇼 및 개인 시상 진행)
+            4:15까지 <strong>빵명장 서울대공원점 앞</strong>으로 복귀하여 전체 단체사진을 촬영한 뒤 실내로 입장합니다. (실내 퀴즈쇼 및 개인 시상 진행)
           </p>
         </div>
       </div>
