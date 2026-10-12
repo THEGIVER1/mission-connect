@@ -2078,13 +2078,13 @@ const AdminScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSendBroadcast({
-                    title: '📸 빵명장 앞 전체 단체사진 집결 안내',
-                    message: '트레킹 복귀 후 4시 15분 빵명장 서울대공원점 앞에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 빵명장 앞으로 모여주세요!',
+                    title: '📸 세븐일레븐 앞 공터 전체 단체사진 집결 안내',
+                    message: '트레킹 복귀 후 4시 15분부터 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 세븐일레븐 앞으로 모여주세요!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
                 >
-                  <span>📸 <strong>[단체사진]</strong> 4:15 빵명장 앞 집결</span>
+                  <span>📸 <strong>[단체사진]</strong> 4:15~4:30 세븐일레븐 공터 집결</span>
                   <span className="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
@@ -2092,12 +2092,12 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: '⏰ 트레킹 마감 15분 전 안내',
-                    message: '트레킹 미션 종료 15분 전입니다. 세븐일레븐 앞 야외 테이블 및 빵명장(출발/종료지)으로 안전하게 복귀해 주시기 바랍니다.',
+                    message: '트레킹 미션 종료 15분 전입니다. 4시 15분까지 첫 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
                 >
-                  <span>⏰ <strong>[마감 15분 전]</strong> 복귀지(세븐일레븐/빵명장) 복귀</span>
+                  <span>⏰ <strong>[마감 15분 전]</strong> 복귀지(세븐일레븐 앞 공터) 복귀</span>
                   <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 

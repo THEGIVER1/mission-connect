@@ -376,12 +376,12 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 3: 트레킹 종료 & 빵명장 앞 단체사진 촬영 (4:15~5:00) */}
+      {/* 타임라인 단계 3: 트레킹 종료 & 세븐일레븐 앞 공터 단체사진 (4:15~5:00) */}
       <div className="space-y-1.5 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[12px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
             <span>🏁</span>
-            <span>STEP 3 · 4:15~5:00 [빵명장 앞 & 실내]</span>
+            <span>STEP 3 · 4:15~5:00 [세븐일레븐 공터 & 빵명장 내부]</span>
           </span>
           <span className="text-[10px] text-slate-400">종료 & 시상</span>
         </div>
@@ -390,14 +390,14 @@ const ActivitySection: React.FC<{
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-bold text-white flex items-center gap-1.5">
               <span>📸</span>
-              <span>트레킹 완료 후 빵명장 앞 단체사진</span>
+              <span>4:15~4:30 세븐일레븐 앞 공터 단체사진</span>
             </span>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
               전체 집결
             </span>
           </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            4:15까지 <strong>빵명장 서울대공원점 앞</strong>으로 복귀하여 전체 단체사진을 촬영한 뒤 실내로 입장합니다. (실내 퀴즈쇼 및 개인 시상 진행)
+            4:15까지 첫 집결지인 <strong>세븐일레븐 앞 공터</strong>로 복귀하여 전체 단체사진(4:15~4:30)을 촬영한 뒤, 빵명장 내부(4:30~5:00)로 입장합니다. (실내 퀴즈쇼 및 개인 시상 진행)
           </p>
         </div>
       </div>

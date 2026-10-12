@@ -957,9 +957,9 @@ const MapScreen: React.FC = () => {
     },
     {
       id: 'finishPhoto' as const,
-      title: '빵명장 서울대공원점 앞',
-      badge: '📸 4:15~5:00 복귀 / 전체 단체사진',
-      subtitle: '트레킹 완료 후 전체 단체사진 촬영 후 실내 입장',
+      title: '세븐일레븐 앞 공터',
+      badge: '📸 4:15~4:30 복귀 / 전체 단체사진',
+      subtitle: '첫 집결지 복귀 후 전체 단체사진 촬영 (4:30 빵명장 입장)',
       coords: ACTIVE_VENUE.photoSpot.coords,
       emoji: '📸',
       color: '#E31837',
@@ -1154,7 +1154,7 @@ const MapScreen: React.FC = () => {
       dashArray: '4, 4',
     }).addTo(layer);
 
-    // 4) 빵명장 앞 [도착 및 전체 단체사진] 마커
+    // 4) 세븐일레븐 앞 공터 [도착 및 전체 단체사진] 마커
     const finishIcon = L.divIcon({
       className: 'custom-finish-pin',
       html: `
@@ -1174,11 +1174,11 @@ const MapScreen: React.FC = () => {
           cursor: pointer;
         ">
           <span>📸</span>
-          <span>빵명장 [도착/전체 단체사진]</span>
+          <span>세븐일레븐 공터 [4:15~4:30 단체사진]</span>
         </div>
       `,
-      iconSize: [195, 32],
-      iconAnchor: [97, 42],
+      iconSize: [215, 32],
+      iconAnchor: [107, 42],
     });
 
     const finishMarker = L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
