@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 @layer base {
-  html { font-family: 'Noto Sans KR', sans-serif; }
-  body { background: #0D1117; color: #F0F2F8; -webkit-tap-highlight-color: transparent; }
+  html { font-family: 'Noto Sans KR', sans-serif; font-size: 16.5px; }
+  body { background: #0D1117; color: #F0F2F8; line-height: 1.55; letter-spacing: -0.01em; -webkit-tap-highlight-color: transparent; }
   * { -webkit-font-smoothing: antialiased; }
 }
 

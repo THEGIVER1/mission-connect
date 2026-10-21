@@ -447,10 +447,10 @@ const PeopleQuestScreen: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
+    <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
       {/* 토스트 메시지 */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1E293B] border border-red-500/40 text-white text-[13px] px-4 py-2.5 rounded-xl shadow-2xl animate-bounce">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1E293B] border border-red-500/40 text-white text-[15px] px-4 py-2.5 rounded-xl shadow-2xl animate-bounce">
           {toastMessage}
         </div>
       )}
@@ -469,9 +469,9 @@ const PeopleQuestScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               ACTIVITY 1 · <span className="text-red-500">PEOPLE QUEST</span>
             </span>
-            <p className="text-[10px] text-slate-400">조별 대화 & 인물 추천 미션</p>
+            <p className="text-[12.5px] text-slate-400">조별 대화 & 인물 추천 미션</p>
           </div>
-          <span className="text-[11px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
+          <span className="text-[13.5px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
             +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt
           </span>
         </div>
@@ -482,23 +482,23 @@ const PeopleQuestScreen: React.FC = () => {
         <div className="bg-[#13192A] border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
           <div className="flex items-center justify-between">
-            <span className="text-[12px] font-bold text-red-400 flex items-center gap-1.5">
+            <span className="text-[14px] font-bold text-red-400 flex items-center gap-1.5">
               💬 {myTeam?.name} 협동 미션
             </span>
             {isSubmitted ? (
-              <span className="text-[11px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="text-[13.5px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
                 ✓ 제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
               </span>
             ) : (
-              <span className="text-[11px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="text-[13.5px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
                 진행 중 (조별 1명 추천)
               </span>
             )}
           </div>
-          <h2 className="text-[16px] font-bold text-white leading-snug">
+          <h2 className="text-[18px] font-bold text-white leading-snug">
             {PEOPLE_QUEST_MISSION_TITLE}
           </h2>
-          <p className="text-[12px] text-slate-300 leading-relaxed">
+          <p className="text-[14px] text-slate-300 leading-relaxed">
             {PEOPLE_QUEST_MISSION_GUIDE}
           </p>
         </div>
@@ -510,25 +510,25 @@ const PeopleQuestScreen: React.FC = () => {
               🎉
             </div>
             <div>
-              <h3 className="text-[17px] font-bold text-white">우리 조의 추천 제출 완료!</h3>
-              <p className="text-[12px] text-slate-300 mt-1">
+              <h3 className="text-[19px] font-bold text-white">우리 조의 추천 제출 완료!</h3>
+              <p className="text-[14px] text-slate-300 mt-1">
                 저녁 식사 자리의 <strong>퀴즈 대항전 및 네트워킹 하이라이트</strong>에서 공개됩니다.
               </p>
             </div>
 
             <div className="bg-black/30 border border-white/5 rounded-xl p-3.5 text-left space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[11px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[13.5px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">
                   {submittedData?.recommendation?.selectedTopic || '추천 스토리'}
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[13.5px] text-slate-400">
                   {submittedData?.submittedBy}
                 </span>
               </div>
-              <p className="text-[15px] font-bold text-white">
+              <p className="text-[17px] font-bold text-white">
                 👑 {submittedData?.recommendation?.recommendedPersonName} 님 ({submittedData?.recommendation?.recommendedPersonCompany})
               </p>
-              <p className="text-[12px] text-slate-300 bg-white/5 p-2.5 rounded-lg italic">
+              <p className="text-[14px] text-slate-300 bg-white/5 p-2.5 rounded-lg italic">
                 "{submittedData?.recommendation?.reason}"
               </p>
             </div>
@@ -536,13 +536,13 @@ const PeopleQuestScreen: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => navigate('/leaderboard')}
-                className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[13px] rounded-xl active:scale-98 shadow"
+                className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[15px] rounded-xl active:scale-98 shadow"
               >
                 🏆 실시간 순위 확인하기
               </button>
               <button
                 onClick={() => navigate('/')}
-                className="flex-1 py-3 bg-[#13192A] border border-white/10 text-white font-bold text-[13px] rounded-xl active:scale-98 shadow"
+                className="flex-1 py-3 bg-[#13192A] border border-white/10 text-white font-bold text-[15px] rounded-xl active:scale-98 shadow"
               >
                 대시보드로 돌아가기
               </button>
@@ -554,29 +554,29 @@ const PeopleQuestScreen: React.FC = () => {
             {/* 1. 추천 대상자 선택 카드 */}
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
-                <label className="text-[13px] font-bold text-white flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[11px] font-bold">
+                <label className="text-[15px] font-bold text-white flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[13.5px] font-bold">
                     1
                   </span>
                   추천할 동료 선택 *
                 </label>
-                <span className="text-[11px] text-slate-400">(본인 제외)</span>
+                <span className="text-[13.5px] text-slate-400">(본인 제외)</span>
               </div>
 
               {recommendation.recommendedPersonName ? (
                 <div className="flex items-center justify-between bg-black/40 border border-red-500/40 rounded-xl p-3">
                   <div>
-                    <span className="text-[11px] text-red-400 font-bold block">
+                    <span className="text-[13.5px] text-red-400 font-bold block">
                       {recommendation.recommendedPersonCompany}
                     </span>
-                    <span className="text-[15px] font-bold text-white">
+                    <span className="text-[17px] font-bold text-white">
                       {recommendation.recommendedPersonName} 님
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(true)}
-                    className="px-3 py-1.5 bg-[#212C42] hover:bg-[#2A3752] text-slate-300 text-[12px] rounded-lg border border-white/10"
+                    className="px-3 py-1.5 bg-[#212C42] hover:bg-[#2A3752] text-slate-300 text-[14px] rounded-lg border border-white/10"
                   >
                     변경하기
                   </button>
@@ -585,7 +585,7 @@ const PeopleQuestScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="w-full py-3.5 bg-black/30 hover:bg-black/50 border border-dashed border-white/20 rounded-xl text-slate-300 text-[13px] font-bold flex items-center justify-center gap-2 active:scale-98 transition-all"
+                  className="w-full py-3.5 bg-black/30 hover:bg-black/50 border border-dashed border-white/20 rounded-xl text-slate-300 text-[15px] font-bold flex items-center justify-center gap-2 active:scale-98 transition-all"
                 >
                   <span>🔍</span>
                   <span>추천할 동료 선택 또는 직접 입력</span>
@@ -595,8 +595,8 @@ const PeopleQuestScreen: React.FC = () => {
 
             {/* 2. 대화 주제 선택 */}
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg">
-              <label className="text-[13px] font-bold text-white flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[11px] font-bold">
+              <label className="text-[15px] font-bold text-white flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[13.5px] font-bold">
                   2
                 </span>
                 가장 인상 깊었던 대화 주제
@@ -604,7 +604,7 @@ const PeopleQuestScreen: React.FC = () => {
               <select
                 value={recommendation.selectedTopic}
                 onChange={e => setRecommendation(prev => ({ ...prev, selectedTopic: e.target.value }))}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-3 text-[13px] text-white focus:outline-none focus:border-red-500 transition-colors appearance-none"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-3 text-[15px] text-white focus:outline-none focus:border-red-500 transition-colors appearance-none"
               >
                 {TOPIC_OPTIONS.map(opt => (
                   <option key={opt} value={opt} style={{ background: '#1A2235', color: 'white' }}>
@@ -617,13 +617,13 @@ const PeopleQuestScreen: React.FC = () => {
             {/* 3. 대화 스토리 및 추천 이유 작성 */}
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg">
               <div className="flex justify-between items-center">
-                <label className="text-[13px] font-bold text-white flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[11px] font-bold">
+                <label className="text-[15px] font-bold text-white flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[13.5px] font-bold">
                     3
                   </span>
                   나눈 이야기 & 추천 사유 *
                 </label>
-                <span className={`text-[11px] ${recommendation.reason.length > 130 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                <span className={`text-[13.5px] ${recommendation.reason.length > 130 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
                   {recommendation.reason.length}/150자
                 </span>
               </div>
@@ -633,7 +633,7 @@ const PeopleQuestScreen: React.FC = () => {
                 value={recommendation.reason}
                 onChange={e => setRecommendation(prev => ({ ...prev, reason: e.target.value }))}
                 placeholder="트레킹 중 나눈 인상 깊었던 이야기나 동료의 매력 포인트를 자유롭게 적어주세요. (예: 주말마다 마라톤 풀코스를 3번 완주하셨다는 이야기를 듣고 깜짝 놀랐습니다!)"
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-[13px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors resize-none leading-relaxed"
+                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-[15px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors resize-none leading-relaxed"
               />
             </div>
 
@@ -643,7 +643,7 @@ const PeopleQuestScreen: React.FC = () => {
                 type="button"
                 onClick={handleDraftSave}
                 disabled={isSaving}
-                className="w-1/3 py-3.5 bg-[#1A2235] hover:bg-[#222C44] text-slate-300 font-bold text-[14px] rounded-xl border border-white/10 active:scale-98 transition-all"
+                className="w-1/3 py-3.5 bg-[#1A2235] hover:bg-[#222C44] text-slate-300 font-bold text-[16px] rounded-xl border border-white/10 active:scale-98 transition-all"
               >
                 임시 저장
               </button>
@@ -651,7 +651,7 @@ const PeopleQuestScreen: React.FC = () => {
                 type="button"
                 onClick={handleOpenConfirm}
                 disabled={isSaving}
-                className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-1.5"
+                className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-1.5"
               >
                 <span>최종 제출 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)</span>
               </button>
@@ -663,15 +663,15 @@ const PeopleQuestScreen: React.FC = () => {
       {/* 최종 제출 확인 모달 */}
       {isConfirmModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#13192A] border border-red-500/40 w-full max-w-[340px] rounded-3xl p-5 text-center space-y-4 shadow-2xl">
+          <div className="bg-[#13192A] border border-red-500/40 w-full max-w-[390px] rounded-3xl p-5 text-center space-y-4 shadow-2xl">
             <div className="w-12 h-12 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center text-xl mx-auto">
               💬
             </div>
             <div>
-              <h3 className="text-[16px] font-bold text-white leading-snug">
+              <h3 className="text-[18px] font-bold text-white leading-snug">
                 [{recommendation.recommendedPersonName}] 님을 최종 추천할까요?
               </h3>
-              <p className="text-[12px] text-slate-400 mt-1">
+              <p className="text-[14px] text-slate-400 mt-1">
                 제출 시 조원 전원에게 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 즉시 부여되며, 실시간 리더보드에 반영됩니다.
               </p>
             </div>
@@ -679,14 +679,14 @@ const PeopleQuestScreen: React.FC = () => {
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setIsConfirmModalOpen(false)}
-                className="flex-1 py-3 bg-[#1A2235] text-slate-400 font-bold text-[13px] rounded-xl border border-white/10"
+                className="flex-1 py-3 bg-[#1A2235] text-slate-400 font-bold text-[15px] rounded-xl border border-white/10"
               >
                 취소
               </button>
               <button
                 onClick={executeSubmit}
                 disabled={isSaving}
-                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl shadow active:scale-98"
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[15px] rounded-xl shadow active:scale-98"
               >
                 {isSaving ? '제출 중...' : '최종 제출'}
               </button>
@@ -698,11 +698,11 @@ const PeopleQuestScreen: React.FC = () => {
       {/* 추천 동료 선택 / 직접 입력 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-[#13192A] border border-white/10 w-full max-w-[390px] h-[82vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden animate-slide-up">
+          <div className="bg-[#13192A] border border-white/10 w-full max-w-[430px] h-[82vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden animate-slide-up">
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
               <div>
-                <h3 className="text-[16px] font-bold text-white">추천할 동료 찾기</h3>
-                <p className="text-[11px] text-slate-400">대화 중 인상 깊었던 동료를 선택하거나 입력하세요</p>
+                <h3 className="text-[18px] font-bold text-white">추천할 동료 찾기</h3>
+                <p className="text-[13.5px] text-slate-400">대화 중 인상 깊었던 동료를 선택하거나 입력하세요</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -717,7 +717,7 @@ const PeopleQuestScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModalTab('roster')}
-                className={`flex-1 py-2.5 text-[12px] font-bold border-b-2 transition-all ${
+                className={`flex-1 py-2.5 text-[14px] font-bold border-b-2 transition-all ${
                   modalTab === 'roster'
                     ? 'text-red-400 border-red-500'
                     : 'text-slate-400 border-transparent hover:text-white'
@@ -728,7 +728,7 @@ const PeopleQuestScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModalTab('manual')}
-                className={`flex-1 py-2.5 text-[12px] font-bold border-b-2 transition-all ${
+                className={`flex-1 py-2.5 text-[14px] font-bold border-b-2 transition-all ${
                   modalTab === 'manual'
                     ? 'text-red-400 border-red-500'
                     : 'text-slate-400 border-transparent hover:text-white'
@@ -747,14 +747,14 @@ const PeopleQuestScreen: React.FC = () => {
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="이름 또는 소속 검색 (예: 홍길동)"
-                    className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                    className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-2.5 text-[15px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
                   />
                   <div className="flex gap-1.5">
                     {(['all', '㈜두산', '두산경영연구원'] as const).map(tab => (
                       <button
                         key={tab}
                         onClick={() => setCompanyFilter(tab)}
-                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                        className={`flex-1 py-1.5 rounded-lg text-[13.5px] font-bold transition-all ${
                           companyFilter === tab
                             ? 'bg-red-500 text-white'
                             : 'bg-[#1A2235] text-slate-400 hover:text-white'
@@ -771,16 +771,16 @@ const PeopleQuestScreen: React.FC = () => {
                   {availablePeople.length === 0 ? (
                     <div className="text-center py-10 px-4 space-y-3">
                       <div className="text-3xl">👥</div>
-                      <p className="text-slate-400 text-[13px] font-bold">
+                      <p className="text-slate-400 text-[15px] font-bold">
                         아직 참여한 동료가 없거나 검색 결과가 없습니다.
                       </p>
-                      <p className="text-slate-500 text-[11px]">
+                      <p className="text-slate-500 text-[13.5px]">
                         아직 앱에 로그인하지 않은 동료는 [직접 이름 입력]으로 추천할 수 있습니다.
                       </p>
                       <button
                         type="button"
                         onClick={() => setModalTab('manual')}
-                        className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-[12px] font-bold hover:bg-red-500/30"
+                        className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-[14px] font-bold hover:bg-red-500/30"
                       >
                         ✏️ 직접 이름 입력하러 가기
                       </button>
@@ -793,19 +793,19 @@ const PeopleQuestScreen: React.FC = () => {
                         className="w-full bg-[#1A2235] hover:bg-[#202B42] border border-white/5 rounded-xl p-3 flex items-center justify-between text-left transition-all active:scale-98"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-[13px]">
+                          <div className="w-9 h-9 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 font-bold text-[15px]">
                             {p.name.charAt(0)}
                           </div>
                           <div>
-                            <span className="text-[14px] font-bold text-white block">
+                            <span className="text-[16px] font-bold text-white block">
                               {p.name}
                             </span>
-                            <span className="text-[11px] text-slate-400">
+                            <span className="text-[13.5px] text-slate-400">
                               {p.company} {p.teamName ? `· ${p.teamName}` : ''}
                             </span>
                           </div>
                         </div>
-                        <span className="text-[12px] text-red-400 font-bold">
+                        <span className="text-[14px] text-red-400 font-bold">
                           선택 →
                         </span>
                       </button>
@@ -818,7 +818,7 @@ const PeopleQuestScreen: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3">
                   <div>
-                    <label className="text-[12px] font-bold text-slate-300 block mb-1">
+                    <label className="text-[14px] font-bold text-slate-300 block mb-1">
                       추천할 동료 이름 *
                     </label>
                     <input
@@ -826,12 +826,12 @@ const PeopleQuestScreen: React.FC = () => {
                       value={manualName}
                       onChange={e => setManualName(e.target.value)}
                       placeholder="예: 홍길동"
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-3 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-3 text-[16px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[12px] font-bold text-slate-300 block mb-1">
+                    <label className="text-[14px] font-bold text-slate-300 block mb-1">
                       소속 회사 *
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -840,7 +840,7 @@ const PeopleQuestScreen: React.FC = () => {
                           key={comp}
                           type="button"
                           onClick={() => setManualCompany(comp)}
-                          className={`py-2.5 rounded-xl text-[12px] font-bold border transition-all ${
+                          className={`py-2.5 rounded-xl text-[14px] font-bold border transition-all ${
                             manualCompany === comp
                               ? 'bg-red-500/20 border-red-500 text-red-300 font-bold'
                               : 'bg-black/30 border-white/10 text-slate-400'
@@ -856,7 +856,7 @@ const PeopleQuestScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleManualSelect}
-                  className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] rounded-xl shadow-lg active:scale-98 transition-all"
+                  className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[16px] rounded-xl shadow-lg active:scale-98 transition-all"
                 >
                   이 동료로 선택 완료 ✓
                 </button>

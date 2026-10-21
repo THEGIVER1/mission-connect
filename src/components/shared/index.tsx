@@ -20,7 +20,7 @@ const STATUS_LABELS: Record<StatusType, string> = {
   completed:'완료', active:'활성화', in_progress:'진행중', locked:'잠금',
 };
 export const MissionStatusBadge: React.FC<{ status: StatusType }> = ({ status }) => (
-  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${STATUS_STYLES[status]}`}>
+  <span className={`text-[12.5px] font-bold px-2 py-0.5 rounded border ${STATUS_STYLES[status]}`}>
     {STATUS_LABELS[status]}
   </span>
 );
@@ -51,7 +51,7 @@ export const ScoreBar: React.FC<{ value: number; max: number; color?: string }> 
 // ─── 섹션 타이틀 ─────────────────────────────────────────────
 export const SectionTitle: React.FC<{ children: React.ReactNode; action?: React.ReactNode }> = ({ children, action }) => (
   <div className="flex items-center justify-between mb-2 px-4">
-    <h2 className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">{children}</h2>
+    <h2 className="text-[13.5px] font-bold text-slate-400 tracking-widest uppercase">{children}</h2>
     {action}
   </div>
 );
@@ -68,7 +68,7 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; acc
 
 // ─── 포인트 배지 ─────────────────────────────────────────────
 export const PointsBadge: React.FC<{ points: number }> = ({ points }) => (
-  <span className="text-[10px] font-bold text-amber-400 bg-amber-400/12 px-1.5 py-0.5 rounded">
+  <span className="text-[12.5px] font-bold text-amber-400 bg-amber-400/12 px-1.5 py-0.5 rounded">
     +{points.toLocaleString()}pt
   </span>
 );
@@ -134,7 +134,7 @@ export const AnimatedScoreCounter: React.FC<{
     <div className="relative inline-flex items-baseline">
       <span className={className}>{displayValue.toLocaleString()}</span>
       {gainAmount !== null && (
-        <span className="absolute -top-3.5 -right-12 bg-amber-400 text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-lg animate-bounce border border-amber-300 pointer-events-none z-20">
+        <span className="absolute -top-3.5 -right-12 bg-amber-400 text-slate-950 text-[12.5px] font-extrabold px-1.5 py-0.5 rounded-full shadow-lg animate-bounce border border-amber-300 pointer-events-none z-20">
           +{gainAmount}pt ✨
         </span>
       )}

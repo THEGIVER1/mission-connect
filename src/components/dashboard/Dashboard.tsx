@@ -57,7 +57,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
           <h1 className="font-['Bebas_Neue'] text-2xl tracking-widest text-white leading-none">
             2026 CHRO <span className="text-red-500">TREKKING</span>
           </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5 tracking-wider">
+          <p className="text-[12.5px] text-slate-400 mt-0.5 tracking-wider">
             {participantName ? `${participantName}님 (${participantCompany})` : 'CHRO Activity Platform'}
           </p>
         </div>
@@ -65,7 +65,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
           <button
             type="button"
             onClick={onOpenProfile}
-            className="text-[10px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
+            className="text-[12.5px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
             title="4개 질문 답변 확인 및 수정"
           >
             <span>👤</span>
@@ -77,11 +77,11 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
 
       {/* 이벤트 & 팀/코스 칩 */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-        <span className="flex items-center gap-1 text-[11px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
+        <span className="flex items-center gap-1 text-[13.5px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
           🏪 세븐일레븐 집결
         </span>
         {teamConfig && (
-          <span className="flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-0.5"
+          <span className="flex items-center gap-1 text-[13.5px] font-bold rounded-full px-2.5 py-0.5"
                 style={{
                   background: teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.15)' : 'rgba(56,189,248,0.15)',
                   color: teamConfig.assignedCourse === 'forest' ? '#34D399' : '#38BDF8',
@@ -100,13 +100,13 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
             {myTeam?.shortCode ?? '--'}
           </div>
           <div>
-            <p className="text-[10px] text-slate-400">우리 조</p>
-            <p className="text-[13px] font-bold text-white leading-tight">{myTeam?.name ?? '—'}</p>
+            <p className="text-[12.5px] text-slate-400">우리 조</p>
+            <p className="text-[15px] font-bold text-white leading-tight">{myTeam?.name ?? '—'}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-slate-400">트레킹 잔여 시간</p>
-          <p className="text-[13px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest">{timeLeft}</p>
+          <p className="text-[12.5px] text-slate-400">트레킹 잔여 시간</p>
+          <p className="text-[15px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest">{timeLeft}</p>
         </div>
       </div>
     </header>
@@ -144,18 +144,18 @@ const ScoreCard: React.FC<{
   return (
     <Card className="mx-4 mt-3 p-3.5 shadow-xl">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+        <span className="text-[13.5px] text-slate-400 font-bold uppercase tracking-wider">
           {myTeam?.name ?? '우리 조'} 실시간 획득 점수
         </span>
         <div className="flex items-center gap-1.5">
           {rankChangeText && (
-            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full animate-bounce ${
+            <span className={`text-[12.5px] font-extrabold px-2 py-0.5 rounded-full animate-bounce ${
               rankChangeText.includes('▲') ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
             }`}>
               {rankChangeText}
             </span>
           )}
-          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+          <span className={`text-[13.5px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
             teamRank === 1
               ? 'text-amber-300 bg-amber-500/20 border-amber-400/40 shadow-sm shadow-amber-500/30'
               : 'text-amber-400 bg-amber-400/10 border-amber-400/20'
@@ -171,7 +171,7 @@ const ScoreCard: React.FC<{
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
         <div className="text-right">
-          <span className="text-[11px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold block">
+          <span className="text-[13.5px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold block">
             내 기여: {personalScore}pt
           </span>
         </div>
@@ -210,7 +210,7 @@ const ActivitySection: React.FC<{
       {isAllCompleted && (
         <div className="bg-gradient-to-r from-amber-500/25 via-yellow-500/15 to-amber-600/25 border-2 border-amber-400/60 rounded-2xl p-4 text-center space-y-2.5 shadow-2xl shadow-amber-500/20 animate-fade-in relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] bg-amber-400 text-slate-950 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+            <span className="text-[12.5px] bg-amber-400 text-slate-950 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
               CHRO ALL MISSIONS CLEARED
             </span>
             <span className="text-xs text-amber-300 font-bold flex items-center gap-1">
@@ -219,17 +219,17 @@ const ActivitySection: React.FC<{
             </span>
           </div>
           <div>
-            <h3 className="text-[16px] font-extrabold text-white">
+            <h3 className="text-[18px] font-extrabold text-white">
               🎉 축하합니다! 모든 미션을 완주하셨습니다!
             </h3>
-            <p className="text-[11px] text-slate-300 mt-0.5">
+            <p className="text-[13.5px] text-slate-300 mt-0.5">
               테마가든 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.
             </p>
           </div>
           <button
             type="button"
             onClick={onOpenCertificate}
-            className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-extrabold text-[13px] rounded-xl shadow-lg shadow-amber-500/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg shadow-amber-500/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
           >
             <span>👑 나의 완주 인증서 보기 (골드 엠블럼)</span>
           </button>
@@ -239,11 +239,11 @@ const ActivitySection: React.FC<{
       {/* 타임라인 단계 1: 오프닝 & 튜토리얼 / 그라운드룰 (1:30~2:00) */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[12px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
+          <span className="text-[14px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
             <span>🏪</span>
             <span>STEP 1 · 1:30~2:00 [세븐일레븐 앞 테이블]</span>
           </span>
-          <span className="text-[10px] text-slate-400">오프닝 & 준비</span>
+          <span className="text-[12.5px] text-slate-400">오프닝 & 준비</span>
         </div>
 
         <button
@@ -257,15 +257,15 @@ const ActivitySection: React.FC<{
                 🥐
               </span>
               <div>
-                <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block">
+                <span className="text-[12.5px] text-amber-400 font-extrabold uppercase tracking-wider block">
                   오프닝 튜토리얼 & 그라운드룰
                 </span>
-                <h3 className="text-[15px] font-bold text-white group-hover:text-amber-300 transition-colors">
+                <h3 className="text-[17px] font-bold text-white group-hover:text-amber-300 transition-colors">
                   빵 가격 퀴즈 & 우리 조 약속 정하기
                 </h3>
               </div>
             </div>
-            <span className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${
+            <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${
               hasGroundRulesDone
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
@@ -274,11 +274,11 @@ const ActivitySection: React.FC<{
             </span>
           </div>
 
-          <p className="text-[11.5px] text-slate-300 leading-relaxed mb-2.5">
+          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
             세븐일레븐 앞 야외 테이블에서 빵명장 빵 가격 퀴즈로 앱을 테스트하고, 조별 역할(타임키퍼 등) 및 <strong>30분 개인 힐링 시간</strong> 등의 규칙을 정해보세요.
           </p>
 
-          <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/5">
+          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
             <span className="text-slate-400">타임키퍼 · 페이스메이커 · 30분 자유 쉼</span>
             <span className="text-amber-400 font-bold flex items-center gap-0.5">
               확인 및 설정 →
@@ -290,11 +290,11 @@ const ActivitySection: React.FC<{
       {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:15) */}
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[12px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
+          <span className="text-[14px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
             <span>🚶</span>
             <span>STEP 2 · 2:00~4:15 [테마가든 & 트레킹 코스]</span>
           </span>
-          <span className="text-[10px] text-slate-400">2대 핵심 미션</span>
+          <span className="text-[12.5px] text-slate-400">2대 핵심 미션</span>
         </div>
 
         {/* 미션 1: 테마가든 단체사진 미션 */}
@@ -309,15 +309,15 @@ const ActivitySection: React.FC<{
                 🌹
               </span>
               <div>
-                <span className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider block">
+                <span className="text-[12.5px] text-pink-400 font-extrabold uppercase tracking-wider block">
                   테마가든 미션 · 조원 전원 +100pt
                 </span>
-                <h3 className="text-[15px] font-bold text-white group-hover:text-pink-300 transition-colors">
+                <h3 className="text-[17px] font-bold text-white group-hover:text-pink-300 transition-colors">
                   지정 힌트 스팟 찾기 & 단체사진 업로드
                 </h3>
               </div>
             </div>
-            <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
+            <span className={`text-[13px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
               themeGardenDone
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-pink-500/20 text-pink-300 border-pink-500/40'
@@ -326,11 +326,11 @@ const ActivitySection: React.FC<{
             </span>
           </div>
 
-          <p className="text-[11.5px] text-slate-300 leading-relaxed mb-2.5">
+          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
             테마가든 내 지정 장소 힌트 사진을 참고해 스팟을 찾고, 조원 전원이 참여하는 시그니처 단체사진을 촬영해 업로드하세요.
           </p>
 
-          <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/5">
+          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
             <span className="text-slate-400">장미원 & 호수 수변 테라스 스팟</span>
             <span className="text-pink-400 font-bold flex items-center gap-0.5">
               미션 사진 올리기 →
@@ -350,11 +350,11 @@ const ActivitySection: React.FC<{
                 💬
               </span>
               <div>
-                <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider block">People Quest · 조원 전원 +100pt</span>
-                <h3 className="text-[15px] font-bold text-white">최고의 스토리 동료 추천</h3>
+                <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">People Quest · 조원 전원 +100pt</span>
+                <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
               </div>
             </div>
-            <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
+            <span className={`text-[13px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
               pqSubmitted
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
@@ -363,11 +363,11 @@ const ActivitySection: React.FC<{
             </span>
           </div>
 
-          <p className="text-[11.5px] text-slate-300 leading-relaxed mb-2.5">
+          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
             트레킹을 함께하며 조원들과 4가지 주제(취미, 버킷리스트, 다른 직업 등)로 대화하고 가장 인상 깊은 동료 1명을 추천해 주세요.
           </p>
 
-          <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/5">
+          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
             <span className="text-slate-400">조별 1명 추천 시 조원당 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
             <span className="text-red-400 font-bold flex items-center gap-0.5">
               추천 작성 →
@@ -379,24 +379,24 @@ const ActivitySection: React.FC<{
       {/* 타임라인 단계 3: 트레킹 종료 & 세븐일레븐 앞 공터 단체사진 (4:15~5:00) */}
       <div className="space-y-1.5 pt-2">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[12px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
+          <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
             <span>🏁</span>
             <span>STEP 3 · 4:15~5:00 [세븐일레븐 공터 & 빵명장 내부]</span>
           </span>
-          <span className="text-[10px] text-slate-400">종료 & 시상</span>
+          <span className="text-[12.5px] text-slate-400">종료 & 시상</span>
         </div>
 
         <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[12px] font-bold text-white flex items-center gap-1.5">
+            <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
               <span>📸</span>
               <span>4:15~4:30 세븐일레븐 앞 공터 단체사진</span>
             </span>
-            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+            <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
               전체 집결
             </span>
           </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
+          <p className="text-[13.5px] text-slate-300 leading-relaxed">
             4:15까지 첫 집결지인 <strong>세븐일레븐 앞 공터</strong>로 복귀하여 전체 단체사진(4:15~4:30)을 촬영한 뒤, 빵명장 내부(4:30~5:00)로 입장합니다. (실내 퀴즈쇼 및 개인 시상 진행)
           </p>
         </div>
@@ -539,10 +539,10 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
         {/* 모달 상단 헤더 */}
         <div className="bg-[#182035] border-b border-white/10 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
           <div>
-            <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
+            <span className="text-[12.5px] text-sky-400 font-bold uppercase tracking-wider block">
               MY PROFILE & 4-SURVEY
             </span>
-            <h3 className="text-[15px] font-bold text-white">
+            <h3 className="text-[17px] font-bold text-white">
               내 정보 및 4문항 답변 수정
             </h3>
           </div>
@@ -558,21 +558,21 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
         <div className="bg-[#101626] p-3.5 border-b border-white/5 space-y-2.5 flex-shrink-0">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10.5px] text-slate-400 block mb-1 font-medium">참가자 이름 *</label>
+              <label className="text-[13px] text-slate-400 block mb-1 font-medium">참가자 이름 *</label>
               <input
                 type="text"
                 value={modalName}
                 onChange={e => setModalName(e.target.value)}
                 placeholder="이름 입력"
-                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[12.5px] font-bold focus:outline-none focus:border-sky-500"
+                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[14.5px] font-bold focus:outline-none focus:border-sky-500"
               />
             </div>
             <div>
-              <label className="text-[10.5px] text-slate-400 block mb-1 font-medium">소속 회사 *</label>
+              <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 회사 *</label>
               <select
                 value={modalCompany}
                 onChange={e => setModalCompany(e.target.value)}
-                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2 py-1.5 text-white text-[12.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
+                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2 py-1.5 text-white text-[14.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
               >
                 {WORKSHOP_COMPANIES.map(c => (
                   <option key={c} value={c} style={{ background: '#1A2235' }}>{c}</option>
@@ -582,11 +582,11 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
           </div>
 
           <div>
-            <label className="text-[10.5px] text-slate-400 block mb-1 font-medium">소속 조 변경</label>
+            <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 조 변경</label>
             <select
               value={modalTeamId}
               onChange={e => setModalTeamId(e.target.value)}
-              className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[12.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
+              className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[14.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
             >
               {WORKSHOP_TEAMS.map(t => (
                 <option key={t.id} value={t.id} style={{ background: '#1A2235' }}>
@@ -600,13 +600,13 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
         {/* 4개 문항 리스트 */}
         <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="py-12 text-center text-slate-400 text-[13px]">
+            <div className="py-12 text-center text-slate-400 text-[15px]">
               <span className="animate-spin inline-block text-xl mb-2">🔄</span>
               <p>답변을 불러오는 중입니다...</p>
             </div>
           ) : (
             <>
-              <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11px] text-slate-300 leading-relaxed">
+              <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[13.5px] text-slate-300 leading-relaxed">
                 💡 입력하신 답변은 트레킹 대화 및 <strong>저녁 퀴즈쇼 힌트</strong>로 실시간 연동됩니다.
               </div>
 
@@ -615,11 +615,11 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 return (
                   <div key={q.id} className="bg-black/40 border border-white/8 rounded-2xl p-3 space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
-                      <label className="text-[12px] font-bold text-slate-200 leading-snug">
+                      <label className="text-[14px] font-bold text-slate-200 leading-snug">
                         <span className="text-sky-400 font-extrabold mr-1">Q{idx + 1}.</span>
                         {q.title}
                       </label>
-                      <span className={`text-[10px] font-bold flex-shrink-0 ${currentVal.length >= 90 ? 'text-amber-400' : 'text-slate-500'}`}>
+                      <span className={`text-[12.5px] font-bold flex-shrink-0 ${currentVal.length >= 90 ? 'text-amber-400' : 'text-slate-500'}`}>
                         {currentVal.length}/100자
                       </span>
                     </div>
@@ -629,7 +629,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                       value={currentVal}
                       onChange={e => handleTextChange(q.id, e.target.value)}
                       placeholder={q.placeholder}
-                      className="w-full bg-[#13192A] border border-white/10 rounded-xl p-2 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 resize-none"
+                      className="w-full bg-[#13192A] border border-white/10 rounded-xl p-2 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 resize-none"
                     />
                   </div>
                 );
@@ -641,13 +641,13 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
         {/* 하단 액션 */}
         <div className="bg-[#182035] border-t border-white/10 p-4 space-y-2 flex-shrink-0">
           {errorMessage && (
-            <div className="bg-red-500/20 border border-red-500/40 text-red-300 text-[12px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
+            <div className="bg-red-500/20 border border-red-500/40 text-red-300 text-[14px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
               ⚠️ {errorMessage}
             </div>
           )}
 
           {saveSuccess && (
-            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[12px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
+            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[14px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
               ✅ 정보와 4문항 답변이 성공적으로 저장되었습니다!
             </div>
           )}
@@ -655,14 +655,14 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="flex-1 py-3 bg-[#13192A] text-slate-400 font-bold text-[13px] rounded-xl border border-white/10 hover:bg-[#1A2235] active:scale-95 transition-all"
+              className="flex-1 py-3 bg-[#13192A] text-slate-400 font-bold text-[15px] rounded-xl border border-white/10 hover:bg-[#1A2235] active:scale-95 transition-all"
             >
               닫기
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving || isLoading}
-              className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold text-[13px] rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold text-[15px] rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
               <span>{isSaving ? '저장 처리 중...' : '저장하기 💾'}</span>
             </button>
@@ -682,7 +682,7 @@ const BottomNav: React.FC<{ active: string }> = ({ active }) => {
     { key: '/leaderboard', icon: '🏆', label: '실시간순위' },
   ];
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-[#13192A] border-t border-white/8 flex justify-around items-center py-2.5 pb-5 z-40">
+    <nav className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-[#13192A] border-t border-white/8 flex justify-around items-center py-2.5 pb-5 z-40">
       {NAV.map((n) => (
         <button
           key={n.key}
@@ -692,7 +692,7 @@ const BottomNav: React.FC<{ active: string }> = ({ active }) => {
           }`}
         >
           <span className="text-xl">{n.icon}</span>
-          <span className={`text-[11px] ${active === n.key ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+          <span className={`text-[13.5px] ${active === n.key ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
             {n.label}
           </span>
         </button>
@@ -915,7 +915,7 @@ const Dashboard: React.FC = () => {
   }, [participantName, participantCompany, myTeam?.id, dbUrl]);
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
+    <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
       <Header onOpenProfile={() => setIsProfileModalOpen(true)} />
       <ScoreCard
         teamScore={teamScore}

@@ -105,29 +105,29 @@ export const GlobalNoticeBanner: React.FC = () => {
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <span className="text-xl animate-pulse">{config.icon}</span>
-            <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${config.badgeBg}`}>
+            <span className={`text-[13.5px] font-extrabold px-2.5 py-0.5 rounded-full border ${config.badgeBg}`}>
               {config.badge}
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono">
+          <span className="text-[12.5px] text-slate-400 font-mono">
             {notice.timestamp ? new Date(notice.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : ''}
           </span>
         </div>
 
         {notice.title && (
-          <h4 className="text-[14px] font-black text-white mb-1 leading-snug">
+          <h4 className="text-[16px] font-black text-white mb-1 leading-snug">
             {notice.title}
           </h4>
         )}
 
-        <p className="text-[13px] font-medium text-slate-100 leading-relaxed break-keep mb-3">
+        <p className="text-[15px] font-medium text-slate-100 leading-relaxed break-keep mb-3">
           {notice.message}
         </p>
 
         <div className="flex justify-end gap-2 pt-1 border-t border-white/10">
           <button
             onClick={handleDismiss}
-            className="px-4 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white font-bold text-[12px] rounded-xl border border-white/20 transition-all shadow"
+            className="px-4 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white font-bold text-[14px] rounded-xl border border-white/20 transition-all shadow"
           >
             확인 (닫기) ✓
           </button>

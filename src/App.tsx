@@ -14,7 +14,7 @@ const DiscoveryQuizScreen = lazy(() => import('./components/discoveryQuiz/Discov
 import GlobalNoticeBanner from './components/common/GlobalNoticeBanner';
 
 const LoadingSpinner: React.FC = () => (
-  <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex items-center justify-center">
+  <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen flex items-center justify-center">
     <div className="flex flex-col items-center gap-4">
       <div className="w-12 h-12 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
       <span className="font-bebas text-xl tracking-widest text-slate-400">LOADING</span>

@@ -299,7 +299,7 @@ const ARScreen: React.FC = () => {
   return (
     <div
       key={retryKey}
-      className="max-w-[390px] mx-auto bg-black min-h-screen flex flex-col relative overflow-hidden"
+      className="max-w-[430px] mx-auto bg-black min-h-screen flex flex-col relative overflow-hidden"
     >
       <video
         ref={videoRef}
@@ -315,7 +315,7 @@ const ARScreen: React.FC = () => {
         <div className="absolute inset-0 bg-[#0D1117] flex items-center justify-center z-10">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-[12px] text-cyan-400">카메라 시작 중...</span>
+            <span className="text-[14px] text-cyan-400">카메라 시작 중...</span>
           </div>
         </div>
       )}
@@ -325,12 +325,12 @@ const ARScreen: React.FC = () => {
           <div className="w-full text-center bg-[#111827] border border-white/10 rounded-2xl p-5">
             <p className="text-3xl mb-2">📷</p>
             <p className="text-white font-bold mb-2">카메라를 사용할 수 없습니다</p>
-            <p className="text-[12px] text-slate-400 mb-4">
+            <p className="text-[14px] text-slate-400 mb-4">
               {denied ? '브라우저 설정에서 카메라 권한을 허용해 주세요.' : error}
             </p>
             <button
               onClick={() => setRetryKey((k) => k + 1)}
-              className="w-full py-3 bg-red-600 text-white font-bold rounded-xl text-[14px]"
+              className="w-full py-3 bg-red-600 text-white font-bold rounded-xl text-[16px]"
             >
               다시 시도
             </button>
@@ -347,8 +347,8 @@ const ARScreen: React.FC = () => {
             ←
           </button>
           <div className="text-right">
-            <p className="text-[11px] text-cyan-300">{ACTIVE_VENUE.venueName} 보물찾기</p>
-            <p className="text-[13px] text-white font-bold">
+            <p className="text-[13.5px] text-cyan-300">{ACTIVE_VENUE.venueName} 보물찾기</p>
+            <p className="text-[15px] text-white font-bold">
               발견 {foundCount} / {AR_TARGETS.length} · {totalPoints}pt
             </p>
           </div>
@@ -378,14 +378,14 @@ const ARScreen: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{target.emoji}</span>
                   <div>
-                    <p className="text-[13px] font-semibold text-white">{target.name}</p>
-                    <p className="text-[11px] text-amber-300">{target.points}pt</p>
+                    <p className="text-[15px] font-semibold text-white">{target.name}</p>
+                    <p className="text-[13.5px] text-amber-300">{target.points}pt</p>
                   </div>
                 </div>
                 <button
                   disabled={!camReady || found || !!busyTargetId}
                   onClick={() => handleSelectTarget(target)}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold ${
+                  className={`px-3 py-1.5 rounded-lg text-[14px] font-bold ${
                     found
                       ? 'bg-emerald-500 text-white'
                       : !camReady || !!busyTargetId
@@ -401,7 +401,7 @@ const ARScreen: React.FC = () => {
           <button
             disabled={!canCaptureSelected}
             onClick={() => selectedTarget && void handleCaptureSelected(selectedTarget)}
-            className={`w-full mt-1 py-3 rounded-xl text-[14px] font-bold ${
+            className={`w-full mt-1 py-3 rounded-xl text-[16px] font-bold ${
               !canCaptureSelected
                 ? 'bg-slate-700 text-slate-300'
                 : 'bg-amber-500 text-black'
@@ -417,7 +417,7 @@ const ARScreen: React.FC = () => {
               ? `📸 ${selectedTarget.name} 캡처`
               : '대상을 먼저 선택하세요'}
           </button>
-          {message && <p className="text-[12px] text-cyan-300 px-1 pt-1">{message}</p>}
+          {message && <p className="text-[14px] text-cyan-300 px-1 pt-1">{message}</p>}
         </div>
       </div>
 

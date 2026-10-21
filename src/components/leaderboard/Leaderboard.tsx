@@ -61,7 +61,7 @@ const StatsRow: React.FC<{ teams: Team[] }> = ({ teams }) => {
       ].map(({ val, label, color }) => (
         <div key={label} className="bg-[#1A2235] border border-white/8 rounded-xl p-2.5 text-center shadow">
           <div className={`font-bebas text-2xl leading-none ${color}`}>{val}</div>
-          <div className="text-[10px] text-slate-400 mt-1">{label}</div>
+          <div className="text-[12.5px] text-slate-400 mt-1">{label}</div>
         </div>
       ))}
     </div>
@@ -75,7 +75,7 @@ const SessionProgressBar: React.FC = () => {
   const timer = useSessionTimer();
   return (
     <div className="px-4 pb-2">
-      <div className="flex justify-between text-[10px] text-slate-400 mb-1 font-medium">
+      <div className="flex justify-between text-[12.5px] text-slate-400 mb-1 font-medium">
         <span>세션 진행률</span>
         <span className="text-white font-bold">{timer.pct}%</span>
       </div>
@@ -130,8 +130,8 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
                 {actualRank === 1 ? '1위 🥇' : actualRank === 2 ? '2위 🥈' : '3위 🥉'}
               </span>
               <div className="text-center w-full">
-                <p className="text-[12px] font-bold text-white truncate">{team.name}</p>
-                <div className="font-bebas text-amber-300 text-[12px]">
+                <p className="text-[14px] font-bold text-white truncate">{team.name}</p>
+                <div className="font-bebas text-amber-300 text-[14px]">
                   <AnimatedScoreCounter value={team.score} className="text-amber-300" />pt
                 </div>
               </div>
@@ -200,13 +200,13 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
                       {team.rank}
                     </span>
                     {diff !== undefined && diff !== 0 ? (
-                      <span className={`text-[9px] font-extrabold leading-none mt-0.5 ${
+                      <span className={`text-[12px] font-extrabold leading-none mt-0.5 ${
                         diff > 0 ? 'text-emerald-400' : 'text-rose-400'
                       }`}>
                         {diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`}
                       </span>
                     ) : (
-                      <span className="text-[9px] text-slate-600 leading-none mt-0.5">—</span>
+                      <span className="text-[12px] text-slate-600 leading-none mt-0.5">—</span>
                     )}
                   </div>
 
@@ -215,24 +215,24 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <strong className="text-[14px] text-white">{team.name}</strong>
+                      <strong className="text-[16px] text-white">{team.name}</strong>
                       {isMe && (
-                        <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">
+                        <span className="text-[12px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">
                           우리 조
                         </span>
                       )}
                       {team.rank === 1 && (
-                        <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-extrabold flex items-center gap-0.5">
+                        <span className="text-[12px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-extrabold flex items-center gap-0.5">
                           👑 1위
                         </span>
                       )}
                       {isFullCompleted && (
-                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">
+                        <span className="text-[12px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">
                           🏅 완주
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[12.5px] text-slate-400">
                       {teamConfig?.courseName} ({team.memberCount}명 참여)
                     </span>
                   </div>
@@ -243,7 +243,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
                     <AnimatedScoreCounter value={team.score} className="text-white" />
                     <span className="text-red-500 text-sm ml-0.5">pt</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block">
+                  <span className="text-[12.5px] text-slate-400 block">
                     완료 미션 {team.missionsCompleted}건
                   </span>
                 </div>
@@ -299,22 +299,22 @@ const MissionTab: React.FC<{
           <div className="flex items-center gap-2">
             <span className="text-xl">💬</span>
             <div>
-              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider block">Activity 1 · 대화형 (조별 1명 추천)</span>
-              <h3 className="text-[15px] font-bold text-white">People Quest (최고의 스토리 동료 추천)</h3>
+              <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">Activity 1 · 대화형 (조별 1명 추천)</span>
+              <h3 className="text-[17px] font-bold text-white">People Quest (최고의 스토리 동료 추천)</h3>
             </div>
           </div>
-          <span className="text-[11px] font-bold text-amber-400">
+          <span className="text-[13.5px] font-bold text-amber-400">
             +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt/인
           </span>
         </div>
 
-        <p className="text-[12px] text-slate-300 leading-relaxed">
+        <p className="text-[14px] text-slate-300 leading-relaxed">
           트레킹 중 조원들과 대화하며 인상 깊었던 동료 1명을 추천합니다. 제출 시 <strong>조원 전원에게 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 부여됩니다.
         </p>
 
         {/* 진행률 바 */}
         <div>
-          <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+          <div className="flex justify-between text-[13.5px] text-slate-400 mb-1">
             <span>6개 조 제출 완료율</span>
             <span className="text-green-400 font-bold">
               {pqCompletedTeams.length} / {WORKSHOP_TEAMS.length}개 조 완료 ({Math.round((pqCompletedTeams.length / WORKSHOP_TEAMS.length) * 100)}%)
@@ -341,7 +341,7 @@ const MissionTab: React.FC<{
             return (
               <div
                 key={team.id}
-                className={`p-2.5 rounded-xl border text-left text-[11px] transition-all ${
+                className={`p-2.5 rounded-xl border text-left text-[13.5px] transition-all ${
                   isSubmitted
                     ? 'bg-green-500/15 border-green-500/30 text-green-300'
                     : isDraft
@@ -352,20 +352,20 @@ const MissionTab: React.FC<{
                 <div className="flex justify-between items-center mb-0.5">
                   <span className="font-bold text-white flex items-center gap-1">
                     {team.emoji} {team.name}
-                    {isMyTeam && <span className="text-[9px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
+                    {isMyTeam && <span className="text-[12px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
                   </span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                  <span className={`text-[12.5px] font-bold px-1.5 py-0.2 rounded ${
                     isSubmitted ? 'bg-green-500/30 text-green-300' : isDraft ? 'bg-amber-500/30 text-amber-300' : 'text-slate-500'
                   }`}>
                     {isSubmitted ? '완료 ✓' : isDraft ? '작성중 💾' : '미진행'}
                   </span>
                 </div>
                 {recName ? (
-                  <p className="text-[10px] text-slate-300 truncate">
+                  <p className="text-[12.5px] text-slate-300 truncate">
                     👑 {recName} 님 {topic ? `(${topic.slice(0, 10)}...)` : ''}
                   </p>
                 ) : (
-                  <p className="text-[10px] text-slate-500">대화 진행 중</p>
+                  <p className="text-[12.5px] text-slate-500">대화 진행 중</p>
                 )}
               </div>
             );
@@ -379,22 +379,22 @@ const MissionTab: React.FC<{
           <div className="flex items-center gap-2">
             <span className="text-xl">🌹</span>
             <div>
-              <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block">Activity 2 · 현장 인증 (2:00~4:15)</span>
-              <h3 className="text-[15px] font-bold text-white">테마가든 시그니처 단체사진 미션</h3>
+              <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">Activity 2 · 현장 인증 (2:00~4:15)</span>
+              <h3 className="text-[17px] font-bold text-white">테마가든 시그니처 단체사진 미션</h3>
             </div>
           </div>
-          <span className="text-[11px] font-bold text-amber-400">
+          <span className="text-[13.5px] font-bold text-amber-400">
             +{THEME_GARDEN_MISSION.pointsPerMember}pt/인
           </span>
         </div>
 
-        <p className="text-[12px] text-slate-300 leading-relaxed">
+        <p className="text-[14px] text-slate-300 leading-relaxed">
           테마가든 지정 장소를 찾아 조원 전원과 단체사진을 촬영 후 업로드합니다. 업로드 시 <strong>조원 전원에게 +{THEME_GARDEN_MISSION.pointsPerMember}pt</strong>가 부여됩니다.
         </p>
 
         {/* 진행률 바 */}
         <div>
-          <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+          <div className="flex justify-between text-[13.5px] text-slate-400 mb-1">
             <span>6개 조 사진 업로드 완료율</span>
             <span className="text-pink-400 font-bold">
               {themeCompletedTeams.length} / {WORKSHOP_TEAMS.length}개 조 업로드 ({Math.round((themeCompletedTeams.length / WORKSHOP_TEAMS.length) * 100)}%)
@@ -418,7 +418,7 @@ const MissionTab: React.FC<{
             return (
               <div
                 key={team.id}
-                className={`p-2.5 rounded-xl border text-left text-[11px] transition-all flex flex-col justify-between ${
+                className={`p-2.5 rounded-xl border text-left text-[13.5px] transition-all flex flex-col justify-between ${
                   isDone
                     ? 'bg-pink-950/20 border-pink-500/40 text-pink-200'
                     : 'bg-black/20 border-white/5 text-slate-500'
@@ -428,9 +428,9 @@ const MissionTab: React.FC<{
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="font-bold text-white flex items-center gap-1">
                       {team.emoji} {team.name}
-                      {isMyTeam && <span className="text-[9px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
+                      {isMyTeam && <span className="text-[12px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
                     </span>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                    <span className={`text-[12px] font-bold px-1.5 py-0.2 rounded ${
                       isDone ? 'bg-pink-500/30 text-pink-300' : 'text-slate-500'
                     }`}>
                       {isDone ? '업로드 완료 ✓' : '미업로드'}
@@ -448,13 +448,13 @@ const MissionTab: React.FC<{
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-1">
-                        <span className="text-[9px] text-white font-medium truncate">
+                        <span className="text-[12px] text-white font-medium truncate">
                           {photoRec.caption || '단체사진'}
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <div className="h-16 rounded-lg bg-black/30 border border-dashed border-white/10 flex flex-col items-center justify-center text-slate-500 text-[10px] mb-1">
+                    <div className="h-16 rounded-lg bg-black/30 border border-dashed border-white/10 flex flex-col items-center justify-center text-slate-500 text-[12.5px] mb-1">
                       <span className="text-sm mb-0.5">📸</span>
                       <span>촬영 진행 중</span>
                     </div>
@@ -462,7 +462,7 @@ const MissionTab: React.FC<{
                 </div>
 
                 {photoRec?.uploadedBy && (
-                  <p className="text-[9.5px] text-slate-400 truncate">
+                  <p className="text-[12px] text-slate-400 truncate">
                     등록: {photoRec.uploadedBy}
                   </p>
                 )}
@@ -504,10 +504,10 @@ const IndividualTab: React.FC<{
   return (
     <div className="px-4 pb-28 space-y-2 pt-2">
       <div className="bg-[#1A2235] border border-white/8 rounded-xl p-3 text-center mb-2">
-        <p className="text-[12px] font-bold text-white">
+        <p className="text-[14px] font-bold text-white">
           개인 미션 기여 순위 (전체 {individuals.length}명)
         </p>
-        <p className="text-[10px] text-slate-400 mt-0.5">
+        <p className="text-[12.5px] text-slate-400 mt-0.5">
           개인 획득 점수 = 테마가든 조별사진 완료(+100pt) + 조별 피플퀘스트 완료(+100pt)
         </p>
       </div>
@@ -515,8 +515,8 @@ const IndividualTab: React.FC<{
       {individuals.length === 0 ? (
         <div className="bg-[#1A2235] border border-white/8 rounded-2xl p-8 text-center space-y-2 my-4">
           <div className="text-3xl">👥</div>
-          <h4 className="text-[14px] font-bold text-white">아직 등록된 참가자가 없습니다</h4>
-          <p className="text-[12px] text-slate-400">
+          <h4 className="text-[16px] font-bold text-white">아직 등록된 참가자가 없습니다</h4>
+          <p className="text-[14px] text-slate-400">
             참가자가 로그인하고 미션에 참여하면 실시간으로 순위표에 등록됩니다.
           </p>
         </div>
@@ -550,27 +550,27 @@ const IndividualTab: React.FC<{
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-[14px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
+                  <span className={`text-[16px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
                     {p.name}
                   </span>
                   {isMe && (
-                    <span className="text-[9px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">나</span>
+                    <span className="text-[12px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">나</span>
                   )}
                   {p.company && (
-                    <span className="text-[10px] text-slate-500">({p.company})</span>
+                    <span className="text-[12.5px] text-slate-500">({p.company})</span>
                   )}
                   {p.missions >= 2 && (
-                    <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded">
+                    <span className="text-[12px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded">
                       👑 완주
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
+                <span className="text-[13.5px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
               </div>
               <div className="flex flex-col items-end">
                 <div className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'} flex items-baseline`}>
                   <AnimatedScoreCounter value={p.pts} className={p.pts > 0 ? 'text-amber-400' : 'text-slate-400'} />
-                  <span className="text-[11px] text-slate-400 ml-0.5">pt</span>
+                  <span className="text-[13.5px] text-slate-400 ml-0.5">pt</span>
                 </div>
               </div>
             </div>
@@ -712,7 +712,7 @@ const Leaderboard: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100 font-['Noto_Sans_KR']">
+    <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100 font-['Noto_Sans_KR']">
       {/* 상단 헤더 */}
       <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative flex-shrink-0">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
@@ -738,7 +738,7 @@ const Leaderboard: React.FC = () => {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 py-2.5 text-[13px] font-bold border-b-2 transition-all ${
+            className={`flex-1 py-2.5 text-[15px] font-bold border-b-2 transition-all ${
               tab === t.key
                 ? 'text-amber-400 border-amber-400'
                 : 'text-slate-400 border-transparent hover:text-white'

@@ -1079,9 +1079,9 @@ const MapScreen: React.FC = () => {
           background: rgba(15, 23, 42, 0.95);
           color: #FACC15;
           border: 2px solid #FACC15;
-          padding: 5px 10px;
+          padding: 6px 12px;
           border-radius: 20px;
-          font-size: 11px;
+          font-size: 13px;
           font-weight: bold;
           white-space: nowrap;
           box-shadow: 0 4px 14px rgba(0,0,0,0.8);
@@ -1094,8 +1094,8 @@ const MapScreen: React.FC = () => {
           <span>세븐일레븐 [첫 집결지/출발]</span>
         </div>
       `,
-      iconSize: [195, 32],
-      iconAnchor: [97, 16],
+      iconSize: [220, 36],
+      iconAnchor: [110, 18],
     });
 
     const startMarker = L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
@@ -1115,9 +1115,9 @@ const MapScreen: React.FC = () => {
           background: rgba(219, 39, 119, 0.95);
           color: #FFFFFF;
           border: 2px solid #FFFFFF;
-          padding: 5px 10px;
+          padding: 6px 12px;
           border-radius: 20px;
-          font-size: 11.5px;
+          font-size: 13.5px;
           font-weight: 800;
           white-space: nowrap;
           box-shadow: 0 4px 16px rgba(219, 39, 119, 0.7);
@@ -1131,8 +1131,8 @@ const MapScreen: React.FC = () => {
           <span>테마가든 미션 스팟 (장미원)</span>
         </div>
       `,
-      iconSize: [210, 32],
-      iconAnchor: [105, 42],
+      iconSize: [235, 36],
+      iconAnchor: [117, 44],
     });
 
     const themeMarker = L.marker([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], {
@@ -1162,9 +1162,9 @@ const MapScreen: React.FC = () => {
           background: rgba(227, 24, 55, 0.95);
           color: #FFFFFF;
           border: 2px solid #FFFFFF;
-          padding: 5px 10px;
+          padding: 6px 12px;
           border-radius: 20px;
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 800;
           white-space: nowrap;
           box-shadow: 0 4px 14px rgba(227, 24, 55, 0.6);
@@ -1177,8 +1177,8 @@ const MapScreen: React.FC = () => {
           <span>세븐일레븐 공터 [4:15~4:30 단체사진]</span>
         </div>
       `,
-      iconSize: [215, 32],
-      iconAnchor: [107, 42],
+      iconSize: [245, 36],
+      iconAnchor: [122, 44],
     });
 
     const finishMarker = L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
@@ -1209,7 +1209,7 @@ const MapScreen: React.FC = () => {
   }, [activeCourse, selectedSpotId, myLocation]);
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
+    <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
       {/* 상단 헤더 */}
       <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative flex-shrink-0 z-10">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
@@ -1224,9 +1224,9 @@ const MapScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               SATELLITE <span className="text-sky-400">TREKKING MAP</span>
             </span>
-            <p className="text-[10px] text-slate-400">세븐일레븐 집결 / 빵명장 종료 순환 코스 지도</p>
+            <p className="text-[12.5px] text-slate-400">세븐일레븐 집결 / 빵명장 종료 순환 코스 지도</p>
           </div>
-          <span className="text-[11px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+          <span className="text-[13.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
           </span>
         </div>
@@ -1237,7 +1237,7 @@ const MapScreen: React.FC = () => {
         <div className="flex bg-[#1A2235] p-1 rounded-xl gap-1.5 w-full">
           <button
             onClick={() => setCourse('lake')}
-            className={`flex-1 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-lg text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeCourse === 'lake'
                 ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
                 : 'text-slate-400 hover:text-white'
@@ -1247,7 +1247,7 @@ const MapScreen: React.FC = () => {
           </button>
           <button
             onClick={() => setCourse('forest')}
-            className={`flex-1 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-lg text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeCourse === 'forest'
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                 : 'text-slate-400 hover:text-white'
@@ -1267,7 +1267,7 @@ const MapScreen: React.FC = () => {
               setSelectedSpotId(spot.id);
               mapRef.current?.panTo([spot.coords.lat, spot.coords.lng], { animate: true });
             }}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1 rounded-lg text-[13.5px] font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
               selectedSpotId === spot.id
                 ? 'bg-white/15 text-white border border-white/30 shadow'
                 : 'bg-black/30 text-slate-400 border border-white/5'
@@ -1313,31 +1313,31 @@ const MapScreen: React.FC = () => {
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2.5 shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border bg-pink-500/15 text-pink-400 border-pink-500/30">
+            <span className="text-[14px] font-bold px-2.5 py-0.5 rounded-full border bg-pink-500/15 text-pink-400 border-pink-500/30">
               {selectedSpot.badge}
             </span>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[13.5px] text-slate-400">
               {distance !== null ? `약 ${distance}m 거리` : '거리 계산 중'}
             </span>
           </div>
 
           <div>
-            <h3 className="text-[16px] font-bold text-white mb-0.5 flex items-center gap-1.5">
+            <h3 className="text-[18px] font-bold text-white mb-0.5 flex items-center gap-1.5">
               <span>{selectedSpot.emoji}</span>
               <span>{selectedSpot.title}</span>
             </h3>
-            <p className="text-[12px] text-slate-300">
+            <p className="text-[14px] text-slate-300">
               {selectedSpot.subtitle}
             </p>
           </div>
 
           {/* 실시간 GPS 좌표 정보 */}
-          <div className="bg-black/40 border border-white/5 p-2 rounded-xl text-[10.5px] space-y-0.5">
+          <div className="bg-black/40 border border-white/5 p-2 rounded-xl text-[13px] space-y-0.5">
             <div className="flex justify-between items-center text-slate-300">
               <span>내 위치: <strong className="text-sky-300 font-mono">{myLocation ? `${myLocation.lat.toFixed(6)}, ${myLocation.lng.toFixed(6)}` : 'GPS 대기'}</strong></span>
               <button
                 onClick={handleCopyCoords}
-                className="text-[10px] bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md transition-all active:scale-95"
+                className="text-[12.5px] bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md transition-all active:scale-95"
               >
                 {copiedGps ? '✅ 복사됨' : '📋 좌표 복사'}
               </button>
@@ -1352,13 +1352,13 @@ const MapScreen: React.FC = () => {
         <div className="pt-3 flex gap-2">
           <button
             onClick={() => navigate('/')}
-            className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1.5"
+            className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1.5"
           >
             <span>🌹 테마가든 사진 올리기</span>
           </button>
           <button
             onClick={() => navigate('/people-quest')}
-            className="flex-1 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-1.5"
+            className="flex-1 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-1.5"
           >
             <span>💬 피플퀘스트 추천</span>
           </button>

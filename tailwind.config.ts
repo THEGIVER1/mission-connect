@@ -17,6 +17,11 @@ export default {
         bebas: ['"Bebas Neue"', 'sans-serif'],
         sans:  ['"Noto Sans KR"', 'sans-serif'],
       },
+      fontSize: {
+        xs:   ['13.5px', { lineHeight: '1.45' }],
+        sm:   ['15px',   { lineHeight: '1.5' }],
+        base: ['16.5px', { lineHeight: '1.55' }],
+      },
       animation: {
         shimmer: 'shimmer 2.5s infinite',
       },

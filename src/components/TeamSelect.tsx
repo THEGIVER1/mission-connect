@@ -206,15 +206,15 @@ const TeamSelect: React.FC = () => {
             {team.emoji}
           </div>
           <div className="flex-1">
-            <span className="text-[15px] font-bold text-white">{team.name}</span>
-            <span className="text-[10px] ml-2 text-slate-400">({team.courseDistance})</span>
+            <span className="text-[17px] font-bold text-white">{team.name}</span>
+            <span className="text-[12.5px] ml-2 text-slate-400">({team.courseDistance})</span>
           </div>
           <div className="w-5 h-5 rounded-full border flex items-center justify-center"
                style={{
                  borderColor: isSel ? team.color : 'rgba(255,255,255,0.2)',
                  background: isSel ? team.color : 'transparent',
                }}>
-            {isSel && <span className="text-white text-[10px] font-bold">✓</span>}
+            {isSel && <span className="text-white text-[12.5px] font-bold">✓</span>}
           </div>
         </div>
       </button>
@@ -222,7 +222,7 @@ const TeamSelect: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100">
+    <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen flex flex-col text-slate-100">
 
       {/* 상단 브랜딩 헤더 */}
       <div className="relative bg-[#13192A] px-5 pt-8 pb-5 text-center">
@@ -230,14 +230,14 @@ const TeamSelect: React.FC = () => {
         <p style={{ color: '#005EB8', fontSize: '32px', fontWeight: '900', letterSpacing: '3px', fontStyle: 'italic', marginBottom: '4px' }}>
           DOOSAN
         </p>
-        <p className="text-[12px] text-white tracking-[4px] font-bold uppercase mb-2">
+        <p className="text-[14px] text-white tracking-[4px] font-bold uppercase mb-2">
           2026 CHRO TREKKING
         </p>
         <div className="flex items-center justify-center gap-1.5">
-          <span className="text-[10px] bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 text-slate-400">
+          <span className="text-[12.5px] bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 text-slate-400">
             🌲 서울대공원 · 국립현대미술관
           </span>
-          <span className="text-[10px] bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 text-slate-400">
+          <span className="text-[12.5px] bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 text-slate-400">
             👥 CHRO 부문 워크샵
           </span>
         </div>
@@ -246,19 +246,19 @@ const TeamSelect: React.FC = () => {
       {/* 스텝 인디케이터 (2단계) */}
       <div className="flex items-center justify-center gap-3 pt-4 pb-2 border-b border-white/5 bg-[#101626]">
         <div className="flex items-center gap-1.5">
-          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[12.5px] font-bold
             ${step === 'info' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
             {step === 'info' ? '1' : '✓'}
           </div>
-          <span className={`text-[11px] ${step === 'info' ? 'text-white font-bold' : 'text-slate-400'}`}>기본 정보</span>
+          <span className={`text-[13.5px] ${step === 'info' ? 'text-white font-bold' : 'text-slate-400'}`}>기본 정보</span>
         </div>
         <div className="w-8 h-0.5 bg-slate-700" />
         <div className="flex items-center gap-1.5">
-          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[12.5px] font-bold
             ${step === 'myinfo' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
             2
           </div>
-          <span className={`text-[11px] ${step === 'myinfo' ? 'text-white font-bold' : 'text-slate-500'}`}>나의 정보 입력 (4문항)</span>
+          <span className={`text-[13.5px] ${step === 'myinfo' ? 'text-white font-bold' : 'text-slate-500'}`}>나의 정보 입력 (4문항)</span>
         </div>
       </div>
 
@@ -268,17 +268,17 @@ const TeamSelect: React.FC = () => {
           {/* 이미 로그인된 세션이 있는 경우 바로가기 & 수정 카드 */}
           {myTeam && participantName && (
             <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-4 text-center space-y-2.5 shadow-lg">
-              <span className="text-[10px] bg-green-500/15 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="text-[12.5px] bg-green-500/15 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
                 ✓ 현재 로그인된 참가자
               </span>
-              <p className="text-[14px] text-white">
+              <p className="text-[16px] text-white">
                 <strong className="text-amber-400">{participantName}</strong>님 ({participantCompany} · {myTeam.name})
               </p>
               <div className="space-y-1.5 pt-1">
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="w-full py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] rounded-xl active:scale-98 shadow"
+                  className="w-full py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold text-[15px] rounded-xl active:scale-98 shadow"
                 >
                   대시보드로 바로 이동 →
                 </button>
@@ -286,7 +286,7 @@ const TeamSelect: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setStep('myinfo')}
-                    className="flex-1 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 text-[12px] font-bold rounded-xl"
+                    className="flex-1 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 text-[14px] font-bold rounded-xl"
                   >
                     ✏️ 4문항 답변 수정/입력
                   </button>
@@ -298,7 +298,7 @@ const TeamSelect: React.FC = () => {
                       setCompany('');
                       setSelectedTeamId(null);
                     }}
-                    className="px-3 py-2 bg-black/40 text-slate-400 hover:text-white text-[11px] rounded-xl border border-white/10"
+                    className="px-3 py-2 bg-black/40 text-slate-400 hover:text-white text-[13.5px] rounded-xl border border-white/10"
                   >
                     다른 이름으로 입장
                   </button>
@@ -308,30 +308,30 @@ const TeamSelect: React.FC = () => {
           )}
 
           <div>
-            <p className="text-[17px] font-bold text-white">참가자 정보 입력 👋</p>
-            <p className="text-[12px] text-slate-400">이름, 소속, 배정받은 행사 조를 선택하세요</p>
+            <p className="text-[19px] font-bold text-white">참가자 정보 입력 👋</p>
+            <p className="text-[14px] text-slate-400">이름, 소속, 배정받은 행사 조를 선택하세요</p>
           </div>
 
           <div>
-            <label className="text-[12px] text-slate-400 mb-1 block font-medium">이름 *</label>
+            <label className="text-[14px] text-slate-400 mb-1 block font-medium">이름 *</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="이름 입력 (예: 홍길동)"
               className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-3
-                text-white text-[14px] placeholder-slate-600
+                text-white text-[16px] placeholder-slate-600
                 focus:outline-none focus:border-red-500 transition-colors"
             />
           </div>
 
           <div>
-            <label className="text-[12px] text-slate-400 mb-1 block font-medium">소속 *</label>
+            <label className="text-[14px] text-slate-400 mb-1 block font-medium">소속 *</label>
             <select
               value={company}
               onChange={e => setCompany(e.target.value)}
               className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-3
-                text-[14px] focus:outline-none focus:border-red-500 transition-colors appearance-none"
+                text-[16px] focus:outline-none focus:border-red-500 transition-colors appearance-none"
               style={{ color: company ? 'white' : '#475569' }}>
               <option value="" disabled>소속을 선택하세요</option>
               {COMPANIES.map(c => (
@@ -342,14 +342,14 @@ const TeamSelect: React.FC = () => {
 
           {/* 조 선택 */}
           <div className="pt-1">
-            <label className="text-[12px] text-slate-400 mb-1.5 block font-medium">
-              행사 조 선택 * <span className="text-[11px] text-slate-500 font-normal">(사전 배정된 조)</span>
+            <label className="text-[14px] text-slate-400 mb-1.5 block font-medium">
+              행사 조 선택 * <span className="text-[13.5px] text-slate-500 font-normal">(사전 배정된 조)</span>
             </label>
 
             <div className="space-y-3">
               {/* 동물원둘레길 조 */}
               <div>
-                <p className="text-[11px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
+                <p className="text-[13.5px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
                   🦁 동물원둘레길 트레킹 (1~3조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
@@ -359,7 +359,7 @@ const TeamSelect: React.FC = () => {
 
               {/* 호수둘레길 조 */}
               <div>
-                <p className="text-[11px] font-bold text-sky-400 mb-1.5 flex items-center gap-1">
+                <p className="text-[13.5px] font-bold text-sky-400 mb-1.5 flex items-center gap-1">
                   🌊 호수둘레길 산책 (4~6조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
@@ -370,7 +370,7 @@ const TeamSelect: React.FC = () => {
           </div>
 
           {error && (
-            <p className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            <p className="text-[14px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               ⚠️ {error}
             </p>
           )}
@@ -378,7 +378,7 @@ const TeamSelect: React.FC = () => {
           <div className="pt-2 mt-auto">
             <button
               onClick={handleInfoNext}
-              className="w-full py-3.5 rounded-xl font-bold text-[15px] text-white
+              className="w-full py-3.5 rounded-xl font-bold text-[17px] text-white
                 bg-red-500 active:scale-98 transition-all shadow-md shadow-red-500/20"
             >
               다음 → 나의 정보 4문항 입력
@@ -392,13 +392,13 @@ const TeamSelect: React.FC = () => {
         <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-[17px] font-bold text-white">나의 정보 입력 💡</p>
-              <span className="text-[11px] bg-green-500/15 text-green-400 px-2.5 py-0.5 rounded-full border border-green-500/30 font-bold flex items-center gap-1">
+              <p className="text-[19px] font-bold text-white">나의 정보 입력 💡</p>
+              <span className="text-[13.5px] bg-green-500/15 text-green-400 px-2.5 py-0.5 rounded-full border border-green-500/30 font-bold flex items-center gap-1">
                 <span>💾</span>
                 <span>{lastSavedTime ? `${lastSavedTime} 자동 저장됨` : '실시간 자동 저장 중'}</span>
               </span>
             </div>
-            <p className="text-[12px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-3 rounded-xl border border-white/5">
+            <p className="text-[14px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-3 rounded-xl border border-white/5">
               동료들과 나눌 <strong>나만의 관심사, 경험, 커리어 이야기</strong>를 작성해 주세요. (저녁 퀴즈쇼 및 네트워킹의 기초자료로 활용됩니다)
             </p>
           </div>
@@ -411,19 +411,19 @@ const TeamSelect: React.FC = () => {
                 <div key={q.id} className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2.5 shadow-md">
                   {/* 질문 헤더 */}
                   <div className="flex justify-between items-start gap-2">
-                    <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-[13.5px] font-bold flex-shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
-                    <label className="flex-1 text-[13.5px] font-bold text-white leading-snug">
+                    <label className="flex-1 text-[15.5px] font-bold text-white leading-snug">
                       {q.title}
                     </label>
-                    <span className={`text-[10px] flex-shrink-0 ${val.length > 90 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                    <span className={`text-[12.5px] flex-shrink-0 ${val.length > 90 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
                       {val.length}/100자
                     </span>
                   </div>
 
                   {/* 예시 텍스트: 별도 줄바꿈 박스로 100% 온전하게 노출 */}
-                  <div className="bg-black/30 border border-white/5 rounded-xl p-2.5 text-[11.5px] text-slate-300 leading-relaxed">
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-2.5 text-[14px] text-slate-300 leading-relaxed">
                     💡 <strong className="text-amber-300">예시:</strong> {q.placeholder.replace(/^예시?:\s*/, '')}
                   </div>
 
@@ -435,7 +435,7 @@ const TeamSelect: React.FC = () => {
                     onChange={e => handleAnswerChange(q.id, e.target.value)}
                     placeholder="나의 답변 입력..."
                     className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-3
-                      text-white text-[13.5px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors"
+                      text-white text-[15.5px] placeholder-slate-600 focus:outline-none focus:border-red-500 transition-colors"
                   />
                 </div>
               );
@@ -443,12 +443,12 @@ const TeamSelect: React.FC = () => {
           </div>
 
           {/* 개인정보 유의 안내 문구 */}
-          <div className="bg-[#121826] border border-white/5 rounded-xl p-2.5 text-[11px] text-slate-400">
+          <div className="bg-[#121826] border border-white/5 rounded-xl p-2.5 text-[13.5px] text-slate-400">
             🔒 입력하신 내용은 <strong>2026 CHRO Trekking</strong> 팀빌딩 활동 및 저녁 퀴즈 대항전 운영을 위해서만 안전하게 활용됩니다.
           </div>
 
           {error && (
-            <p className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            <p className="text-[14px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               ⚠️ {error}
             </p>
           )}
@@ -465,7 +465,7 @@ const TeamSelect: React.FC = () => {
             <button
               onClick={handleFinalEnter}
               disabled={isSubmitting}
-              className="flex-1 py-3.5 rounded-xl font-bold text-[15px] text-white flex items-center justify-center gap-2
+              className="flex-1 py-3.5 rounded-xl font-bold text-[17px] text-white flex items-center justify-center gap-2
                 bg-red-500 hover:bg-red-600 active:scale-98 transition-all shadow-md shadow-red-500/20"
             >
               {isSubmitting ? (

@@ -174,7 +174,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in select-none">
-      <div className="bg-[#13192A] border border-white/15 w-full max-w-[390px] max-h-[92vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#13192A] border border-white/15 w-full max-w-[430px] max-h-[92vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden">
         {/* 상단 헤더 */}
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -183,10 +183,10 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
               {teamConfig.shortCode}
             </span>
             <div>
-              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider block">
+              <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">
                 1:30~2:00 집결 오프닝
               </span>
-              <h3 className="text-[14px] font-bold text-white">
+              <h3 className="text-[16px] font-bold text-white">
                 {teamConfig.name} 튜토리얼 & 그라운드룰
               </h3>
             </div>
@@ -203,7 +203,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
         <div className="flex bg-[#101626] p-1.5 border-b border-white/8 gap-1.5 flex-shrink-0">
           <button
             onClick={() => setActiveTab('quiz')}
-            className={`flex-1 py-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeTab === 'quiz'
                 ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -211,11 +211,11 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           >
             <span>🥐</span>
             <span>1. 빵 가격 튜토리얼</span>
-            {isQuizSubmitted && <span className="text-emerald-300 text-[10px]">✔</span>}
+            {isQuizSubmitted && <span className="text-emerald-300 text-[12.5px]">✔</span>}
           </button>
           <button
             onClick={() => setActiveTab('rules')}
-            className={`flex-1 py-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeTab === 'rules'
                 ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -223,7 +223,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           >
             <span>🤝</span>
             <span>2. 조별 그라운드룰</span>
-            {selectedRules.length > 0 && <span className="text-sky-300 text-[10px]">({selectedRules.length})</span>}
+            {selectedRules.length > 0 && <span className="text-sky-300 text-[12.5px]">({selectedRules.length})</span>}
           </button>
         </div>
 
@@ -231,7 +231,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
         {activeTab === 'quiz' && (
           <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
             {/* 빵명장 튜토리얼 안내 배너 */}
-            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-red-500/15 border border-amber-500/30 rounded-2xl p-3 text-[11.5px] text-slate-200 leading-relaxed">
+            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-red-500/15 border border-amber-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
               <div className="flex items-center gap-1.5 font-bold text-amber-400 mb-1">
                 <span>🥐</span>
                 <span>어플 테스트 & 빵명장 시그니처 퀴즈</span>
@@ -242,19 +242,19 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
             {/* 퀴즈 문제 카드 */}
             <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[13.5px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
                   빵명장 서울대공원점
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[13.5px] text-slate-400">
                   앱 사용 튜토리얼
                 </span>
               </div>
 
               <div className="space-y-1">
-                <h4 className="text-[14px] font-bold text-white leading-snug">
+                <h4 className="text-[16px] font-bold text-white leading-snug">
                   {TUTORIAL_QUIZ.questionText}
                 </h4>
-                <p className="text-[11px] text-amber-300/90 font-medium">
+                <p className="text-[13.5px] text-amber-300/90 font-medium">
                   {TUTORIAL_QUIZ.hintText}
                 </p>
               </div>
@@ -282,10 +282,10 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                       type="button"
                       disabled={isQuizSubmitted}
                       onClick={() => setSelectedOption(idx)}
-                      className={`w-full text-left p-3 rounded-xl border text-[13px] flex items-center justify-between transition-all active:scale-98 ${btnStyle}`}
+                      className={`w-full text-left p-3 rounded-xl border text-[15px] flex items-center justify-between transition-all active:scale-98 ${btnStyle}`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-bold">
+                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[13.5px] font-bold">
                           {idx + 1}
                         </span>
                         <span>{opt}</span>
@@ -300,7 +300,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
               {/* 제출 후 해설 */}
               {isQuizSubmitted && (
-                <div className={`p-3 rounded-xl border text-[11.5px] leading-relaxed animate-fade-in ${
+                <div className={`p-3 rounded-xl border text-[14px] leading-relaxed animate-fade-in ${
                   isQuizCorrect
                     ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
                     : 'bg-red-950/40 border-red-500/40 text-red-200'
@@ -319,7 +319,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
         {activeTab === 'rules' && (
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
             {/* 30분 힐링 & 그라운드룰 안내 */}
-            <div className="bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 rounded-2xl p-3 text-[11.5px] text-slate-200 leading-relaxed">
+            <div className="bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
               <div className="flex items-center gap-1.5 font-bold text-sky-400 mb-1">
                 <span>🤝</span>
                 <span>출발 전 조별 자기소개 & 그라운드룰 약속</span>
@@ -329,7 +329,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
             {/* 역할 배분 섹션 */}
             <div className="space-y-2">
-              <h4 className="text-[13px] font-bold text-white flex items-center gap-1">
+              <h4 className="text-[15px] font-bold text-white flex items-center gap-1">
                 <span>👥</span>
                 <span>우리 조 역할 배분 (담당 조원명 입력)</span>
               </h4>
@@ -338,9 +338,9 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                   <div key={role.id} className="bg-[#182035] border border-white/8 rounded-xl p-2.5 space-y-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-base">{role.icon}</span>
-                      <strong className="text-[12px] text-white">{role.title}</strong>
+                      <strong className="text-[14px] text-white">{role.title}</strong>
                     </div>
-                    <p className="text-[10px] text-slate-400 leading-tight">
+                    <p className="text-[12.5px] text-slate-400 leading-tight">
                       {role.description}
                     </p>
                     <input
@@ -348,7 +348,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                       placeholder="담당자 이름"
                       value={selectedRoles[role.id] || ''}
                       onChange={e => setSelectedRoles({ ...selectedRoles, [role.id]: e.target.value })}
-                      className="w-full bg-[#101626] border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-[#101626] border border-white/10 rounded-lg px-2 py-1 text-[13.5px] text-white focus:outline-none focus:border-sky-500"
                     />
                   </div>
                 ))}
@@ -357,7 +357,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
             {/* 추천 그라운드룰 체크리스트 */}
             <div className="space-y-2">
-              <h4 className="text-[13px] font-bold text-white flex items-center gap-1">
+              <h4 className="text-[15px] font-bold text-white flex items-center gap-1">
                 <span>🌿</span>
                 <span>우리 조의 약속 (그라운드룰) 선택</span>
               </h4>
@@ -369,13 +369,13 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                       key={preset.id}
                       type="button"
                       onClick={() => toggleRule(preset.id)}
-                      className={`w-full text-left p-2.5 rounded-xl border text-[12px] flex items-center gap-2.5 transition-all ${
+                      className={`w-full text-left p-2.5 rounded-xl border text-[14px] flex items-center gap-2.5 transition-all ${
                         isChecked
                           ? 'bg-sky-500/15 border-sky-400 text-white font-medium'
                           : 'bg-black/20 border-white/5 text-slate-400 hover:border-white/15'
                       }`}
                     >
-                      <span className={`w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ${
+                      <span className={`w-4 h-4 rounded flex items-center justify-center text-[12.5px] font-bold ${
                         isChecked ? 'bg-sky-500 text-slate-950' : 'border border-slate-500'
                       }`}>
                         {isChecked ? '✓' : ''}
@@ -390,7 +390,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
             {/* 직접 입력 커스텀 그라운드룰 */}
             <div className="space-y-2">
-              <h4 className="text-[12.5px] font-bold text-slate-300 flex items-center gap-1">
+              <h4 className="text-[14.5px] font-bold text-slate-300 flex items-center gap-1">
                 <span>✍️</span>
                 <span>우리 조만의 특별한 룰 직접 추가</span>
               </h4>
@@ -401,12 +401,12 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                   value={customRuleText}
                   onChange={e => setCustomRuleText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddCustomRule()}
-                  className="flex-1 bg-[#101626] border border-white/10 rounded-xl px-3 py-2 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500"
+                  className="flex-1 bg-[#101626] border border-white/10 rounded-xl px-3 py-2 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500"
                 />
                 <button
                   type="button"
                   onClick={handleAddCustomRule}
-                  className="px-3 py-2 bg-sky-500 text-slate-950 font-bold text-[12px] rounded-xl hover:bg-sky-400 active:scale-95"
+                  className="px-3 py-2 bg-sky-500 text-slate-950 font-bold text-[14px] rounded-xl hover:bg-sky-400 active:scale-95"
                 >
                   추가
                 </button>
@@ -415,7 +415,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
               {customRulesList.length > 0 && (
                 <div className="space-y-1 pt-1">
                   {customRulesList.map((cr, idx) => (
-                    <div key={idx} className="bg-sky-950/30 border border-sky-500/20 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-[11.5px] text-sky-200">
+                    <div key={idx} className="bg-sky-950/30 border border-sky-500/20 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-[14px] text-sky-200">
                       <span>✨ {cr}</span>
                       <button
                         type="button"
@@ -441,7 +441,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                   type="button"
                   disabled={selectedOption === null}
                   onClick={handleQuizSubmit}
-                  className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 disabled:opacity-40 text-white font-extrabold text-[13px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 disabled:opacity-40 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
                   <span>정답 제출하고 튜토리얼 완료하기 🚀</span>
                 </button>
@@ -449,7 +449,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('rules')}
-                  className="w-full py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-[13px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  className="w-full py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
                   <span>다음: 2단계 조별 그라운드룰 정하기 →</span>
                 </button>
@@ -460,7 +460,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
               type="button"
               disabled={isSavingRules}
               onClick={handleSaveGroundRules}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-slate-950 font-extrabold text-[13px] rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
               <span>{isSavingRules ? '저장 처리 중...' : saveSuccess ? '✅ 저장 완료!' : '우리 조 그라운드룰 확정 & 저장 💾'}</span>
             </button>

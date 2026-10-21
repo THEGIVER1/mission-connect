@@ -379,7 +379,7 @@ const DiscoveryQuizScreen: React.FC = () => {
   const isCurrentQuizUnlocked = unlockedQuizzes[currentQuiz?.id] || isCurrentQuizAnswered;
 
   return (
-    <div className="max-w-[390px] mx-auto bg-[#0D1117] min-h-screen pb-20 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
+    <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-20 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
       {/* 상단 헤더 */}
       <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3 relative flex-shrink-0 z-10">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
@@ -394,11 +394,11 @@ const DiscoveryQuizScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               ACTIVITY 2 · <span className="text-sky-400">DISCOVERY QUIZ</span>
             </span>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[12.5px] text-slate-400">
               {teamConfig?.courseName} (총 {activeQuizzes.length}문항)
             </p>
           </div>
-          <span className="text-[11px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
+          <span className="text-[13.5px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
             {completedCount}/{activeQuizzes.length} 완료
           </span>
         </div>
@@ -425,8 +425,8 @@ const DiscoveryQuizScreen: React.FC = () => {
                     : 'border-white/5 bg-[#1A2235] text-slate-500'
                 }`}
               >
-                <span className="text-[11px] block font-bold">Q{i + 1}</span>
-                <span className="text-[9px] block truncate">
+                <span className="text-[13.5px] block font-bold">Q{i + 1}</span>
+                <span className="text-[12px] block truncate">
                   {res ? (res.isCorrect ? `정답 +${quiz.points}` : '오답') : `스팟 ${i + 1}`}
                 </span>
               </button>
@@ -443,7 +443,7 @@ const DiscoveryQuizScreen: React.FC = () => {
             : 'bg-[#1A2235] border-white/10'
         }`}>
           <div className="flex items-center justify-between">
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+            <span className={`text-[13.5px] font-bold px-2.5 py-0.5 rounded-full border ${
               isInRange
                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 animate-pulse'
                 : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
@@ -458,7 +458,7 @@ const DiscoveryQuizScreen: React.FC = () => {
               <button
                 onClick={checkCurrentLocation}
                 disabled={isLocating}
-                className="text-[11px] text-sky-400 hover:text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all"
+                className="text-[13.5px] text-sky-400 hover:text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all"
               >
                 <span className={isLocating ? 'animate-spin inline-block' : ''}>🔄</span>
                 <span>{isLocating ? '측정 중...' : 'GPS 다시 측정'}</span>
@@ -467,27 +467,27 @@ const DiscoveryQuizScreen: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="text-[16px] font-bold text-white mb-0.5 flex items-center justify-between">
+            <h3 className="text-[18px] font-bold text-white mb-0.5 flex items-center justify-between">
               <span>스팟 {currentIdx + 1}: {currentQuiz?.title}</span>
-              <span className="text-[11px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+              <span className="text-[13.5px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                 +{currentQuiz?.points}pt
               </span>
             </h3>
-            <p className="text-[12px] text-slate-300">
+            <p className="text-[14px] text-slate-300">
               위치: <strong className="text-white">{currentQuiz?.locationLabel}</strong>
             </p>
           </div>
 
           {/* GPS 정밀도 및 거리 상태 바 */}
           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
-            <div className="bg-black/30 p-2.5 rounded-xl text-[11px] flex flex-col justify-center">
+            <div className="bg-black/30 p-2.5 rounded-xl text-[13.5px] flex flex-col justify-center">
               <span className="text-slate-400">GPS 수신 상태</span>
-              <span className={`font-bold mt-0.5 flex items-center gap-1 text-[11px] ${getGpsAccuracyBadge(gpsAccuracy).color}`}>
+              <span className={`font-bold mt-0.5 flex items-center gap-1 text-[13.5px] ${getGpsAccuracyBadge(gpsAccuracy).color}`}>
                 <span>{getGpsAccuracyBadge(gpsAccuracy).icon}</span>
                 <span>{getGpsAccuracyBadge(gpsAccuracy).text}</span>
               </span>
             </div>
-            <div className="bg-black/30 p-2.5 rounded-xl text-[11px] flex flex-col justify-center">
+            <div className="bg-black/30 p-2.5 rounded-xl text-[13.5px] flex flex-col justify-center">
               <span className="text-slate-400">인증 반경 ({currentQuiz?.radiusMeters}m 이내)</span>
               <span className="mt-0.5">
                 현재 거리:{' '}
@@ -499,12 +499,12 @@ const DiscoveryQuizScreen: React.FC = () => {
           </div>
 
           {/* 실시간 GPS 좌표 정보 (현장 점검 및 운영자용) */}
-          <div className="bg-black/40 border border-white/5 p-2.5 rounded-xl space-y-1 text-[11px]">
+          <div className="bg-black/40 border border-white/5 p-2.5 rounded-xl space-y-1 text-[13.5px]">
             <div className="flex justify-between items-center text-slate-300">
               <span>내 GPS: <strong className="text-sky-300 font-mono">{myLocation ? `${myLocation.lat.toFixed(6)}, ${myLocation.lng.toFixed(6)}` : '수신 대기'}</strong></span>
               <button
                 onClick={handleCopyCoords}
-                className="text-[10px] bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md transition-all active:scale-95"
+                className="text-[12.5px] bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md transition-all active:scale-95"
               >
                 {copiedGps ? '✅ 복사 완료' : '📋 좌표 복사'}
               </button>
@@ -515,7 +515,7 @@ const DiscoveryQuizScreen: React.FC = () => {
           </div>
 
           {gpsError && (
-            <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg mt-1">
+            <p className="text-[13.5px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg mt-1">
               ⚠️ {gpsError}
             </p>
           )}
@@ -524,10 +524,10 @@ const DiscoveryQuizScreen: React.FC = () => {
           {!isInRange && (
             <div className="pt-2 border-t border-white/5 flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <span className="text-[11px] text-slate-400">위치 신호가 약하거나 테스트 중이신가요?</span>
+                <span className="text-[13.5px] text-slate-400">위치 신호가 약하거나 테스트 중이신가요?</span>
                 <button
                   onClick={handleInstantBypass}
-                  className="text-[11px] text-amber-300 hover:text-amber-200 font-bold bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 rounded-lg transition-all active:scale-95 animate-pulse"
+                  className="text-[13.5px] text-amber-300 hover:text-amber-200 font-bold bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 rounded-lg transition-all active:scale-95 animate-pulse"
                 >
                   ⚡ 1초 비상 인증 (2026)
                 </button>
@@ -542,18 +542,18 @@ const DiscoveryQuizScreen: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-2xl animate-bounce">📸</span>
               <div>
-                <span className="text-[10px] bg-red-500/25 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[12.5px] bg-red-500/25 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full font-bold">
                   [전체 조 공통] 공식 단체사진 촬영지
                 </span>
-                <h4 className="text-[14px] font-bold text-white mt-0.5">
+                <h4 className="text-[16px] font-bold text-white mt-0.5">
                   국립현대미술관 과천관 야외조각공원
                 </h4>
               </div>
             </div>
-            <p className="text-[12px] text-slate-200 leading-relaxed">
+            <p className="text-[14px] text-slate-200 leading-relaxed">
               이곳은 모든 조가 함께 모여 <strong className="text-amber-300">2026 CHRO 트레킹 공식 단체사진</strong>을 촬영하는 메인 포토스팟입니다!
             </p>
-            <div className="bg-black/40 p-2.5 rounded-xl text-[11px] text-slate-300 flex items-start gap-2 border border-white/5">
+            <div className="bg-black/40 p-2.5 rounded-xl text-[13.5px] text-slate-300 flex items-start gap-2 border border-white/5">
               <span className="text-amber-400 text-sm">💡</span>
               <span className="leading-snug">
                 <strong>추천 포즈:</strong> 거대한 '노래하는 사람' 조형물 앞 계단에서 조원들과 함께 두산 화이팅 포즈로 멋진 추억을 남겨보세요!
@@ -571,17 +571,17 @@ const DiscoveryQuizScreen: React.FC = () => {
               🔒
             </div>
             <div>
-              <span className="text-[11px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="text-[13.5px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
                 문제 잠김 (위치 이동 필요)
               </span>
-              <h3 className="text-[16px] font-bold text-white mt-2">
+              <h3 className="text-[18px] font-bold text-white mt-2">
                 지정된 장소에 도착하면 문제가 공개됩니다
               </h3>
-              <p className="text-[12px] text-slate-400 mt-1">
+              <p className="text-[14px] text-slate-400 mt-1">
                 위치: <strong className="text-sky-300">{currentQuiz?.locationLabel}</strong>
               </p>
             </div>
-            <div className="bg-black/30 p-3 rounded-xl border border-white/5 text-[11px] text-slate-400 leading-relaxed">
+            <div className="bg-black/30 p-3 rounded-xl border border-white/5 text-[13.5px] text-slate-400 leading-relaxed">
               📍 스팟 반경 {currentQuiz?.radiusMeters}m 이내로 이동하거나, 신호 미약 시 상단의 <strong>[🔑 현장 인증코드]</strong>를 입력하면 활성화 버튼이 나타납니다.
             </div>
           </div>
@@ -596,19 +596,19 @@ const DiscoveryQuizScreen: React.FC = () => {
               🎉
             </div>
             <div>
-              <span className="text-[11px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="text-[13.5px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
                 현장 도착 인증 완료!
               </span>
-              <h3 className="text-[17px] font-bold text-white mt-2">
+              <h3 className="text-[19px] font-bold text-white mt-2">
                 [{currentQuiz?.locationLabel}] 에 도착했습니다!
               </h3>
-              <p className="text-[12px] text-slate-300 mt-1">
+              <p className="text-[14px] text-slate-300 mt-1">
                 현장 시설과 안내판을 확인한 후 아래 버튼을 눌러 문제를 확인하세요.
               </p>
             </div>
             <button
               onClick={handleUnlockCurrentQuiz}
-              className="w-full py-4 bg-gradient-to-r from-sky-500 via-emerald-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-bold text-[15px] rounded-xl shadow-xl shadow-emerald-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-sky-500 via-emerald-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-bold text-[17px] rounded-xl shadow-xl shadow-emerald-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
             >
               <span>🔓 퀴즈 문제 활성화하기 (열기)</span>
             </button>
@@ -622,14 +622,14 @@ const DiscoveryQuizScreen: React.FC = () => {
           <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-4 shadow-xl animate-fade-in">
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <span className="text-[11px] font-bold text-sky-400">
+                <span className="text-[13.5px] font-bold text-sky-400">
                   QUESTION {currentIdx + 1} / {activeQuizzes.length}
                 </span>
-                <span className="text-[12px] font-bold text-amber-400">
+                <span className="text-[14px] font-bold text-amber-400">
                   +{currentQuiz?.points}pt
                 </span>
               </div>
-              <p className="text-[15px] font-bold text-white leading-relaxed">
+              <p className="text-[17px] font-bold text-white leading-relaxed">
                 {currentQuiz?.questionText}
               </p>
             </div>
@@ -658,19 +658,19 @@ const DiscoveryQuizScreen: React.FC = () => {
                     type="button"
                     disabled={hasSubmittedAnswer}
                     onClick={() => setSelectedOption(idx)}
-                    className={`w-full p-3.5 rounded-xl border text-left text-[13px] flex items-center justify-between transition-all ${optionStyle}`}
+                    className={`w-full p-3.5 rounded-xl border text-left text-[15px] flex items-center justify-between transition-all ${optionStyle}`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold">
+                      <span className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[13.5px] font-bold">
                         {idx + 1}
                       </span>
                       <span>{optionText}</span>
                     </div>
                     {hasSubmittedAnswer && idx === currentQuiz.correctIndex && (
-                      <span className="text-green-400 font-bold text-[12px]">정답 ✓</span>
+                      <span className="text-green-400 font-bold text-[14px]">정답 ✓</span>
                     )}
                     {hasSubmittedAnswer && isSelected && idx !== currentQuiz.correctIndex && (
-                      <span className="text-red-400 font-bold text-[12px]">오답 ✕</span>
+                      <span className="text-red-400 font-bold text-[14px]">오답 ✕</span>
                     )}
                   </button>
                 );
@@ -681,14 +681,14 @@ const DiscoveryQuizScreen: React.FC = () => {
             {hasSubmittedAnswer && (
               <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5 animate-fade-in">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px]">
+                  <span className="text-[15px]">
                     {selectedOption === currentQuiz.correctIndex ? '🎉 정답입니다!' : '💡 아쉽네요! 오답입니다.'}
                   </span>
-                  <span className="text-[11px] font-bold text-amber-400">
+                  <span className="text-[13.5px] font-bold text-amber-400">
                     {selectedOption === currentQuiz.correctIndex ? `+${currentQuiz.points}pt 획득` : '+0pt'}
                   </span>
                 </div>
-                <p className="text-[12px] text-slate-300 leading-relaxed">
+                <p className="text-[14px] text-slate-300 leading-relaxed">
                   {currentQuiz.explanation}
                 </p>
               </div>
@@ -699,7 +699,7 @@ const DiscoveryQuizScreen: React.FC = () => {
               <button
                 onClick={handleAnswerSubmit}
                 disabled={selectedOption === null}
-                className="w-full py-3.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold text-[14px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20"
+                className="w-full py-3.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20"
               >
                 {selectedOption === null ? '답안을 선택해주세요' : '답안 제출하기'}
               </button>
@@ -708,7 +708,7 @@ const DiscoveryQuizScreen: React.FC = () => {
                 {currentIdx > 0 && (
                   <button
                     onClick={() => setCurrentIdx(prev => prev - 1)}
-                    className="px-4 py-3 bg-[#1A2235] text-slate-300 font-bold text-[13px] rounded-xl border border-white/10"
+                    className="px-4 py-3 bg-[#1A2235] text-slate-300 font-bold text-[15px] rounded-xl border border-white/10"
                   >
                     ← 이전 문제
                   </button>
@@ -716,14 +716,14 @@ const DiscoveryQuizScreen: React.FC = () => {
                 {currentIdx < activeQuizzes.length - 1 ? (
                   <button
                     onClick={() => setCurrentIdx(prev => prev + 1)}
-                    className="flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[13px] rounded-xl shadow"
+                    className="flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[15px] rounded-xl shadow"
                   >
                     다음 스팟 퀴즈 (Q{currentIdx + 2}) →
                   </button>
                 ) : (
                   <button
                     onClick={() => navigate('/leaderboard')}
-                    className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[13px] rounded-xl shadow"
+                    className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[15px] rounded-xl shadow"
                   >
                     🏆 실시간 순위 확인 →
                   </button>
@@ -737,10 +737,10 @@ const DiscoveryQuizScreen: React.FC = () => {
         {isAllCompleted && (
           <div className="bg-gradient-to-r from-emerald-900/40 to-sky-900/40 border border-emerald-500/30 rounded-2xl p-4 text-center space-y-2 shadow-xl">
             <span className="text-2xl">🏆</span>
-            <h4 className="text-[16px] font-bold text-white">
+            <h4 className="text-[18px] font-bold text-white">
               {teamConfig?.courseName} {activeQuizzes.length}개 스팟 퀴즈 완주!
             </h4>
-            <p className="text-[12px] text-slate-300">
+            <p className="text-[14px] text-slate-300">
               총 {totalPossibleQuizPoints}pt 중 <strong className="text-amber-400">{totalPointsEarned}pt</strong>를 획득하셨습니다.
             </p>
           </div>
@@ -750,15 +750,15 @@ const DiscoveryQuizScreen: React.FC = () => {
       {/* 현장 비상 패스코드 모달 */}
       {isBypassModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#13192A] border border-amber-500/40 w-full max-w-[340px] rounded-3xl p-5 text-center space-y-4 shadow-2xl">
+          <div className="bg-[#13192A] border border-amber-500/40 w-full max-w-[390px] rounded-3xl p-5 text-center space-y-4 shadow-2xl">
             <div className="w-12 h-12 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full flex items-center justify-center text-xl mx-auto">
               🔑
             </div>
             <div>
-              <h3 className="text-[16px] font-bold text-white leading-snug">
+              <h3 className="text-[18px] font-bold text-white leading-snug">
                 현장 비상 인증코드 입력
               </h3>
-              <p className="text-[12px] text-slate-400 mt-1">
+              <p className="text-[14px] text-slate-400 mt-1">
                 운영진이 안내해 드린 <strong>4자리 인증 번호</strong>를 입력해 주세요.
               </p>
             </div>
@@ -780,13 +780,13 @@ const DiscoveryQuizScreen: React.FC = () => {
                 setInputBypassCode('2026');
                 handleInstantBypass();
               }}
-              className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[12px] rounded-xl border border-amber-500/40 transition-all active:scale-98"
+              className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[14px] rounded-xl border border-amber-500/40 transition-all active:scale-98"
             >
               ⚡ 2026 코드 1초 즉시 인증
             </button>
 
             {bypassCodeError && (
-              <p className="text-[12px] text-red-400">{bypassCodeError}</p>
+              <p className="text-[14px] text-red-400">{bypassCodeError}</p>
             )}
 
             <div className="flex gap-2 pt-1">
@@ -795,13 +795,13 @@ const DiscoveryQuizScreen: React.FC = () => {
                   setIsBypassModalOpen(false);
                   setBypassCodeError('');
                 }}
-                className="flex-1 py-3 bg-[#1A2235] text-slate-400 font-bold text-[13px] rounded-xl border border-white/10"
+                className="flex-1 py-3 bg-[#1A2235] text-slate-400 font-bold text-[15px] rounded-xl border border-white/10"
               >
                 취소
               </button>
               <button
                 onClick={handleVerifyBypassCode}
-                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-[13px] rounded-xl shadow active:scale-98"
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-[15px] rounded-xl shadow active:scale-98"
               >
                 인증 확인
               </button>

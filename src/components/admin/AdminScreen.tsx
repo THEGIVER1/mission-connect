@@ -1461,7 +1461,7 @@ const AdminScreen: React.FC = () => {
             <span className="font-bebas text-xl md:text-2xl tracking-widest text-white">
               ADMIN · <span className="text-red-500">CONTROL CENTER</span>
             </span>
-            <p className="text-[11px] text-slate-400">2026 CHRO Trekking 운영본부 통합 관리자 콘솔</p>
+            <p className="text-[13.5px] text-slate-400">2026 CHRO Trekking 운영본부 통합 관리자 콘솔</p>
           </div>
           <button
             onClick={fetchData}
@@ -1486,7 +1486,7 @@ const AdminScreen: React.FC = () => {
         </div>
         <button
           onClick={handleResetSessionData}
-          className="px-2.5 py-1 rounded bg-red-900/40 text-red-300 border border-red-500/30 text-[11px] font-bold hover:bg-red-800/60 transition-all flex items-center gap-1"
+          className="px-2.5 py-1 rounded bg-red-900/40 text-red-300 border border-red-500/30 text-[13.5px] font-bold hover:bg-red-800/60 transition-all flex items-center gap-1"
           title="파일럿 테스트용 세션 전체 초기화"
         >
           🧹 데이터 리셋
@@ -1501,9 +1501,9 @@ const AdminScreen: React.FC = () => {
             <div>
               <h3 className="text-sm md:text-base font-black text-white flex items-center gap-2">
                 운영본부 엑셀(CSV) 다운로드 센터
-                <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">1-Click 즉시 다운</span>
+                <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">1-Click 즉시 다운</span>
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[13.5px] text-slate-400">
                 참가자 등록 현황 및 4문항 답변 원문, 조별 피플퀘스트 추천 마스터 데이터를 실시간 엑셀로 추출합니다.
               </p>
             </div>
@@ -1516,7 +1516,7 @@ const AdminScreen: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
           <button
             onClick={handleExportMasterMergedCSV}
-            className="px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-black text-xs md:text-[13px] rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-all"
+            className="px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-black text-xs md:text-[15px] rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
             <span>📥</span>
             <span>저녁 퀴즈 마스터 결합 엑셀</span>
@@ -1524,7 +1524,7 @@ const AdminScreen: React.FC = () => {
 
           <button
             onClick={handleExportMyInfoCSV}
-            className="px-4 py-3 bg-[#1F2C47] hover:bg-[#2A3B5F] text-sky-300 border border-sky-500/40 font-bold text-xs md:text-[13px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+            className="px-4 py-3 bg-[#1F2C47] hover:bg-[#2A3B5F] text-sky-300 border border-sky-500/40 font-bold text-xs md:text-[15px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
             <span>📋</span>
             <span>참가자 4문항 원문 엑셀</span>
@@ -1532,7 +1532,7 @@ const AdminScreen: React.FC = () => {
 
           <button
             onClick={handleExportPeopleQuestCSV}
-            className="px-4 py-3 bg-[#26283D] hover:bg-[#343753] text-amber-300 border border-amber-500/40 font-bold text-xs md:text-[13px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+            className="px-4 py-3 bg-[#26283D] hover:bg-[#343753] text-amber-300 border border-amber-500/40 font-bold text-xs md:text-[15px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
             <span>💬</span>
             <span>조별 피플퀘스트 추천 엑셀</span>
@@ -1616,14 +1616,14 @@ const AdminScreen: React.FC = () => {
             {/* 빔프로젝터 모드 실행 카드 */}
             <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/40 rounded-2xl p-4 space-y-2.5 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
+                <span className="text-[15px] font-bold text-white flex items-center gap-1.5">
                   📽️ 빔프로젝터 3단계 퀴즈쇼 모드
                 </span>
-                <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
                   16:9 무대용
                 </span>
               </div>
-              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+              <p className="text-[14px] text-slate-300 leading-relaxed">
                 저녁 식사 무대 빔프로젝터에 띄우고 방향키와 스페이스바로 <strong>3단계 점진적 힌트</strong>를 극적으로 공개할 수 있습니다.
               </p>
               <button
@@ -1631,7 +1631,7 @@ const AdminScreen: React.FC = () => {
                   setStageStep(0);
                   setIsStageMode(true);
                 }}
-                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[13.5px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-[15.5px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
               >
                 <span>📽️ 무대 퀴즈쇼 풀스크린 시작</span>
               </button>
@@ -1640,12 +1640,12 @@ const AdminScreen: React.FC = () => {
             {/* 일반 모바일 플래시 카드 뷰 */}
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[12px] font-bold text-slate-300">
+                <span className="text-[14px] font-bold text-slate-300">
                   모바일 프리뷰 화면
                 </span>
                 <button
                   onClick={() => setBlindMode(!blindMode)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                  className={`px-3 py-1 rounded-full text-[13.5px] font-bold border transition-all ${
                     blindMode
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       : 'bg-green-500/20 text-green-300 border-green-500/40'
@@ -1658,11 +1658,11 @@ const AdminScreen: React.FC = () => {
               {/* 참가자 선택 셀렉터 */}
               {participants.length > 0 && (
                 <div className="flex items-center justify-between gap-2 pt-1">
-                  <span className="text-[11px] font-bold text-slate-400 whitespace-nowrap">참가자:</span>
+                  <span className="text-[13.5px] font-bold text-slate-400 whitespace-nowrap">참가자:</span>
                   <select
                     value={currentCardIndex}
                     onChange={e => setCurrentCardIndex(Number(e.target.value))}
-                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-[12px] text-white focus:outline-none focus:border-red-500"
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-[14px] text-white focus:outline-none focus:border-red-500"
                   >
                     {participants.map((p, idx) => (
                       <option key={p.id} value={idx} style={{ background: '#1A2235', color: 'white' }}>
@@ -1677,7 +1677,7 @@ const AdminScreen: React.FC = () => {
             {/* 플래시 카드 */}
             {participants.length === 0 ? (
               <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-6 text-center space-y-3">
-                <p className="text-slate-400 text-[13px]">
+                <p className="text-slate-400 text-[15px]">
                   아직 등록된 참가자 정보가 없습니다.
                 </p>
               </div>
@@ -1691,25 +1691,25 @@ const AdminScreen: React.FC = () => {
                   <div className="bg-gradient-to-br from-[#161F33] to-[#101726] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4">
                     <div className="flex justify-between items-start border-b border-white/10 pb-3">
                       <div>
-                        <span className="text-[11px] text-red-400 font-bold tracking-wider uppercase block">
+                        <span className="text-[13.5px] text-red-400 font-bold tracking-wider uppercase block">
                           QUIZ CARD #{currentCardIndex + 1} / {participants.length}
                         </span>
                         <h2 className="text-[19px] font-extrabold text-white mt-0.5">
                           {blindMode ? '❓ 누구의 이야기일까요?' : `👑 ${currentP.name || '미등록'} 님`}
                         </h2>
-                        <span className="text-[12px] text-slate-400">
+                        <span className="text-[14px] text-slate-400">
                           {blindMode ? `소속: ${currentP.company} · ${currentP.teamName || currentP.teamId}` : `${currentP.company} · ${currentP.teamName || currentP.teamId}`}
                         </span>
                       </div>
                       {stat && stat.count > 0 && (
-                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[13.5px] font-bold px-2.5 py-1 rounded-full">
                           ⭐ 낮 트레킹 {stat.count}개 조 추천!
                         </span>
                       )}
                     </div>
 
                     {!hasInfo && (
-                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-[12px] text-amber-300 text-center">
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-[14px] text-amber-300 text-center">
                         ⚠️ 이 참가자는 아직 4문항 답변을 입력하지 않았습니다.
                       </div>
                     )}
@@ -1720,10 +1720,10 @@ const AdminScreen: React.FC = () => {
                         const val = info[q.id] || (idx === 0 ? currentP.truth1 : idx === 2 ? currentP.lie : idx === 4 ? currentP.truth2 : '');
                         return (
                           <div key={q.id} className="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1">
-                            <span className="text-[11px] text-red-400 font-bold block">
+                            <span className="text-[13.5px] text-red-400 font-bold block">
                               Q{idx + 1}. {q.title}
                             </span>
-                            <p className="text-[13px] text-white font-medium leading-relaxed">
+                            <p className="text-[15px] text-white font-medium leading-relaxed">
                               {val ? `"${val}"` : <span className="text-slate-500 italic">(미입력)</span>}
                             </p>
                           </div>
@@ -1736,14 +1736,14 @@ const AdminScreen: React.FC = () => {
                       <button
                         onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
                         disabled={currentCardIndex === 0}
-                        className="flex-1 py-3 bg-[#1A2235] hover:bg-[#222C44] disabled:opacity-40 text-white font-bold text-[13px] rounded-xl border border-white/10"
+                        className="flex-1 py-3 bg-[#1A2235] hover:bg-[#222C44] disabled:opacity-40 text-white font-bold text-[15px] rounded-xl border border-white/10"
                       >
                         ← 이전 참가자
                       </button>
                       <button
                         onClick={() => setCurrentCardIndex(prev => Math.min(participants.length - 1, prev + 1))}
                         disabled={currentCardIndex === participants.length - 1}
-                        className="flex-1 py-3 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white font-bold text-[13px] rounded-xl shadow"
+                        className="flex-1 py-3 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white font-bold text-[15px] rounded-xl shadow"
                       >
                         다음 참가자 →
                       </button>
@@ -1757,7 +1757,7 @@ const AdminScreen: React.FC = () => {
             <div className="pt-2">
               <button
                 onClick={handleExportMasterMergedCSV}
-                className="w-full py-3.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-bold text-[14px] rounded-xl shadow-lg flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-bold text-[16px] rounded-xl shadow-lg flex items-center justify-center gap-2"
               >
                 <span>📥 저녁 퀴즈용 전체 결합 엑셀(CSV) 다운로드</span>
               </button>
@@ -1771,14 +1771,14 @@ const AdminScreen: React.FC = () => {
             {/* 시상식 모드 실행 배너 */}
             <div className="bg-gradient-to-r from-amber-900/40 via-yellow-900/30 to-orange-900/40 border border-amber-500/40 rounded-2xl p-4 space-y-2.5 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-bold text-amber-300 flex items-center gap-1.5">
+                <span className="text-[15px] font-bold text-amber-300 flex items-center gap-1.5">
                   🏆 빔프로젝터 최종 시상식 모드
                 </span>
-                <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
+                <span className="text-[12.5px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
                   6위~1위 순차 발표
                 </span>
               </div>
-              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+              <p className="text-[14px] text-slate-300 leading-relaxed">
                 행사 마지막 순간, 16:9 풀스크린 무대 화면으로 6위부터 우승팀(1위)까지 긴장감 넘치게 발표하고 축하 팡파레를 터뜨릴 수 있습니다.
               </p>
               <button
@@ -1786,7 +1786,7 @@ const AdminScreen: React.FC = () => {
                   setRevealedAwardRank(7);
                   setIsAwardMode(true);
                 }}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[14px] rounded-xl shadow-2xl active:scale-98 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[16px] rounded-xl shadow-2xl active:scale-98 transition-all flex items-center justify-center gap-2"
               >
                 <span>🏆 최종 시상식 풀스크린 시작</span>
               </button>
@@ -1794,14 +1794,14 @@ const AdminScreen: React.FC = () => {
 
             {/* 현재 조별 실시간 순위표 */}
             <div className="space-y-2.5">
-              <span className="text-[12px] font-bold text-slate-300 block">
+              <span className="text-[14px] font-bold text-slate-300 block">
                 📊 실시간 조별 종합 순위표
               </span>
               {rankedTeams.map((team, idx) => (
                 <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className={`w-6 h-6 rounded-full font-bold text-[11px] flex items-center justify-center ${
+                      <span className={`w-6 h-6 rounded-full font-bold text-[13.5px] flex items-center justify-center ${
                         idx === 0
                           ? 'bg-amber-400 text-slate-950 font-black'
                           : idx === 1
@@ -1812,17 +1812,17 @@ const AdminScreen: React.FC = () => {
                       }`}>
                         {idx + 1}
                       </span>
-                      <strong className="text-[14px] text-white">{team.emoji} {team.name}</strong>
-                      <span className="text-[11px] text-slate-400">({team.members.length}명)</span>
+                      <strong className="text-[16px] text-white">{team.emoji} {team.name}</strong>
+                      <span className="text-[13.5px] text-slate-400">({team.members.length}명)</span>
                     </div>
-                    <span className="text-[14px] font-extrabold text-amber-400">
+                    <span className="text-[16px] font-extrabold text-amber-400">
                       {team.totalScore.toLocaleString()} pt
                     </span>
                   </div>
 
                   <div className="flex flex-wrap gap-1 pt-1">
                     {team.members.map(m => (
-                      <span key={m.id} className="text-[10px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
+                      <span key={m.id} className="text-[12.5px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
                         {m.name || '미등록'} ({m.score ?? 0}pt)
                       </span>
                     ))}
@@ -1838,14 +1838,14 @@ const AdminScreen: React.FC = () => {
           <div className="space-y-4">
             <div className="bg-[#1A2235] border border-sky-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-bold text-sky-400 flex items-center gap-1.5">
+                <span className="text-[15px] font-bold text-sky-400 flex items-center gap-1.5">
                   🤝 6개 조 그라운드룰 & 역할 분담 현황
                 </span>
-                <span className="text-[11px] bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full font-bold">
+                <span className="text-[13.5px] bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full font-bold">
                   1:30~2:00 오프닝
                 </span>
               </div>
-              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+              <p className="text-[14px] text-slate-300 leading-relaxed">
                 출발 전 각 조가 의논하여 확정한 <strong>역할 분담(타임키퍼, 페이스메이커 등)</strong> 및 <strong>30분 개인 힐링 시간 등 그라운드룰 약속</strong> 현황입니다.
               </p>
             </div>
@@ -1867,11 +1867,11 @@ const AdminScreen: React.FC = () => {
                           {team.shortCode}
                         </span>
                         <div>
-                          <strong className="text-[14px] text-white">{team.name}</strong>
-                          <span className="text-[11px] text-slate-400 ml-1.5">({team.courseName} · {team.courseDistance})</span>
+                          <strong className="text-[16px] text-white">{team.name}</strong>
+                          <span className="text-[13.5px] text-slate-400 ml-1.5">({team.courseName} · {team.courseDistance})</span>
                         </div>
                       </div>
-                      <span className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
+                      <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full border ${
                         hasRules
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                           : 'bg-white/5 text-slate-400 border-white/10'
@@ -1882,22 +1882,22 @@ const AdminScreen: React.FC = () => {
 
                     {/* 역할 분담 */}
                     <div className="space-y-1.5">
-                      <span className="text-[11px] font-bold text-sky-400 block">👥 조별 역할 배분</span>
-                      <div className="grid grid-cols-2 gap-1.5 text-[11.5px]">
+                      <span className="text-[13.5px] font-bold text-sky-400 block">👥 조별 역할 배분</span>
+                      <div className="grid grid-cols-2 gap-1.5 text-[14px]">
                         <div className="bg-black/30 p-2 rounded-xl border border-white/5">
-                          <span className="text-slate-400 block text-[10px]">⏱️ 타임키퍼</span>
+                          <span className="text-slate-400 block text-[12.5px]">⏱️ 타임키퍼</span>
                           <strong className="text-white">{roles['timekeeper'] || '(미정)'}</strong>
                         </div>
                         <div className="bg-black/30 p-2 rounded-xl border border-white/5">
-                          <span className="text-slate-400 block text-[10px]">🚶 페이스메이커</span>
+                          <span className="text-slate-400 block text-[12.5px]">🚶 페이스메이커</span>
                           <strong className="text-white">{roles['pacemaker'] || '(미정)'}</strong>
                         </div>
                         <div className="bg-black/30 p-2 rounded-xl border border-white/5">
-                          <span className="text-slate-400 block text-[10px]">📸 포토그래퍼</span>
+                          <span className="text-slate-400 block text-[12.5px]">📸 포토그래퍼</span>
                           <strong className="text-white">{roles['photographer'] || '(미정)'}</strong>
                         </div>
                         <div className="bg-black/30 p-2 rounded-xl border border-white/5">
-                          <span className="text-slate-400 block text-[10px]">💊 비타민/리액션</span>
+                          <span className="text-slate-400 block text-[12.5px]">💊 비타민/리액션</span>
                           <strong className="text-white">{roles['vitamin'] || '(미정)'}</strong>
                         </div>
                       </div>
@@ -1905,9 +1905,9 @@ const AdminScreen: React.FC = () => {
 
                     {/* 확정된 그라운드룰 약속 */}
                     <div className="space-y-1.5">
-                      <span className="text-[11px] font-bold text-amber-400 block">🌿 우리 조의 약속 (그라운드룰)</span>
+                      <span className="text-[13.5px] font-bold text-amber-400 block">🌿 우리 조의 약속 (그라운드룰)</span>
                       {ruleTexts.length > 0 || customRules.length > 0 ? (
-                        <div className="space-y-1 bg-black/30 p-2.5 rounded-xl border border-white/5 text-[11.5px] text-slate-200">
+                        <div className="space-y-1 bg-black/30 p-2.5 rounded-xl border border-white/5 text-[14px] text-slate-200">
                           {ruleTexts.map((rt, i) => (
                             <p key={i} className="flex items-start gap-1">
                               <span className="text-emerald-400 font-bold">✓</span>
@@ -1922,7 +1922,7 @@ const AdminScreen: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[11px] text-slate-500 italic bg-black/20 p-2 rounded-lg">
+                        <p className="text-[13.5px] text-slate-500 italic bg-black/20 p-2 rounded-lg">
                           아직 설정된 그라운드룰이 없습니다.
                         </p>
                       )}
@@ -1930,7 +1930,7 @@ const AdminScreen: React.FC = () => {
 
                     {/* 업데이트 정보 */}
                     {gr?.updatedAt && (
-                      <div className="text-[10px] text-slate-500 text-right pt-1 border-t border-white/5">
+                      <div className="text-[12.5px] text-slate-500 text-right pt-1 border-t border-white/5">
                         작성자: {gr.updatedBy || '익명'} ({new Date(gr.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
                       </div>
                     )}
@@ -1946,14 +1946,14 @@ const AdminScreen: React.FC = () => {
           <div className="space-y-4">
             <div className="bg-[#1A2235] border border-pink-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-bold text-pink-400 flex items-center gap-1.5">
+                <span className="text-[15px] font-bold text-pink-400 flex items-center gap-1.5">
                   🌹 테마가든 조별 단체사진 실시간 갤러리
                 </span>
-                <span className="text-[11px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
+                <span className="text-[13.5px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
                   2:00~4:15 메인 미션
                 </span>
               </div>
-              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+              <p className="text-[14px] text-slate-300 leading-relaxed">
                 각 조가 테마가든 장미원/호수 수변 스팟에서 촬영하여 업로드한 단체사진입니다. 클릭하여 원본으로 크게 확대할 수 있습니다.
               </p>
             </div>
@@ -1971,9 +1971,9 @@ const AdminScreen: React.FC = () => {
                               style={{ background: team.color }}>
                           {team.shortCode}
                         </span>
-                        <strong className="text-[13px] text-white">{team.name}</strong>
+                        <strong className="text-[15px] text-white">{team.name}</strong>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      <span className={`text-[12.5px] font-bold px-2 py-0.5 rounded-full border ${
                         isUploaded
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                           : 'bg-white/5 text-slate-400 border-white/10'
@@ -2001,10 +2001,10 @@ const AdminScreen: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                          <p className="text-[12px] font-bold text-white truncate">
+                          <p className="text-[14px] font-bold text-white truncate">
                             "{photo.caption || '우리 조 단체사진'}"
                           </p>
-                          <div className="flex justify-between items-center text-[10.5px] text-slate-400">
+                          <div className="flex justify-between items-center text-[13px] text-slate-400">
                             <span>등록자: <strong className="text-slate-200">{photo.uploadedBy}</strong></span>
                             <span>{new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
@@ -2015,8 +2015,8 @@ const AdminScreen: React.FC = () => {
                         <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl text-slate-500">
                           📷
                         </div>
-                        <p className="text-[12px] text-slate-400 font-medium">사진 촬영 및 업로드 대기 중</p>
-                        <p className="text-[10px] text-slate-500">테마가든 스팟에서 업로드 시 즉시 반영됩니다.</p>
+                        <p className="text-[14px] text-slate-400 font-medium">사진 촬영 및 업로드 대기 중</p>
+                        <p className="text-[12.5px] text-slate-500">테마가든 스팟에서 업로드 시 즉시 반영됩니다.</p>
                       </div>
                     )}
                   </div>
@@ -2032,10 +2032,10 @@ const AdminScreen: React.FC = () => {
             {/* 현재 활성 공지 상태 */}
             <div className="bg-[#1A2235] border border-emerald-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-[12px] font-bold text-emerald-400 flex items-center gap-1.5">
+                <span className="text-[14px] font-bold text-emerald-400 flex items-center gap-1.5">
                   📢 실시간 브로드캐스트 공지 센터
                 </span>
-                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full ${
                   currentBroadcast && currentBroadcast.active
                     ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                     : 'bg-white/10 text-slate-400'
@@ -2043,24 +2043,24 @@ const AdminScreen: React.FC = () => {
                   {currentBroadcast && currentBroadcast.active ? '🟢 송출 중' : '⚪ 송출 없음'}
                 </span>
               </div>
-              <p className="text-[11.5px] text-slate-300 leading-relaxed">
+              <p className="text-[14px] text-slate-300 leading-relaxed">
                 공지를 발송하면 모든 참가자의 스마트폰 상단에 <strong>실시간 알림 팝업</strong>이 즉시 나타납니다.
               </p>
 
               {currentBroadcast && currentBroadcast.active && (
                 <div className="bg-black/40 border border-emerald-500/30 rounded-xl p-3 space-y-1 mt-2">
-                  <div className="flex justify-between items-center text-[11px]">
+                  <div className="flex justify-between items-center text-[13.5px]">
                     <span className="text-emerald-400 font-bold">현재 화면에 노출 중인 내용:</span>
-                    <span className="text-slate-400 text-[10px]">{new Date(currentBroadcast.timestamp).toLocaleTimeString('ko-KR')}</span>
+                    <span className="text-slate-400 text-[12.5px]">{new Date(currentBroadcast.timestamp).toLocaleTimeString('ko-KR')}</span>
                   </div>
                   {currentBroadcast.title && (
-                    <strong className="text-white text-[13px] block">{currentBroadcast.title}</strong>
+                    <strong className="text-white text-[15px] block">{currentBroadcast.title}</strong>
                   )}
-                  <p className="text-slate-200 text-[12px]">{currentBroadcast.message}</p>
+                  <p className="text-slate-200 text-[14px]">{currentBroadcast.message}</p>
                   <div className="pt-2 flex justify-end">
                     <button
                       onClick={handleClearBroadcast}
-                      className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 text-[11px] font-bold rounded-lg transition-all"
+                      className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 text-[13.5px] font-bold rounded-lg transition-all"
                     >
                       🗑️ 현재 공지 내리기 (삭제)
                     </button>
@@ -2071,7 +2071,7 @@ const AdminScreen: React.FC = () => {
 
             {/* 원클릭 프리셋 버튼 모음 */}
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-2.5 shadow-xl">
-              <span className="text-[12px] font-bold text-slate-300 block">
+              <span className="text-[14px] font-bold text-slate-300 block">
                 ⚡ 빠른 공지 프리셋 (1-Click 전송)
               </span>
               <div className="space-y-2">
@@ -2082,10 +2082,10 @@ const AdminScreen: React.FC = () => {
                     message: '트레킹 복귀 후 4시 15분부터 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 세븐일레븐 앞으로 모여주세요!',
                     type: 'photo',
                   })}
-                  className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
+                  className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>📸 <strong>[단체사진]</strong> 4:15~4:30 세븐일레븐 공터 집결</span>
-                  <span className="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
+                  <span className="text-[12.5px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
                 <button
@@ -2095,10 +2095,10 @@ const AdminScreen: React.FC = () => {
                     message: '트레킹 미션 종료 15분 전입니다. 4시 15분까지 첫 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
-                  className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
+                  className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>⏰ <strong>[마감 15분 전]</strong> 복귀지(세븐일레븐 앞 공터) 복귀</span>
-                  <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
+                  <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
                 <button
@@ -2108,27 +2108,27 @@ const AdminScreen: React.FC = () => {
                     message: '낮 트레킹이 종료되었습니다. 만찬 장소로 이동하여 맛있는 저녁 식사와 저녁 퀴즈쇼를 준비해 주세요!',
                     type: 'dinner',
                   })}
-                  className="w-full p-3 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[12px] transition-all"
+                  className="w-full p-3 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>🍽️ <strong>[저녁 만찬]</strong> 만찬 및 퀴즈쇼 장소 이동</span>
-                  <span className="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
+                  <span className="text-[12.5px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
               </div>
             </div>
 
             {/* 직접 작성 폼 */}
             <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-xl">
-              <span className="text-[12px] font-bold text-slate-300 block">
+              <span className="text-[14px] font-bold text-slate-300 block">
                 ✍️ 공지 직접 작성
               </span>
 
               <div className="space-y-2">
                 <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">공지 분류</label>
+                  <label className="text-[13.5px] text-slate-400 block mb-1">공지 분류</label>
                   <select
                     value={broadcastType}
                     onChange={e => setBroadcastType(e.target.value as any)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[12px] text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[14px] text-white focus:outline-none focus:border-red-500"
                   >
                     <option value="info">📢 일반 알림 (하늘색)</option>
                     <option value="photo">📸 단체사진 (초록색)</option>
@@ -2138,24 +2138,24 @@ const AdminScreen: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">제목 (선택사항)</label>
+                  <label className="text-[13.5px] text-slate-400 block mb-1">제목 (선택사항)</label>
                   <input
                     type="text"
                     value={broadcastTitle}
                     onChange={e => setBroadcastTitle(e.target.value)}
                     placeholder="예: [운영본부] 긴급 안내"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">공지 본문 (필수)</label>
+                  <label className="text-[13.5px] text-slate-400 block mb-1">공지 본문 (필수)</label>
                   <textarea
                     value={broadcastMessage}
                     onChange={e => setBroadcastMessage(e.target.value)}
                     rows={3}
                     placeholder="참가자들에게 전달할 내용을 입력하세요."
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
                   />
                 </div>
 
@@ -2163,7 +2163,7 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   disabled={isSendingBroadcast || !broadcastMessage.trim()}
                   onClick={() => handleSendBroadcast()}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-40 text-white font-bold text-[13px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-40 text-white font-bold text-[15px] rounded-xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2"
                 >
                   <span>🚀 전체 참가자에게 실시간 전송</span>
                 </button>
@@ -2181,11 +2181,11 @@ const AdminScreen: React.FC = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="이름 또는 조 검색"
-                className="flex-1 bg-[#1A2235] border border-white/10 rounded-xl px-3 py-2 text-[12px] text-white placeholder-slate-600"
+                className="flex-1 bg-[#1A2235] border border-white/10 rounded-xl px-3 py-2 text-[14px] text-white placeholder-slate-600"
               />
               <button
                 onClick={handleExportMyInfoCSV}
-                className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-[12px] font-bold rounded-xl whitespace-nowrap shadow"
+                className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-[14px] font-bold rounded-xl whitespace-nowrap shadow"
               >
                 CSV 받기
               </button>
@@ -2198,17 +2198,17 @@ const AdminScreen: React.FC = () => {
                   <div key={p.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
                     <div className="flex justify-between items-center">
                       <div>
-                        <strong className="text-[14px] text-white">{p.name || '미등록'}</strong>
-                        <span className="text-[11px] text-slate-400 ml-2">
+                        <strong className="text-[16px] text-white">{p.name || '미등록'}</strong>
+                        <span className="text-[13.5px] text-slate-400 ml-2">
                           ({p.company || ''} · {p.teamName || p.teamId || ''})
                         </span>
                       </div>
-                      <span className="text-[11px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[13.5px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold">
                         {p.score ?? 0}pt
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-[11px] text-slate-300 bg-black/30 p-2.5 rounded-xl">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-[13.5px] text-slate-300 bg-black/30 p-2.5 rounded-xl">
                       <p>• <strong>1. 취미/관심사:</strong> {info['q1_passion'] || p.truth1 || '-'}</p>
                       <p>• <strong>2. 3년 버킷리스트:</strong> {info['q3_bucketList'] || '-'}</p>
                       <p>• <strong>3. 원하는 다른 직업:</strong> {info['q4_dreamJob'] || p.lie || '-'}</p>
@@ -2226,16 +2226,16 @@ const AdminScreen: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 gap-2">
               <div>
-                <span className="text-[12px] font-bold text-white block">
+                <span className="text-[14px] font-bold text-white block">
                   💬 6개 조 People Quest 제출 상태
                 </span>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[13.5px] text-slate-400">
                   각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다. (조당 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
                 </p>
               </div>
               <button
                 onClick={handleExportPeopleQuestCSV}
-                className="px-3 py-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white text-[12px] font-bold rounded-xl whitespace-nowrap shadow flex-shrink-0"
+                className="px-3 py-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white text-[14px] font-bold rounded-xl whitespace-nowrap shadow flex-shrink-0"
               >
                 📥 추천 CSV 받기
               </button>
@@ -2252,9 +2252,9 @@ const AdminScreen: React.FC = () => {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <span className="text-base">{team.emoji}</span>
-                        <strong className="text-[14px] text-white">{team.name}</strong>
+                        <strong className="text-[16px] text-white">{team.name}</strong>
                       </div>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                      <span className={`text-[13.5px] font-bold px-2 py-0.5 rounded-full border ${
                         isSubmitted
                           ? 'bg-green-500/15 text-green-400 border-green-500/30'
                           : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
@@ -2264,26 +2264,26 @@ const AdminScreen: React.FC = () => {
                     </div>
 
                     {rec?.recommendedPersonName ? (
-                      <div className="bg-black/30 p-2.5 rounded-xl space-y-1 text-[12px]">
+                      <div className="bg-black/30 p-2.5 rounded-xl space-y-1 text-[14px]">
                         <p className="text-white font-bold">
                           👑 추천: <span className="text-amber-400">{rec.recommendedPersonName} 님</span> ({rec.recommendedPersonCompany})
                         </p>
-                        <p className="text-slate-300 text-[11px]">
+                        <p className="text-slate-300 text-[13.5px]">
                           주제: {rec.selectedTopic}
                         </p>
-                        <p className="text-slate-400 text-[11px] italic bg-white/5 p-2 rounded-lg mt-1">
+                        <p className="text-slate-400 text-[13.5px] italic bg-white/5 p-2 rounded-lg mt-1">
                           "{rec.reason}"
                         </p>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-slate-500">아직 추천 대상자가 등록되지 않았습니다.</p>
+                      <p className="text-[13.5px] text-slate-500">아직 추천 대상자가 등록되지 않았습니다.</p>
                     )}
 
                     {isSubmitted && (
                       <div className="pt-1 flex justify-end">
                         <button
                           onClick={() => handleResetPeopleQuest(team.id)}
-                          className="text-[11px] text-slate-400 hover:text-red-400 underline"
+                          className="text-[13.5px] text-slate-400 hover:text-red-400 underline"
                         >
                           제출 취소 및 수정 허용
                         </button>

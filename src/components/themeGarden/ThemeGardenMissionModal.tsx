@@ -155,7 +155,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in select-none">
-      <div className="bg-[#13192A] border border-white/15 w-full max-w-[390px] max-h-[92vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#13192A] border border-white/15 w-full max-w-[430px] max-h-[92vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden">
         {/* 상단 헤더 */}
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -163,10 +163,10 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
               🌹
             </span>
             <div>
-              <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block">
+              <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">
                 2:00~4:15 트레킹 메인 미션
               </span>
-              <h3 className="text-[14px] font-bold text-white">
+              <h3 className="text-[16px] font-bold text-white">
                 테마가든 단체사진 미션
               </h3>
             </div>
@@ -184,14 +184,14 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
           {/* 배점 및 완료 안내 배너 */}
           <div className="bg-gradient-to-r from-pink-500/15 via-rose-500/10 to-purple-500/15 border border-pink-500/30 rounded-2xl p-3 flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider block">
+              <span className="text-[12.5px] text-pink-400 font-extrabold uppercase tracking-wider block">
                 MISSION REWARD
               </span>
-              <p className="text-[13px] font-bold text-white">
+              <p className="text-[15px] font-bold text-white">
                 조원 전원 <span className="text-amber-400 font-extrabold">+{THEME_GARDEN_MISSION.pointsPerMember}pt</span> 획득
               </p>
             </div>
-            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+            <span className={`text-[13.5px] font-bold px-2.5 py-1 rounded-full border ${
               photoRecord
                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                 : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
@@ -203,14 +203,14 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
           {/* 힌트 사진 & 가이드 카드 */}
           <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-bold text-pink-300 flex items-center gap-1">
+              <span className="text-[14px] font-bold text-pink-300 flex items-center gap-1">
                 <span>🔍</span>
                 <span>{THEME_GARDEN_MISSION.hintTitle}</span>
               </span>
               <button
                 type="button"
                 onClick={() => setShowFullHint(!showFullHint)}
-                className="text-[11px] text-sky-400 hover:text-sky-300 font-medium"
+                className="text-[13.5px] text-sky-400 hover:text-sky-300 font-medium"
               >
                 {showFullHint ? '가이드 접기' : '미션 가이드 보기'}
               </button>
@@ -220,22 +220,22 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             <div className="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#1C2538] to-[#101726] p-3 text-center space-y-2">
               <div className="h-28 rounded-lg bg-gradient-to-br from-rose-900/40 via-pink-950/30 to-sky-950/40 border border-pink-500/20 flex flex-col items-center justify-center p-2 relative overflow-hidden">
                 <div className="text-3xl mb-1 animate-pulse">🌹 ⛲ 📸</div>
-                <p className="text-[12px] font-extrabold text-pink-200">
+                <p className="text-[14px] font-extrabold text-pink-200">
                   테마가든 장미원 & 호수 수변 테라스
                 </p>
-                <p className="text-[10px] text-slate-300">
+                <p className="text-[12.5px] text-slate-300">
                   분수대 주변 또는 호수가 내려다보이는 랜드마크 앞
                 </p>
               </div>
 
-              <p className="text-[11.5px] text-slate-300 leading-relaxed text-left px-1">
+              <p className="text-[14px] text-slate-300 leading-relaxed text-left px-1">
                 💡 <strong>미션 방법</strong>: 테마가든 내 지정 스팟을 찾아, <strong>{teamConfig.name} 조원 전원</strong>이 함께 참여하는 개성 넘치는 포즈로 단체사진을 촬영해 주세요!
               </p>
             </div>
 
             {/* 가이드 상세 */}
             {showFullHint && (
-              <div className="bg-black/30 border border-white/5 rounded-xl p-2.5 space-y-1 text-[11px] text-slate-300 animate-fade-in">
+              <div className="bg-black/30 border border-white/5 rounded-xl p-2.5 space-y-1 text-[13.5px] text-slate-300 animate-fade-in">
                 {THEME_GARDEN_MISSION.guideLines.map((gl, i) => (
                   <p key={i} className="flex items-start gap-1">
                     <span className="text-pink-400 font-bold">•</span>
@@ -248,13 +248,13 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
 
           {/* 사진 업로드 / 기등록 사진 확인 */}
           <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-3">
-            <h4 className="text-[13px] font-bold text-white flex items-center justify-between">
+            <h4 className="text-[15px] font-bold text-white flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span>📷</span>
                 <span>우리 조 단체사진</span>
               </span>
               {photoRecord && (
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[12.5px] text-slate-400">
                   {new Date(photoRecord.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 업로드됨
                 </span>
               )}
@@ -274,17 +274,17 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-[11px] text-white font-bold truncate">
+                      <span className="text-[13.5px] text-white font-bold truncate">
                         {photoRecord.caption || '우리 조 단체사진'}
                       </span>
-                      <span className="text-[10px] bg-black/60 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      <span className="text-[12.5px] bg-black/60 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
                         🔍 확대 보기
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                <div className="flex items-center justify-between text-[13.5px] text-slate-400 px-1">
                   <span>촬영/등록자: <strong className="text-slate-200">{photoRecord.uploadedBy}</strong></span>
                   <button
                     type="button"
@@ -316,14 +316,14 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">한 줄 코멘트 (선택)</label>
+                  <label className="text-[13.5px] text-slate-400 block mb-1">한 줄 코멘트 (선택)</label>
                   <input
                     type="text"
                     placeholder="예: 1조 테마가든 완벽 클리어! 🌸"
                     value={captionInput}
                     onChange={e => setCaptionInput(e.target.value)}
                     maxLength={40}
-                    className="w-full bg-[#101626] border border-white/10 rounded-xl px-3 py-2 text-[12px] text-white focus:outline-none focus:border-pink-500"
+                    className="w-full bg-[#101626] border border-white/10 rounded-xl px-3 py-2 text-[14px] text-white focus:outline-none focus:border-pink-500"
                   />
                 </div>
               </div>
@@ -339,10 +339,10 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
                   📸
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-white">
+                  <p className="text-[15px] font-bold text-white">
                     조별 단체사진 촬영 / 갤러리 선택
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[13.5px] text-slate-400 mt-0.5">
                     터치하여 카메라로 촬영하거나 사진을 업로드하세요
                   </p>
                 </div>
@@ -362,7 +362,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
 
           {/* 상태 메시지 */}
           {statusMessage && (
-            <div className="bg-pink-500/20 border border-pink-500/40 text-pink-200 text-[12px] font-bold py-2 px-3 rounded-xl text-center animate-fade-in">
+            <div className="bg-pink-500/20 border border-pink-500/40 text-pink-200 text-[14px] font-bold py-2 px-3 rounded-xl text-center animate-fade-in">
               {statusMessage}
             </div>
           )}
@@ -375,7 +375,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
               type="button"
               disabled={isUploading}
               onClick={handleSubmitPhoto}
-              className="w-full py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 disabled:opacity-40 text-white font-extrabold text-[13.5px] rounded-xl shadow-lg shadow-pink-500/25 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 disabled:opacity-40 text-white font-extrabold text-[15.5px] rounded-xl shadow-lg shadow-pink-500/25 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
               <span>{isUploading ? '사진 업로드 중...' : '📸 단체사진 업로드 & 미션 완료 (+100pt)'}</span>
             </button>
@@ -383,7 +383,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 bg-[#1A2235] text-slate-300 font-bold text-[13px] rounded-xl border border-white/10 hover:bg-[#222C44] active:scale-95 transition-all"
+              className="w-full py-3 bg-[#1A2235] text-slate-300 font-bold text-[15px] rounded-xl border border-white/10 hover:bg-[#222C44] active:scale-95 transition-all"
             >
               닫기
             </button>
