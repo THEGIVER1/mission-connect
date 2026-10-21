@@ -634,9 +634,9 @@ const AdminScreen: React.FC = () => {
       }
     });
 
-    // 3) 조별 피플퀘스트 6개 조 추천 최종 현황 블록 추가
+    // 3) 조별 최고의 스토리 동료 추천 6개 조 추천 최종 현황 블록 추가
     rows.push([]);
-    rows.push(['=== [2026 CHRO Trekking 조별 People Quest 6개 조 추천 최종 현황] ===']);
+    rows.push(['=== [2026 CHRO Trekking 조별 최고의 스토리 동료 추천 6개 조 최종 현황] ===']);
     rows.push([
       '조 명칭',
       '제출 상태',
@@ -668,7 +668,7 @@ const AdminScreen: React.FC = () => {
     downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 3. 조별 People Quest 추천 현황 전용 CSV 다운로드
+  // 3. 조별 최고의 스토리 동료 추천 현황 전용 CSV 다운로드
   const handleExportPeopleQuestCSV = () => {
     const headers = [
       '추천 조',
@@ -698,13 +698,13 @@ const AdminScreen: React.FC = () => {
       ];
     });
 
-    downloadCSV(`CHRO_트레킹_조별_피플퀘스트_추천현황_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    downloadCSV(`CHRO_트레킹_조별_최고의스토리동료추천_현황_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 3. 조별 People Quest 제출 해제
+  // 3. 조별 최고의 스토리 동료 추천 제출 해제
   const handleResetPeopleQuest = async (teamId: string) => {
     const normTeamId = normalizeTeamId(teamId);
-    if (!window.confirm(`[${teamId}]의 People Quest 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
+    if (!window.confirm(`[${teamId}]의 최고의 스토리 동료 추천 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
       return;
     }
     try {
@@ -805,7 +805,7 @@ const AdminScreen: React.FC = () => {
 
   // 6. 파일럿 테스트용 전체 세션 데이터 초기화 (참가자, 퀴즈 기록, 추천 내역 등)
   const handleResetSessionData = async () => {
-    if (!window.confirm('⚠️ 주의: 현재 등록된 모든 참가자 데이터, 퀴즈 풀이 내역, People Quest 추천 내역이 영구 초기화됩니다.\n\n새로운 파일럿 테스트를 위해 데이터를 초기화하시겠습니까?')) {
+    if (!window.confirm('⚠️ 주의: 현재 등록된 모든 참가자 데이터, 퀴즈 풀이 내역, 최고의 스토리 동료 추천 내역이 영구 초기화됩니다.\n\n새로운 파일럿 테스트를 위해 데이터를 초기화하시겠습니까?')) {
       return;
     }
     const confirmCode = window.prompt('초기화를 확정하려면 "초기화"라고 입력해주세요.');
@@ -904,7 +904,7 @@ const AdminScreen: React.FC = () => {
                 </span>
               </h1>
               <p className="text-slate-300 text-lg max-w-2xl mx-auto">
-                6개 조의 열정적인 현장 퀴즈 풀이와 People Quest 미션 점수가 모두 집계되었습니다.<br />
+                6개 조의 열정적인 단체사진 미션과 최고의 스토리 동료 추천 점수가 모두 집계되었습니다.<br />
                 지금부터 <strong>6위부터 영광의 1위 우승팀</strong>까지 순차적으로 공개합니다!
               </p>
               <div className="pt-4">
@@ -1504,7 +1504,7 @@ const AdminScreen: React.FC = () => {
                 <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">1-Click 즉시 다운</span>
               </h3>
               <p className="text-[13.5px] text-slate-400">
-                참가자 등록 현황 및 4문항 답변 원문, 조별 피플퀘스트 추천 마스터 데이터를 실시간 엑셀로 추출합니다.
+                참가자 등록 현황 및 4문항 답변 원문, 조별 최고의 스토리 동료 추천 마스터 데이터를 실시간 엑셀로 추출합니다.
               </p>
             </div>
           </div>
@@ -1535,7 +1535,7 @@ const AdminScreen: React.FC = () => {
             className="px-4 py-3 bg-[#26283D] hover:bg-[#343753] text-amber-300 border border-amber-500/40 font-bold text-xs md:text-[15px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
             <span>💬</span>
-            <span>조별 피플퀘스트 추천 엑셀</span>
+            <span>조별 최고의 스토리 동료 추천 엑셀</span>
           </button>
         </div>
       </div>
@@ -1576,7 +1576,7 @@ const AdminScreen: React.FC = () => {
           }`}
         >
           <span>💬</span>
-          <span>피플퀘스트</span>
+          <span>최고의 스토리 동료 추천</span>
         </button>
         <button
           onClick={() => setActiveTab('myInfoList')}
@@ -2229,13 +2229,13 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 6: 조별 People Quest 추천 현황 */}
+        {/* TAB 6: 조별 최고의 스토리 동료 추천 현황 */}
         {activeTab === 'peopleQuest' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 gap-2">
               <div>
                 <span className="text-[14px] font-bold text-white block">
-                  💬 6개 조 People Quest 제출 상태
+                  💬 6개 조 최고의 스토리 동료 추천 제출 상태
                 </span>
                 <p className="text-[13.5px] text-slate-400">
                   각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다. (조당 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)

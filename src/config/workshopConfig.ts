@@ -256,7 +256,6 @@ export interface GroundRulePreset {
 }
 
 export const GROUND_RULE_PRESETS: GroundRulePreset[] = [
-  { id: 'rule_healing', icon: '🌿', text: '트레킹 중간에 온전히 개인 힐링·자유 쉼 시간 갖기' },
   { id: 'rule_slow', icon: '🐢', text: '가장 천천히 걷는 조원의 걸음 속도에 맞춰 도란도란 걷기' },
   {
     id: 'rule_smile_photo',

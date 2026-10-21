@@ -293,14 +293,14 @@ const MissionTab: React.FC<{
 
   return (
     <div className="px-4 pb-28 space-y-4 pt-2">
-      {/* Activity 1: People Quest */}
+      {/* Activity 1: 최고의 스토리 동료 추천 */}
       <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-4 shadow-lg space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">💬</span>
             <div>
               <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">Activity 1 · 대화형 (조별 1명 추천)</span>
-              <h3 className="text-[17px] font-bold text-white">People Quest (최고의 스토리 동료 추천)</h3>
+              <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
             </div>
           </div>
           <span className="text-[13.5px] font-bold text-amber-400">
@@ -508,7 +508,7 @@ const IndividualTab: React.FC<{
           개인 미션 기여 순위 (전체 {individuals.length}명)
         </p>
         <p className="text-[12.5px] text-slate-400 mt-0.5">
-          개인 획득 점수 = 테마가든 조별사진 완료(+100pt) + 조별 피플퀘스트 완료(+100pt)
+          개인 획득 점수 = 조별 단체사진 완료(+100pt) + 최고의 스토리 동료 추천 완료(+100pt)
         </p>
       </div>
 

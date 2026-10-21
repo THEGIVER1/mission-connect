@@ -229,8 +229,8 @@ const ActivitySection: React.FC<{
             </h3>
             <p className="text-[13.5px] text-slate-300 mt-0.5">
               {IS_PILOT_MODE
-                ? '두산 저수지 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.'
-                : '테마가든 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.'}
+                ? '두산 저수지 단체사진과 최고의 스토리 동료 추천을 모두 완료하여 완주 증서가 발급되었습니다.'
+                : '테마가든 단체사진과 최고의 스토리 동료 추천을 모두 완료하여 완주 증서가 발급되었습니다.'}
             </p>
           </div>
           <button
@@ -291,7 +291,7 @@ const ActivitySection: React.FC<{
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
             <span className="text-slate-400">
-              {IS_PILOT_MODE ? '조장 · 어플담당 · 베오라떼 몸풀기 Quiz' : '조장 · 어플담당 · 30분 자유 쉼 · 몸풀기 Quiz'}
+              {IS_PILOT_MODE ? '조장 · 어플담당 · 베오라떼 몸풀기 Quiz' : '조장 · 어플담당 · 소보루 빵 몸풀기 Quiz'}
             </span>
             <span className="text-amber-400 font-bold flex items-center gap-0.5">
               확인 및 설정 →
@@ -314,7 +314,7 @@ const ActivitySection: React.FC<{
           <span className="text-[12.5px] text-slate-400">2대 핵심 미션</span>
         </div>
 
-        {/* 미션 1: People Quest (먼저 배치) */}
+        {/* 미션 1: 최고의 스토리 동료 추천 (먼저 배치) */}
         <button
           type="button"
           onClick={() => navigate('/people-quest')}
@@ -326,7 +326,7 @@ const ActivitySection: React.FC<{
                 💬
               </span>
               <div>
-                <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">People Quest · 조원 전원 +100pt</span>
+                <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">최고의 스토리 동료 추천 · 조원 전원 +100pt</span>
                 <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
               </div>
             </div>
@@ -351,7 +351,7 @@ const ActivitySection: React.FC<{
           </div>
         </button>
 
-        {/* 미션 2: 단체사진 미션 (피플퀘스트 다음 순서) */}
+        {/* 미션 2: 단체사진 미션 (최고의 스토리 동료 추천 다음 순서) */}
         <button
           type="button"
           onClick={onOpenThemeGardenModal}

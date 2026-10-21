@@ -1607,17 +1607,17 @@ const MapScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 하단 미션 이동 버튼 (순서: 1. 피플퀘스트 추천 -> 2. 단체사진 올리기) */}
+        {/* 하단 미션 이동 버튼 (순서: 1. 최고의 스토리 동료 추천 -> 2. 단체사진 올리기) */}
         <div className="pt-3 flex gap-2">
           <button
             onClick={() => navigate('/people-quest')}
-            className="flex-1 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-1.5"
+            className="flex-1 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-[15px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-1"
           >
-            <span>💬 피플퀘스트 추천</span>
+            <span>💬 최고의 스토리 동료 추천</span>
           </button>
           <button
             onClick={() => navigate('/')}
-            className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1.5"
+            className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[15px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1"
           >
             <span>{IS_PILOT_MODE ? '📸 두산 저수지 사진 올리기' : '🌹 테마가든 사진 올리기'}</span>
           </button>

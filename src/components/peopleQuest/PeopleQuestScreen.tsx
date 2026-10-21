@@ -500,10 +500,10 @@ const PeopleQuestScreen: React.FC = () => {
             ←
           </button>
           <div className="text-center">
-            <span className="font-bebas text-xl tracking-widest text-white">
-              ACTIVITY 1 · <span className="text-red-500">PEOPLE QUEST</span>
+            <span className="font-bold text-[17px] tracking-tight text-white">
+              ACTIVITY 1 · <span className="text-red-500">최고의 스토리 동료 추천</span>
             </span>
-            <p className="text-[12.5px] text-slate-400">조별 대화 & 인물 추천 미션</p>
+            <p className="text-[12.5px] text-slate-400">조별 대화 & 최고의 스토리 동료 추천 미션</p>
           </div>
           <span className="text-[13.5px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
             +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt

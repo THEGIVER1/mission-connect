@@ -86,7 +86,7 @@ export const MCCueSheetModal: React.FC<MCCueSheetModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                현장 참가자의 4문항 전체 답변 및 낮 피플퀘스트 추천 코멘트, 맞춤 인터뷰 질문 팁
+                현장 참가자의 4문항 전체 답변 및 최고의 스토리 동료 추천 코멘트, 맞춤 인터뷰 질문 팁
               </p>
             </div>
           </div>
@@ -142,7 +142,7 @@ export const MCCueSheetModal: React.FC<MCCueSheetModalProps> = ({
 
         {/* 스크롤 영역 (문항 + 추천 사유) */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* 낮 피플퀘스트 추천 코멘트가 있을 때 하이라이트 박스 */}
+          {/* 최고의 스토리 동료 추천 코멘트가 있을 때 하이라이트 박스 */}
           {nominationStat && nominationStat.count > 0 && (
             <div className="bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-4 space-y-2">
               <div className="flex items-center justify-between">

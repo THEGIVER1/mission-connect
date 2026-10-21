@@ -39,7 +39,6 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
   // 2. 조별 그라운드룰 상태
   const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({}); // { roleId: memberName }
   const [selectedRules, setSelectedRules] = useState<string[]>([
-    'rule_healing', // 기본 추천: 30분 개인 힐링 시간
     'rule_slow',
   ]);
   const [customRuleText, setCustomRuleText] = useState<string>('');
@@ -59,7 +58,9 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
       .then(data => {
         if (data && typeof data === 'object') {
           if (data.roles) setSelectedRoles(data.roles);
-          if (Array.isArray(data.selectedRuleIds)) setSelectedRules(data.selectedRuleIds);
+          if (Array.isArray(data.selectedRuleIds)) {
+            setSelectedRules(data.selectedRuleIds.filter((id: string) => id !== 'rule_healing'));
+          }
           if (Array.isArray(data.customRules)) setCustomRulesList(data.customRules);
         }
       })
@@ -212,7 +213,6 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           >
             <span>🤝</span>
             <span>1. 조별 그라운드룰</span>
-            {selectedRules.length > 0 && <span className="text-sky-300 text-[12.5px]">({selectedRules.length})</span>}
           </button>
           <button
             onClick={() => setActiveTab('quiz')}
@@ -231,13 +231,13 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
         {/* 탭 1: 조별 그라운드룰 & 역할 분담 */}
         {activeTab === 'rules' && (
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-            {/* 30분 힐링 & 그라운드룰 안내 */}
+            {/* 그라운드룰 안내 */}
             <div className="bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
               <div className="flex items-center gap-1.5 font-bold text-sky-400 mb-1">
                 <span>🤝</span>
                 <span>출발 전 조별 자기소개 & 그라운드룰 약속</span>
               </div>
-              조원들과 역할(조장, 어플담당 등)을 나누고 우리 조만의 힐링 규칙을 정해보세요! (예: <strong>30분 개인 힐링 시간</strong>, 천천히 걷기 등)
+              조원들과 역할(조장, 어플담당 등)을 나누고 우리 조만의 힐링 규칙을 정해보세요!
             </div>
 
             {/* 역할 배분 섹션 */}
@@ -310,7 +310,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="예: 30분 동안 혼자 산책하며 사진 3장 찍기"
+                  placeholder="예: 20분 동안 혼자 산책하며 사진 3장 찍기"
                   value={customRuleText}
                   onChange={e => setCustomRuleText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddCustomRule()}
