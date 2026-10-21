@@ -64,8 +64,10 @@ const LAKE_TRACK: [number, number][] = [
   [37.432812, 127.016866], // 제1호교 (테마가든 북단)
   [37.432184, 127.017081],
   [37.431722, 127.017151],
-  [37.431510, 127.017609], // 스카이리프트 중간도착지 / 현대미술관 진입로
-  [37.431694, 127.018148], // 현대미술관 입구 경유
+  [37.431510, 127.017609], // 현대미술관 진입로 입구
+  [37.431380, 127.018250],
+  [37.431200, 127.018850], // 현대미술관 건물 앞 경유
+  [37.430906, 127.017918],
   [37.431264, 127.017463],
   [37.430631, 127.017247], // 동물원 북문 / 테마가든 동측 도로
   [37.430188, 127.017172],
@@ -988,12 +990,12 @@ const MapScreen: React.FC = () => {
       lineJoin: 'round',
     }).addTo(layer);
 
-    // 4) 국립현대미술관 랜드마크 라벨 (미술관 코스 경유 지점)
+    // 4) 국립현대미술관 랜드마크 라벨 (보라색 동그라미 건물 위치로 정확히 배치)
     const museumIcon = L.divIcon({
       className: 'custom-museum-pin',
       html: `
         <div style="
-          background: rgba(30, 58, 138, 0.92);
+          background: rgba(30, 58, 138, 0.94);
           color: #BAE6FD;
           border: 1.5px solid #38BDF8;
           padding: 3px 8px;
@@ -1001,7 +1003,7 @@ const MapScreen: React.FC = () => {
           font-size: 11.5px;
           font-weight: 700;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.75);
           display: flex;
           align-items: center;
           gap: 3px;
@@ -1011,9 +1013,9 @@ const MapScreen: React.FC = () => {
         </div>
       `,
       iconSize: [96, 24],
-      iconAnchor: [10, 12],
+      iconAnchor: [48, 12],
     });
-    L.marker([37.431694, 127.018148], { icon: museumIcon, interactive: false }).addTo(layer);
+    L.marker([37.431200, 127.018850], { icon: museumIcon, interactive: false }).addTo(layer);
 
     // 5) 빵명장 [첫 집결지 · 출발 기점] 마커 (길 북서측 위치, 라벨을 위쪽으로 배치하여 길 건너편 마커와 겹침 방지)
     const startIcon = L.divIcon({
