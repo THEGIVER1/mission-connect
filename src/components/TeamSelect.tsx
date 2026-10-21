@@ -9,6 +9,7 @@ import {
   MY_INFO_QUESTIONS,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   WorkshopTeamConfig,
+  IS_PILOT_MODE,
 } from '../config/workshopConfig';
 import { createParticipantId, sanitizeFirebaseKey } from '../utils/scoreCalculator';
 
@@ -229,14 +230,14 @@ const TeamSelect: React.FC = () => {
           DOOSAN
         </p>
         <p className="text-[14px] text-white tracking-[4px] font-bold uppercase mb-2">
-          2026 CHRO TREKKING
+          {IS_PILOT_MODE ? '연강원 TEAM ACTIVITY' : '2026 CHRO TREKKING'}
         </p>
         <div className="flex items-center justify-center gap-1.5">
           <span className="text-[12.5px] bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 text-slate-400">
-            🌲 서울대공원 · 국립현대미술관
+            {IS_PILOT_MODE ? '🌲 두산연강원 · 두산 저수지' : '🌲 서울대공원 · 국립현대미술관'}
           </span>
           <span className="text-[12.5px] bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 text-slate-400">
-            👥 CHRO 부문 워크샵
+            {IS_PILOT_MODE ? '🕐 오후 1:00 ~ 3:00' : '👥 CHRO 부문 워크샵'}
           </span>
         </div>
       </div>
@@ -328,27 +329,38 @@ const TeamSelect: React.FC = () => {
               행사 조 선택 * <span className="text-[13.5px] text-slate-500 font-normal">(사전 배정된 조)</span>
             </label>
 
-            <div className="space-y-3">
-              {/* 동물원둘레길 코스 조 */}
+            {IS_PILOT_MODE ? (
               <div>
                 <p className="text-[13.5px] font-bold text-red-400 mb-1.5 flex items-center gap-1">
-                  🦁 동물원둘레길 코스 (1~3조)
+                  🌲 연강원 트레킹 코스 (1~6조 단일 코스)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {forestTeams.map(renderTeamCard)}
+                  {TEAMS.map(renderTeamCard)}
                 </div>
               </div>
+            ) : (
+              <div className="space-y-3">
+                {/* 동물원둘레길 코스 조 */}
+                <div>
+                  <p className="text-[13.5px] font-bold text-red-400 mb-1.5 flex items-center gap-1">
+                    🦁 동물원둘레길 코스 (1~3조)
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {forestTeams.map(renderTeamCard)}
+                  </div>
+                </div>
 
-              {/* 미술관 코스 조 */}
-              <div>
-                <p className="text-[13.5px] font-bold text-sky-400 mb-1.5 flex items-center gap-1">
-                  🏛️ 미술관 코스 (4~6조)
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {lakeTeams.map(renderTeamCard)}
+                {/* 미술관 코스 조 */}
+                <div>
+                  <p className="text-[13.5px] font-bold text-sky-400 mb-1.5 flex items-center gap-1">
+                    🏛️ 미술관 코스 (4~6조)
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {lakeTeams.map(renderTeamCard)}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {error && (

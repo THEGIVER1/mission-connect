@@ -4,6 +4,7 @@ import {
   GROUND_RULE_ROLE_OPTIONS,
   GROUND_RULE_PRESETS,
   WORKSHOP_TEAMS,
+  IS_PILOT_MODE,
 } from '../../config/workshopConfig';
 import { normalizeTeamId, createParticipantId } from '../../utils/scoreCalculator';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
@@ -184,7 +185,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
             </span>
             <div>
               <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">
-                1:30~2:00 집결 오프닝
+                {IS_PILOT_MODE ? '1:00~1:20 카페쿰베오 오프닝 (20분)' : '1:30~2:00 집결 오프닝'}
               </span>
               <h3 className="text-[16px] font-bold text-white">
                 {teamConfig.name} 그라운드룰 & 몸풀기 Quiz
@@ -221,7 +222,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>🥐</span>
+            <span>{IS_PILOT_MODE ? '☕' : '🥐'}</span>
             <span>2. 몸풀기 Quiz</span>
             {isQuizSubmitted && <span className="text-emerald-300 text-[12.5px]">✔</span>}
           </button>
@@ -350,17 +351,21 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
             {/* 몸풀기 Quiz 안내 배너 */}
             <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-red-500/15 border border-amber-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
               <div className="flex items-center gap-1.5 font-bold text-amber-400 mb-1">
-                <span>🥐</span>
+                <span>{IS_PILOT_MODE ? '☕' : '🥐'}</span>
                 <span>어플 테스트 & 몸풀기 Quiz</span>
               </div>
-              출발 전 빵명장에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (빵명장 매장 진열대를 확인하고 <strong>소보루 빵</strong>의 가격을 맞혀보세요.)
+              {IS_PILOT_MODE ? (
+                <>출발 전 카페쿰베오에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (카페쿰베오 시그니처 메뉴인 <strong>베오라떼</strong>의 가격을 맞혀보세요.)</>
+              ) : (
+                <>출발 전 빵명장에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (빵명장 매장 진열대를 확인하고 <strong>소보루 빵</strong>의 가격을 맞혀보세요.)</>
+              )}
             </div>
 
             {/* 퀴즈 문제 카드 */}
             <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <span className="text-[13.5px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
-                  빵명장 서울대공원점
+                  {IS_PILOT_MODE ? '카페쿰베오 (두산연강원)' : '빵명장 서울대공원점'}
                 </span>
                 <span className="text-[13.5px] text-slate-400">
                   몸풀기 Quiz
@@ -423,7 +428,11 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                     : 'bg-red-950/40 border-red-500/40 text-red-200'
                 }`}>
                   <p className="font-bold mb-1">
-                    {isQuizCorrect ? '🎉 완벽합니다! 정답입니다.' : '💡 오답입니다. 정답은 3,800원(2번)입니다.'}
+                    {isQuizCorrect
+                      ? '🎉 완벽합니다! 정답입니다.'
+                      : IS_PILOT_MODE
+                      ? '💡 오답입니다. 정답은 6,500원(3번)입니다.'
+                      : '💡 오답입니다. 정답은 3,800원(2번)입니다.'}
                   </p>
                   <p>{TUTORIAL_QUIZ.explanation}</p>
                 </div>

@@ -9,6 +9,7 @@ import {
   ACTIVE_VENUE,
   WORKSHOP_TEAMS,
   CourseKey,
+  IS_PILOT_MODE,
 } from '../../config/workshopConfig';
 
 function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -829,6 +830,48 @@ const ZOO_TRACK: [number, number][] = [
   [37.434120, 127.009650], // 세븐일레븐 앞 공터 도착
 ];
 
+// ─────────────────────────────────────────────────────────────────
+// [연강원 파일럿 전용] 두산연강원 1개 단일 트레킹 코스 (참조사진 빨간색 선) 및 두산 저수지(노란 동그라미)
+// ─────────────────────────────────────────────────────────────────
+const YEONKANG_OUTER_TRACK: [number, number][] = [
+  [37.542520, 127.149120], // 두산연강원 산책로 출입구 (출발)
+  [37.542850, 127.149020], // 서측 산책로 북상
+  [37.543250, 127.149020],
+  [37.543460, 127.149150], // 북서측 코너 (기도원 인근)
+  [37.543450, 127.149420],
+  [37.543260, 127.149750],
+  [37.543243, 127.150170], // 북측 산책로 중앙 갈림길
+  [37.543260, 127.150480],
+  [37.543480, 127.150720], // 북동측 오르막 산책로
+  [37.543780, 127.150980],
+  [37.543900, 127.151250], // 최북동단 코너
+  [37.543880, 127.151580],
+  [37.543680, 127.151880], // 북동측 사선 산책로
+  [37.543420, 127.152080],
+  [37.543080, 127.152080], // 동측 끝단
+  [37.542750, 127.151820], // 동측 산책로 남하
+  [37.542380, 127.151520],
+  [37.541951, 127.151330], // 남동측 산책로
+  [37.541550, 127.151320], // 남동측 하단 코너
+  [37.541480, 127.151050], // 남측 산책로 서진
+  [37.541450, 127.150750],
+  [37.541620, 127.150420], // 남측 중앙 곡선 구간
+  [37.541650, 127.150120],
+  [37.541520, 127.149780], // 남서측 코너 (농구장 동측)
+  [37.541550, 127.149650],
+  [37.541920, 127.149480], // 서남측 산책로 복귀
+  [37.542250, 127.149280],
+  [37.542520, 127.149120], // 두산연강원 출입구 복귀
+];
+
+const YEONKANG_INNER_BRANCH: [number, number][] = [
+  [37.543250, 127.150420], // 북측 갈림길 분기
+  [37.542780, 127.150320], // 두산 저수지(노란 원) 서북측 경계
+  [37.542660, 127.150080],
+  [37.542640, 127.149700], // 중앙 서측 산책로
+  [37.541650, 127.149680], // 남서측 산책로 합류
+];
+
 const MapScreen: React.FC = () => {
   const navigate = useNavigate();
   const { myLocation, setMyLocation } = useAppStore();
@@ -843,36 +886,70 @@ const MapScreen: React.FC = () => {
   const mapRef = useRef<L.Map | null>(null);
   const elementsLayerRef = useRef<L.LayerGroup | null>(null);
 
-  // 3대 핵심 거점 스팟 정의
-  const venueSpots = useMemo(() => [
-    {
-      id: 'start' as const,
-      title: '빵명장',
-      badge: '🚩 1:30~2:00 첫 집결지 / 출발',
-      subtitle: '빵명장에서 조별 그라운드룰 의논 및 몸풀기 Quiz 진행 후 출발',
-      coords: ACTIVE_VENUE.departurePoint.coords,
-      emoji: '🥐',
-      color: '#FACC15',
-    },
-    {
-      id: 'themeGarden' as const,
-      title: '서울대공원 테마가든',
-      badge: '🌹 2:00~4:30 메인 단체사진 미션 (+100pt)',
-      subtitle: '노란색 표시 영역(테마가든) 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영',
-      coords: ACTIVE_VENUE.themeGardenSpot.coords,
-      emoji: '🌹',
-      color: '#FACC15',
-    },
-    {
-      id: 'finishPhoto' as const,
-      title: '세븐일레븐 앞 공터',
-      badge: '📸 4:30 최종 집결 / 전체 단체사진',
-      subtitle: '빵명장 길 건너편 세븐일레븐 앞 공터로 4:30까지 최종 집결 후 전체 단체사진 촬영',
-      coords: ACTIVE_VENUE.photoSpot.coords,
-      emoji: '📸',
-      color: '#E31837',
-    },
-  ], []);
+  // 3대 핵심 거점 스팟 정의 (파일럿: 카페쿰베오·두산 저수지·연강원 강의장 / 본행사: 빵명장·테마가든·세븐일레븐 앞 공터)
+  const venueSpots = useMemo(() => {
+    if (IS_PILOT_MODE) {
+      return [
+        {
+          id: 'start' as const,
+          title: '카페쿰베오',
+          badge: '🚩 1:00~1:20 첫 집결지 / 출발',
+          subtitle: '카페쿰베오에서 20분간 조별 그라운드룰 및 베오라떼 몸풀기 Quiz 진행 후 출발',
+          coords: ACTIVE_VENUE.departurePoint.coords,
+          emoji: '☕',
+          color: '#FACC15',
+        },
+        {
+          id: 'themeGarden' as const,
+          title: '두산 저수지',
+          badge: '📸 1:32~2:20 조별 단체사진 미션 (+100pt)',
+          subtitle: '지도상 노란색 동그라미 영역(두산 저수지)에서 조원 전원이 보이도록 단체사진 촬영 및 업로드',
+          coords: ACTIVE_VENUE.themeGardenSpot.coords,
+          emoji: '📸',
+          color: '#FACC15',
+        },
+        {
+          id: 'finishPhoto' as const,
+          title: '연강원 강의장',
+          badge: '🏫 2:20 최종 집결 / 2:20~2:40 Wrap-up Quiz',
+          subtitle: '2:20까지 연강원 강의장으로 최종 집결 후 2:20~2:40 Wrap-up Quiz 진행',
+          coords: ACTIVE_VENUE.photoSpot.coords,
+          emoji: '🏫',
+          color: '#E31837',
+        },
+      ];
+    }
+
+    return [
+      {
+        id: 'start' as const,
+        title: '빵명장',
+        badge: '🚩 1:30~2:00 첫 집결지 / 출발',
+        subtitle: '빵명장에서 조별 그라운드룰 의논 및 몸풀기 Quiz 진행 후 출발',
+        coords: ACTIVE_VENUE.departurePoint.coords,
+        emoji: '🥐',
+        color: '#FACC15',
+      },
+      {
+        id: 'themeGarden' as const,
+        title: '서울대공원 테마가든',
+        badge: '🌹 2:00~4:30 메인 단체사진 미션 (+100pt)',
+        subtitle: '노란색 표시 영역(테마가든) 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영',
+        coords: ACTIVE_VENUE.themeGardenSpot.coords,
+        emoji: '🌹',
+        color: '#FACC15',
+      },
+      {
+        id: 'finishPhoto' as const,
+        title: '세븐일레븐 앞 공터',
+        badge: '📸 4:30 최종 집결 / 전체 단체사진',
+        subtitle: '빵명장 길 건너편 세븐일레븐 앞 공터로 4:30까지 최종 집결 후 전체 단체사진 촬영',
+        coords: ACTIVE_VENUE.photoSpot.coords,
+        emoji: '📸',
+        color: '#E31837',
+      },
+    ];
+  }, []);
 
   const selectedSpot = venueSpots.find(s => s.id === selectedSpotId) || venueSpots[1];
 
@@ -920,9 +997,13 @@ const MapScreen: React.FC = () => {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    const initialCenter: [number, number] = IS_PILOT_MODE
+      ? [37.54265, 127.15040]
+      : [37.4298, 127.0175];
+
     const map = L.map(mapContainerRef.current, {
-      center: [37.4298, 127.0175],
-      zoom: 14,
+      center: initialCenter,
+      zoom: IS_PILOT_MODE ? 16 : 14,
       zoomControl: false,
       attributionControl: false,
     });
@@ -941,8 +1022,13 @@ const MapScreen: React.FC = () => {
     const elementsLayer = L.layerGroup().addTo(map);
     elementsLayerRef.current = elementsLayer;
 
-    // 초기 로드 시 두 코스가 모두 한눈에 들어오도록 영역 맞춤
-    const allBounds = L.polyline([...ZOO_TRACK, ...LAKE_TRACK]).getBounds();
+    // 초기 로드 시 전체 코스가 한눈에 들어오도록 영역 맞춤
+    const allBounds = IS_PILOT_MODE
+      ? L.polyline([
+          ...YEONKANG_OUTER_TRACK,
+          [ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng],
+        ]).getBounds()
+      : L.polyline([...ZOO_TRACK, ...LAKE_TRACK]).getBounds();
     map.fitBounds(allBounds, { padding: [28, 28] });
 
     mapRef.current = map;
@@ -953,203 +1039,356 @@ const MapScreen: React.FC = () => {
     };
   }, []);
 
-  // 3. 단일 지도 위에 두 코스(동물원둘레길 코스 = 빨간색, 미술관 코스 = 파란색), 노란색 테마가든 영역, 거점 마커 동시 렌더링
+  // 3. 코스 및 거점 마커 렌더링 (파일럿: 두산연강원 / 본행사: 서울대공원)
   useEffect(() => {
     if (!mapRef.current || !elementsLayerRef.current) return;
     elementsLayerRef.current.clearLayers();
 
     const layer = elementsLayerRef.current;
 
-    // 1) 테마가든 노란색 영역 다각형 (참조 이미지의 호수 남동측 반도 노란 영역)
-    const themePolygon = L.polygon(THEME_GARDEN_POLYGON, {
-      color: '#FACC15',
-      fillColor: '#FACC15',
-      fillOpacity: 0.32,
-      weight: 3,
-      lineJoin: 'round',
-    }).addTo(layer);
+    if (IS_PILOT_MODE) {
+      // ── [연강원 파일럿 모드] ─────────────────────────────────────
+      // 1) 두산 저수지 노란색 동그라미 영역 (참조 이미지의 중앙 노란 동그라미)
+      const reservoirCircle = L.circle(
+        [ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng],
+        {
+          radius: 62,
+          color: '#FACC15',
+          fillColor: '#FACC15',
+          fillOpacity: 0.32,
+          weight: 4,
+        }
+      ).addTo(layer);
 
-    themePolygon.on('click', () => {
-      setSelectedSpotId('themeGarden');
-    });
+      reservoirCircle.on('click', () => {
+        setSelectedSpotId('themeGarden');
+      });
 
-    // 2) 동물원둘레길 코스 (1~3조, 빨간색 #EF4444)
-    L.polyline(ZOO_TRACK, {
-      color: '#000000',
-      weight: focusedCourse === 'forest' ? 8.5 : 7,
-      opacity: 0.65,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
+      // 2) 연강원 트레킹 1개 코스 (빨간색 외곽 순환선 + 중앙 연결선)
+      [YEONKANG_OUTER_TRACK, YEONKANG_INNER_BRANCH].forEach(track => {
+        L.polyline(track, {
+          color: '#000000',
+          weight: 8,
+          opacity: 0.65,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(layer);
 
-    L.polyline(ZOO_TRACK, {
-      color: '#EF4444',
-      weight: focusedCourse === 'forest' ? 5.5 : 4.5,
-      opacity: focusedCourse === 'lake' ? 0.75 : 1,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
+        L.polyline(track, {
+          color: '#EF4444',
+          weight: 5,
+          opacity: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(layer);
+      });
 
-    // 3) 미술관 코스 (4~6조, 파란색 #38BDF8)
-    L.polyline(LAKE_TRACK, {
-      color: '#0F172A',
-      weight: focusedCourse === 'lake' ? 8.5 : 7,
-      opacity: 0.75,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
-
-    L.polyline(LAKE_TRACK, {
-      color: '#38BDF8',
-      weight: focusedCourse === 'lake' ? 5.5 : 4.5,
-      opacity: focusedCourse === 'forest' ? 0.85 : 1,
-      dashArray: '10, 6',
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
-
-    // 4) 국립현대미술관 랜드마크 라벨 (보라색 동그라미 건물 위치로 정확히 배치)
-    const museumIcon = L.divIcon({
-      className: 'custom-museum-pin',
-      html: `
-        <div style="
-          background: rgba(30, 58, 138, 0.94);
-          color: #BAE6FD;
-          border: 1.5px solid #38BDF8;
-          padding: 3px 8px;
-          border-radius: 12px;
-          font-size: 11.5px;
-          font-weight: 700;
-          white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.75);
-          display: flex;
-          align-items: center;
-          gap: 3px;
-        ">
-          <span>🏛️</span>
-          <span>현대미술관</span>
-        </div>
-      `,
-      iconSize: [96, 24],
-      iconAnchor: [48, 12],
-    });
-    L.marker([37.431000, 127.019380], { icon: museumIcon, interactive: false }).addTo(layer);
-
-    // 5) 빵명장 [첫 집결지 · 출발 기점] 마커 (길 북서측 위치, 라벨을 위쪽으로 배치하여 길 건너편 마커와 겹침 방지)
-    const startIcon = L.divIcon({
-      className: 'custom-start-pin',
-      html: `
-        <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-          <div style="
-            background: rgba(15, 23, 42, 0.95);
-            color: #FACC15;
-            border: 2px solid #FACC15;
-            padding: 4px 10px;
-            border-radius: 16px;
-            font-size: 12.5px;
-            font-weight: 800;
-            white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.85);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-          ">
-            <span>🥐</span>
-            <span>빵명장 [출발]</span>
+      // 3) 카페쿰베오 [1:00 첫 집결지/출발] 마커 (위쪽 배치)
+      const startIcon = L.divIcon({
+        className: 'custom-start-pin',
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+            <div style="
+              background: rgba(15, 23, 42, 0.95);
+              color: #FACC15;
+              border: 2px solid #FACC15;
+              padding: 4px 10px;
+              border-radius: 16px;
+              font-size: 12.5px;
+              font-weight: 800;
+              white-space: nowrap;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.85);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              cursor: pointer;
+            ">
+              <span>☕</span>
+              <span>카페쿰베오 [1:00 출발]</span>
+            </div>
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #FACC15; border: 2px solid #0F172A; margin-top: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
           </div>
-          <div style="width: 10px; height: 10px; border-radius: 50%; background: #FACC15; border: 2px solid #0F172A; margin-top: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
-        </div>
-      `,
-      iconSize: [120, 42],
-      iconAnchor: [60, 38],
-    });
+        `,
+        iconSize: [165, 42],
+        iconAnchor: [82, 38],
+      });
 
-    const startMarker = L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
-      icon: startIcon,
-    }).addTo(layer);
+      const startMarker = L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
+        icon: startIcon,
+      }).addTo(layer);
 
-    startMarker.on('click', () => {
-      setSelectedSpotId('start');
-      mapRef.current?.panTo([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], { animate: true });
-    });
+      startMarker.on('click', () => {
+        setSelectedSpotId('start');
+        mapRef.current?.panTo([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], { animate: true });
+      });
 
-    // 6) 세븐일레븐 앞 공터 [빵명장 길 건너편 · 4:30 최종 집결] 마커 (점 위치를 먼저 찍고 라벨을 아래쪽으로 배치)
-    const finishIcon = L.divIcon({
-      className: 'custom-finish-pin',
-      html: `
-        <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-          <div style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; border: 2px solid #FFFFFF; margin-bottom: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
+      // 4) 연강원 강의장 [2:20 최종 집결 / Wrap-up Quiz] 마커 (아래쪽 배치)
+      const finishIcon = L.divIcon({
+        className: 'custom-finish-pin',
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; border: 2px solid #FFFFFF; margin-bottom: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
+            <div style="
+              background: rgba(227, 24, 55, 0.95);
+              color: #FFFFFF;
+              border: 2px solid #FFFFFF;
+              padding: 4px 10px;
+              border-radius: 16px;
+              font-size: 12.5px;
+              font-weight: 800;
+              white-space: nowrap;
+              box-shadow: 0 4px 12px rgba(227, 24, 55, 0.65);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              cursor: pointer;
+            ">
+              <span>🏫</span>
+              <span>연강원 강의장 [2:20 집결]</span>
+            </div>
+          </div>
+        `,
+        iconSize: [185, 42],
+        iconAnchor: [92, 5],
+      });
+
+      const finishMarker = L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
+        icon: finishIcon,
+      }).addTo(layer);
+
+      finishMarker.on('click', () => {
+        setSelectedSpotId('finishPhoto');
+        mapRef.current?.panTo([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], { animate: true });
+      });
+
+      // 5) 두산 저수지 [조별 단체사진 미션] 마커 (노란 동그라미 중앙)
+      const reservoirIcon = L.divIcon({
+        className: 'custom-theme-garden-pin',
+        html: `
           <div style="
-            background: rgba(227, 24, 55, 0.95);
-            color: #FFFFFF;
+            background: rgba(250, 204, 21, 0.96);
+            color: #0F172A;
             border: 2px solid #FFFFFF;
-            padding: 4px 10px;
-            border-radius: 16px;
-            font-size: 12.5px;
-            font-weight: 800;
+            padding: 5px 11px;
+            border-radius: 18px;
+            font-size: 13px;
+            font-weight: 900;
             white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(227, 24, 55, 0.65);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
             display: flex;
             align-items: center;
             gap: 4px;
             cursor: pointer;
           ">
             <span>📸</span>
-            <span>세븐일레븐 앞 공터 [4:30 집결]</span>
+            <span>두산 저수지</span>
           </div>
-        </div>
-      `,
-      iconSize: [200, 42],
-      iconAnchor: [100, 5],
-    });
+        `,
+        iconSize: [115, 32],
+        iconAnchor: [57, 16],
+      });
 
-    const finishMarker = L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
-      icon: finishIcon,
-    }).addTo(layer);
+      const reservoirMarker = L.marker([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], {
+        icon: reservoirIcon,
+      }).addTo(layer);
 
-    finishMarker.on('click', () => {
-      setSelectedSpotId('finishPhoto');
-      mapRef.current?.panTo([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], { animate: true });
-    });
+      reservoirMarker.on('click', () => {
+        setSelectedSpotId('themeGarden');
+        mapRef.current?.panTo([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], { animate: true });
+      });
+    } else {
+      // ── [서울대공원 본행사 모드 (기존 그대로 유지)] ─────────────────
+      // 1) 테마가든 노란색 영역 다각형 (참조 이미지의 호수 남동측 반도 노란 영역)
+      const themePolygon = L.polygon(THEME_GARDEN_POLYGON, {
+        color: '#FACC15',
+        fillColor: '#FACC15',
+        fillOpacity: 0.32,
+        weight: 3,
+        lineJoin: 'round',
+      }).addTo(layer);
 
-    // 7) 테마가든 단체사진 미션 스팟 마커 (노란색 영역 중앙)
-    const themeGardenIcon = L.divIcon({
-      className: 'custom-theme-garden-pin',
-      html: `
-        <div style="
-          background: rgba(250, 204, 21, 0.96);
-          color: #0F172A;
-          border: 2px solid #FFFFFF;
-          padding: 5px 11px;
-          border-radius: 18px;
-          font-size: 13px;
-          font-weight: 900;
-          white-space: nowrap;
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          cursor: pointer;
-        ">
-          <span>🌹</span>
-          <span>테마가든</span>
-        </div>
-      `,
-      iconSize: [105, 32],
-      iconAnchor: [52, 16],
-    });
+      themePolygon.on('click', () => {
+        setSelectedSpotId('themeGarden');
+      });
 
-    const themeMarker = L.marker([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], {
-      icon: themeGardenIcon,
-    }).addTo(layer);
+      // 2) 동물원둘레길 코스 (1~3조, 빨간색 #EF4444)
+      L.polyline(ZOO_TRACK, {
+        color: '#000000',
+        weight: focusedCourse === 'forest' ? 8.5 : 7,
+        opacity: 0.65,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
 
-    themeMarker.on('click', () => {
-      setSelectedSpotId('themeGarden');
-      mapRef.current?.panTo([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], { animate: true });
-    });
+      L.polyline(ZOO_TRACK, {
+        color: '#EF4444',
+        weight: focusedCourse === 'forest' ? 5.5 : 4.5,
+        opacity: focusedCourse === 'lake' ? 0.75 : 1,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
 
-    // 8) 내 실시간 위치 마커 (GPS)
+      // 3) 미술관 코스 (4~6조, 파란색 #38BDF8)
+      L.polyline(LAKE_TRACK, {
+        color: '#0F172A',
+        weight: focusedCourse === 'lake' ? 8.5 : 7,
+        opacity: 0.75,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
+
+      L.polyline(LAKE_TRACK, {
+        color: '#38BDF8',
+        weight: focusedCourse === 'lake' ? 5.5 : 4.5,
+        opacity: focusedCourse === 'forest' ? 0.85 : 1,
+        dashArray: '10, 6',
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
+
+      // 4) 국립현대미술관 랜드마크 라벨 (파란색 동그라미 흰색 건물 중심 위치)
+      const museumIcon = L.divIcon({
+        className: 'custom-museum-pin',
+        html: `
+          <div style="
+            background: rgba(30, 58, 138, 0.94);
+            color: #BAE6FD;
+            border: 1.5px solid #38BDF8;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11.5px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.75);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+          ">
+            <span>🏛️</span>
+            <span>현대미술관</span>
+          </div>
+        `,
+        iconSize: [96, 24],
+        iconAnchor: [48, 12],
+      });
+      L.marker([37.431000, 127.019380], { icon: museumIcon, interactive: false }).addTo(layer);
+
+      // 5) 빵명장 [첫 집결지 · 출발 기점] 마커
+      const startIcon = L.divIcon({
+        className: 'custom-start-pin',
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+            <div style="
+              background: rgba(15, 23, 42, 0.95);
+              color: #FACC15;
+              border: 2px solid #FACC15;
+              padding: 4px 10px;
+              border-radius: 16px;
+              font-size: 12.5px;
+              font-weight: 800;
+              white-space: nowrap;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.85);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              cursor: pointer;
+            ">
+              <span>🥐</span>
+              <span>빵명장 [출발]</span>
+            </div>
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #FACC15; border: 2px solid #0F172A; margin-top: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
+          </div>
+        `,
+        iconSize: [120, 42],
+        iconAnchor: [60, 38],
+      });
+
+      const startMarker = L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
+        icon: startIcon,
+      }).addTo(layer);
+
+      startMarker.on('click', () => {
+        setSelectedSpotId('start');
+        mapRef.current?.panTo([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], { animate: true });
+      });
+
+      // 6) 세븐일레븐 앞 공터 [빵명장 길 건너편 · 4:30 최종 집결] 마커
+      const finishIcon = L.divIcon({
+        className: 'custom-finish-pin',
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; border: 2px solid #FFFFFF; margin-bottom: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
+            <div style="
+              background: rgba(227, 24, 55, 0.95);
+              color: #FFFFFF;
+              border: 2px solid #FFFFFF;
+              padding: 4px 10px;
+              border-radius: 16px;
+              font-size: 12.5px;
+              font-weight: 800;
+              white-space: nowrap;
+              box-shadow: 0 4px 12px rgba(227, 24, 55, 0.65);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              cursor: pointer;
+            ">
+              <span>📸</span>
+              <span>세븐일레븐 앞 공터 [4:30 집결]</span>
+            </div>
+          </div>
+        `,
+        iconSize: [200, 42],
+        iconAnchor: [100, 5],
+      });
+
+      const finishMarker = L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
+        icon: finishIcon,
+      }).addTo(layer);
+
+      finishMarker.on('click', () => {
+        setSelectedSpotId('finishPhoto');
+        mapRef.current?.panTo([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], { animate: true });
+      });
+
+      // 7) 테마가든 단체사진 미션 스팟 마커 (노란색 영역 중앙)
+      const themeGardenIcon = L.divIcon({
+        className: 'custom-theme-garden-pin',
+        html: `
+          <div style="
+            background: rgba(250, 204, 21, 0.96);
+            color: #0F172A;
+            border: 2px solid #FFFFFF;
+            padding: 5px 11px;
+            border-radius: 18px;
+            font-size: 13px;
+            font-weight: 900;
+            white-space: nowrap;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+          ">
+            <span>🌹</span>
+            <span>테마가든</span>
+          </div>
+        `,
+        iconSize: [105, 32],
+        iconAnchor: [52, 16],
+      });
+
+      const themeMarker = L.marker([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], {
+        icon: themeGardenIcon,
+      }).addTo(layer);
+
+      themeMarker.on('click', () => {
+        setSelectedSpotId('themeGarden');
+        mapRef.current?.panTo([ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng], { animate: true });
+      });
+    }
+
+    // 내 실시간 위치 마커 (GPS)
     if (myLocation) {
       const myIcon = L.divIcon({
         className: 'custom-my-location-pin',
@@ -1183,7 +1422,11 @@ const MapScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               SATELLITE <span className="text-sky-400">TREKKING MAP</span>
             </span>
-            <p className="text-[12.5px] text-slate-400">동물원둘레길 코스 · 미술관 코스 통합 지도</p>
+            <p className="text-[12.5px] text-slate-400">
+              {IS_PILOT_MODE
+                ? '두산연강원 트레킹 코스 · 두산 저수지 지도'
+                : '동물원둘레길 코스 · 미술관 코스 통합 지도'}
+            </p>
           </div>
           <span className="text-[13.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
@@ -1191,42 +1434,76 @@ const MapScreen: React.FC = () => {
         </div>
       </header>
 
-      {/* 단일 지도 색상 범례 바 (클릭 시 해당 코스로 줌 이동, 지도에는 두 코스 모두 상시 표시) */}
+      {/* 코스 색상 범례 바 */}
       <div className="bg-[#101626] border-b border-white/8 px-3 py-2 flex flex-col gap-1.5 z-10">
-        <div className="flex items-center gap-1.5 w-full">
-          <button
-            onClick={() => {
-              setFocusedCourse('forest');
-              if (mapRef.current) {
-                mapRef.current.fitBounds(L.polyline(ZOO_TRACK).getBounds(), { padding: [28, 28], animate: true });
-              }
-            }}
-            className={`flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
-              focusedCourse === 'forest'
-                ? 'bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15'
-                : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-red-400/50'
-            }`}
-          >
-            <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
-            <span>동물원둘레길 코스 (1~3조)</span>
-          </button>
-          <button
-            onClick={() => {
-              setFocusedCourse('lake');
-              if (mapRef.current) {
-                mapRef.current.fitBounds(L.polyline(LAKE_TRACK).getBounds(), { padding: [32, 32], animate: true });
-              }
-            }}
-            className={`flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
-              focusedCourse === 'lake'
-                ? 'bg-sky-500/20 text-white border-sky-400 shadow-md shadow-sky-500/15'
-                : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-sky-400/50'
-            }`}
-          >
-            <span className="w-3.5 h-1.5 rounded-full bg-[#38BDF8] inline-block shadow-sm shadow-sky-400" />
-            <span>미술관 코스 (4~6조)</span>
-          </button>
-        </div>
+        {IS_PILOT_MODE ? (
+          <div className="flex items-center gap-1.5 w-full">
+            <button
+              onClick={() => {
+                if (mapRef.current) {
+                  const bounds = L.polyline([
+                    ...YEONKANG_OUTER_TRACK,
+                    [ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng],
+                  ]).getBounds();
+                  mapRef.current.fitBounds(bounds, { padding: [28, 28], animate: true });
+                }
+              }}
+              className="flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15"
+            >
+              <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
+              <span>연강원 트레킹 코스 (1~6조)</span>
+            </button>
+            <button
+              onClick={() => {
+                setSelectedSpotId('themeGarden');
+                mapRef.current?.flyTo(
+                  [ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng],
+                  17,
+                  { duration: 0.9 }
+                );
+              }}
+              className="flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border bg-amber-500/15 text-amber-200 border-amber-400/50"
+            >
+              <span className="w-3 h-3 rounded-full bg-[#FACC15] inline-block shadow-sm shadow-amber-400" />
+              <span>두산 저수지 (사진미션)</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 w-full">
+            <button
+              onClick={() => {
+                setFocusedCourse('forest');
+                if (mapRef.current) {
+                  mapRef.current.fitBounds(L.polyline(ZOO_TRACK).getBounds(), { padding: [28, 28], animate: true });
+                }
+              }}
+              className={`flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                focusedCourse === 'forest'
+                  ? 'bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15'
+                  : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-red-400/50'
+              }`}
+            >
+              <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
+              <span>동물원둘레길 코스 (1~3조)</span>
+            </button>
+            <button
+              onClick={() => {
+                setFocusedCourse('lake');
+                if (mapRef.current) {
+                  mapRef.current.fitBounds(L.polyline(LAKE_TRACK).getBounds(), { padding: [32, 32], animate: true });
+                }
+              }}
+              className={`flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                focusedCourse === 'lake'
+                  ? 'bg-sky-500/20 text-white border-sky-400 shadow-md shadow-sky-500/15'
+                  : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-sky-400/50'
+              }`}
+            >
+              <span className="w-3.5 h-1.5 rounded-full bg-[#38BDF8] inline-block shadow-sm shadow-sky-400" />
+              <span>미술관 코스 (4~6조)</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 거점 스팟 퀵 선택 바 */}
@@ -1236,7 +1513,7 @@ const MapScreen: React.FC = () => {
             key={spot.id}
             onClick={() => {
               setSelectedSpotId(spot.id);
-              mapRef.current?.flyTo([spot.coords.lat, spot.coords.lng], spot.id === 'themeGarden' ? 16 : 17, { duration: 0.9 });
+              mapRef.current?.flyTo([spot.coords.lat, spot.coords.lng], spot.id === 'themeGarden' ? (IS_PILOT_MODE ? 17 : 16) : 17, { duration: 0.9 });
             }}
             className={`px-2.5 py-1 rounded-lg text-[13.5px] font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
               selectedSpotId === spot.id
@@ -1245,7 +1522,13 @@ const MapScreen: React.FC = () => {
             }`}
           >
             <span>{spot.emoji}</span>
-            <span>{spot.id === 'themeGarden' ? '테마가든 (노란영역)' : spot.title}</span>
+            <span>
+              {spot.id === 'themeGarden'
+                ? IS_PILOT_MODE
+                  ? '두산 저수지 (노란영역)'
+                  : '테마가든 (노란영역)'
+                : spot.title}
+            </span>
           </button>
         ))}
       </div>
@@ -1268,7 +1551,12 @@ const MapScreen: React.FC = () => {
             onClick={() => {
               setFocusedCourse('all');
               if (mapRef.current) {
-                const allBounds = L.polyline([...ZOO_TRACK, ...LAKE_TRACK]).getBounds();
+                const allBounds = IS_PILOT_MODE
+                  ? L.polyline([
+                      ...YEONKANG_OUTER_TRACK,
+                      [ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng],
+                    ]).getBounds()
+                  : L.polyline([...ZOO_TRACK, ...LAKE_TRACK]).getBounds();
                 mapRef.current.fitBounds(allBounds, { padding: [28, 28], animate: true, duration: 1 });
               }
             }}
@@ -1319,7 +1607,7 @@ const MapScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 하단 미션 이동 버튼 (순서: 1. 피플퀘스트 추천 -> 2. 테마가든 사진 올리기) */}
+        {/* 하단 미션 이동 버튼 (순서: 1. 피플퀘스트 추천 -> 2. 단체사진 올리기) */}
         <div className="pt-3 flex gap-2">
           <button
             onClick={() => navigate('/people-quest')}
@@ -1331,7 +1619,7 @@ const MapScreen: React.FC = () => {
             onClick={() => navigate('/')}
             className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1.5"
           >
-            <span>🌹 테마가든 사진 올리기</span>
+            <span>{IS_PILOT_MODE ? '📸 두산 저수지 사진 올리기' : '🌹 테마가든 사진 올리기'}</span>
           </button>
         </div>
       </div>
@@ -1342,5 +1630,6 @@ const MapScreen: React.FC = () => {
 };
 
 export default MapScreen;
+
 
 

@@ -21,6 +21,22 @@ import {
 
 export type CourseKey = 'forest' | 'lake';
 
+// ─────────────────────────────────────────────────────────────────
+// 파일럿(두산연강원) 모드 자동 감지 (/pilot 경로 접속 시 활성화, 본행사 / 경로는 서울대공원 유지)
+// ─────────────────────────────────────────────────────────────────
+export const IS_PILOT_MODE: boolean = (() => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname;
+  const search = window.location.search;
+  const host = window.location.hostname;
+  return (
+    path === '/pilot' ||
+    path.startsWith('/pilot/') ||
+    search.includes('mode=pilot') ||
+    host.includes('pilot')
+  );
+})();
+
 export interface GpsLocation {
   lat: number;
   lng: number;
@@ -51,16 +67,25 @@ export const WORKSHOP_COMPANIES = [
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────
-// 2. 6개 조 구성 (1~3조: 동물원둘레길 코스 / 4~6조: 미술관 코스)
+// 2. 6개 조 구성 (본행사: 동물원둘레길·미술관 코스 / 연강원 파일럿: 단일 트레킹 코스)
 // ─────────────────────────────────────────────────────────────────
-export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
-  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
-  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
-  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
-  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
-  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
-  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
-];
+export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = IS_PILOT_MODE
+  ? [
+      { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+      { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+      { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+      { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+      { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+    ]
+  : [
+      { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
+      { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
+      { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
+      { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
+      { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
+      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
+    ];
 
 // ─────────────────────────────────────────────────────────────────
 // 3. 플랫폼 입장: 「나의 정보 입력」 4개 질문 (1단계: 취미·버킷리스트 / 2단계: 다른직업·의외의사실)
@@ -107,7 +132,7 @@ export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들�
 export const PEOPLE_QUEST_POINTS_PER_MEMBER = 100; // 조원당 100pt
 
 // ─────────────────────────────────────────────────────────────────
-// 5. Activity 2: 테마가든 메인 미션 (2:00~4:30 진행 중)
+// 5. Activity 2: 조별 단체사진 미션 (본행사: 테마가든 / 파일럿: 두산 저수지)
 // ─────────────────────────────────────────────────────────────────
 export interface ThemeGardenMissionConfig {
   id: string;
@@ -121,25 +146,42 @@ export interface ThemeGardenMissionConfig {
   pointsPerMember: number;
 }
 
-export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
-  id: 'theme_garden_photo',
-  title: '🌹 테마가든 포토 스팟 & 조별 단체사진 미션',
-  timeRange: '2:00 ~ 4:30 (트레킹 중)',
-  locationName: '서울대공원 테마가든 내 포토 스팟',
-  coords: { lat: 37.430800, lng: 127.015500 },
-  hintTitle: '테마가든 단체사진 촬영 가이드',
-  hintDescription: '테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드해 주세요!',
-  guideLines: [
-    '테마가든 안에 숨어있는 포토 스팟을 찾아 이동합니다.',
-    '포토 스팟에서 우리 조원 전원이 빠짐없이 화면에 보이도록 단체사진을 촬영해 주세요.',
-    '카메라로 직접 촬영하거나, 사진첩(갤러리)에서 촬영된 사진을 선택해 업로드할 수 있습니다.',
-    '조별 대표 1명이 업로드하면 조원 전원에게 미션 점수(+100pt)가 부여됩니다!',
-  ],
-  pointsPerMember: 100,
-};
+export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = IS_PILOT_MODE
+  ? {
+      id: 'theme_garden_photo',
+      title: '📸 두산 저수지 조별 단체사진 미션',
+      timeRange: '1:32 ~ 2:20 (트레킹 중)',
+      locationName: '두산 저수지 (지도 노란색 표시 영역)',
+      coords: { lat: 37.542620, lng: 127.150480 },
+      hintTitle: '두산 저수지 단체사진 촬영 가이드',
+      hintDescription: '두산 저수지(노란색 동그라미 영역)에서 조원 전원이 보이도록 사진 촬영 후 업로드해 주세요!',
+      guideLines: [
+        '트레킹 코스를 따라 두산 저수지(지도 노란색 표시 영역)로 이동합니다.',
+        '두산 저수지 일대에서 우리 조원 전원이 빠짐없이 화면에 보이도록 단체사진을 촬영해 주세요.',
+        '카메라로 직접 촬영하거나, 사진첩(갤러리)에서 촬영된 사진을 선택해 업로드할 수 있습니다.',
+        '조별 대표 1명이 업로드하면 조원 전원에게 미션 점수(+100pt)가 부여됩니다!',
+      ],
+      pointsPerMember: 100,
+    }
+  : {
+      id: 'theme_garden_photo',
+      title: '🌹 테마가든 포토 스팟 & 조별 단체사진 미션',
+      timeRange: '2:00 ~ 4:30 (트레킹 중)',
+      locationName: '서울대공원 테마가든 내 포토 스팟',
+      coords: { lat: 37.430800, lng: 127.015500 },
+      hintTitle: '테마가든 단체사진 촬영 가이드',
+      hintDescription: '테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드해 주세요!',
+      guideLines: [
+        '테마가든 안에 숨어있는 포토 스팟을 찾아 이동합니다.',
+        '포토 스팟에서 우리 조원 전원이 빠짐없이 화면에 보이도록 단체사진을 촬영해 주세요.',
+        '카메라로 직접 촬영하거나, 사진첩(갤러리)에서 촬영된 사진을 선택해 업로드할 수 있습니다.',
+        '조별 대표 1명이 업로드하면 조원 전원에게 미션 점수(+100pt)가 부여됩니다!',
+      ],
+      pointsPerMember: 100,
+    };
 
 // ─────────────────────────────────────────────────────────────────
-// 6. 몸풀기 Quiz (1:30~2:00 @ 빵명장)
+// 6. 몸풀기 Quiz (본행사: 빵명장 소보루 빵 3800원 / 파일럿: 카페쿰베오 베오라떼 6500원)
 // ─────────────────────────────────────────────────────────────────
 export interface TutorialQuizConfig {
   id: string;
@@ -152,19 +194,30 @@ export interface TutorialQuizConfig {
   hintText: string;
 }
 
-export const TUTORIAL_QUIZ: TutorialQuizConfig = {
-  id: 'tutorial_bbang_price',
-  title: '🥐 몸풀기 Quiz: 소보루 빵 가격 맞히기',
-  itemTitle: '빵명장 인기 메뉴 (소보루 빵)',
-  questionText: '빵명장 서울대공원점의 인기 메뉴인 "소보루 빵"의 판매 가격은 얼마일까요? (매장 진열대 확인!)',
-  options: ['3,200원', '3,800원', '4,300원', '4,800원'],
-  correctIndex: 1, // 3,800원
-  explanation: '정답입니다! 소보루 빵의 판매 가격은 3,800원입니다. 가벼운 몸풀기 Quiz와 앱 작동 테스트가 완료되었습니다.',
-  hintText: '💡 매장 진열대의 소보루 빵 가격표를 가볍게 확인해 보세요!',
-};
+export const TUTORIAL_QUIZ: TutorialQuizConfig = IS_PILOT_MODE
+  ? {
+      id: 'tutorial_bbang_price',
+      title: '☕ 몸풀기 Quiz: 베오라떼 가격 맞히기',
+      itemTitle: '카페쿰베오 시그니처 메뉴 (베오라떼)',
+      questionText: '카페쿰베오의 시그니처 메뉴인 "베오라떼"의 가격은 얼마일까요?',
+      options: ['5,500원', '6,000원', '6,500원', '7,000원'],
+      correctIndex: 2, // 6,500원
+      explanation: '정답입니다! 카페쿰베오 시그니처 메뉴인 베오라떼의 판매 가격은 6,500원입니다. 가벼운 몸풀기 Quiz와 앱 작동 테스트가 완료되었습니다.',
+      hintText: '💡 카페쿰베오 메뉴판에서 시그니처 메뉴 베오라떼 가격을 가볍게 확인해 보세요!',
+    }
+  : {
+      id: 'tutorial_bbang_price',
+      title: '🥐 몸풀기 Quiz: 소보루 빵 가격 맞히기',
+      itemTitle: '빵명장 인기 메뉴 (소보루 빵)',
+      questionText: '빵명장 서울대공원점의 인기 메뉴인 "소보루 빵"의 판매 가격은 얼마일까요? (매장 진열대 확인!)',
+      options: ['3,200원', '3,800원', '4,300원', '4,800원'],
+      correctIndex: 1, // 3,800원
+      explanation: '정답입니다! 소보루 빵의 판매 가격은 3,800원입니다. 가벼운 몸풀기 Quiz와 앱 작동 테스트가 완료되었습니다.',
+      hintText: '💡 매장 진열대의 소보루 빵 가격표를 가볍게 확인해 보세요!',
+    };
 
 // ─────────────────────────────────────────────────────────────────
-// 7. 조별 그라운드룰 & 역할 분담 (출발 전 1:30~2:00 의논)
+// 7. 조별 그라운드룰 & 역할 분담
 // ─────────────────────────────────────────────────────────────────
 export interface RoleOption {
   id: string;
@@ -176,9 +229,23 @@ export interface RoleOption {
 export const GROUND_RULE_ROLE_OPTIONS: RoleOption[] = [
   { id: 'leader', title: '조장', icon: '👑', description: '우리 조의 중심! 조원들의 의견을 모으고 트레킹을 이끄는 리더' },
   { id: 'app_manager', title: '어플담당', icon: '📱', description: '앱 미션 입력, 몸풀기 Quiz, 사진 업로드 및 동료 추천 작성을 주도' },
-  { id: 'timekeeper', title: '타임키퍼', icon: '⏱️', description: '트레킹 페이스와 4:30 세븐일레븐 앞 공터 최종 집결 시간을 챙기는 매니저' },
+  {
+    id: 'timekeeper',
+    title: '타임키퍼',
+    icon: '⏱️',
+    description: IS_PILOT_MODE
+      ? '트레킹 페이스와 2:20 연강원 강의장 최종 집결 시간을 챙기는 매니저'
+      : '트레킹 페이스와 4:30 세븐일레븐 앞 공터 최종 집결 시간을 챙기는 매니저',
+  },
   { id: 'pacemaker', title: '페이스메이커', icon: '🚶', description: '가장 편안한 템포로 걸으며 조원들의 무리 없는 걷기를 리드' },
-  { id: 'photographer', title: '전속 포토그래퍼', icon: '📸', description: '테마가든 미션 사진 및 조원들의 인생샷과 웃는 순간을 포착' },
+  {
+    id: 'photographer',
+    title: '전속 포토그래퍼',
+    icon: '📸',
+    description: IS_PILOT_MODE
+      ? '두산 저수지 미션 사진 및 조원들의 인생샷과 웃는 순간을 포착'
+      : '테마가든 미션 사진 및 조원들의 인생샷과 웃는 순간을 포착',
+  },
   { id: 'vitamin', title: '비타민/리액션 캡틴', icon: '💊', description: '지치지 않는 긍정 에너지와 리액션으로 조의 활력을 불어넣음' },
 ];
 
@@ -189,21 +256,27 @@ export interface GroundRulePreset {
 }
 
 export const GROUND_RULE_PRESETS: GroundRulePreset[] = [
-  { id: 'rule_healing', icon: '🌿', text: '트레킹 중간에 30분은 온전히 개인 힐링·자유 쉼 시간 갖기' },
+  { id: 'rule_healing', icon: '🌿', text: '트레킹 중간에 온전히 개인 힐링·자유 쉼 시간 갖기' },
   { id: 'rule_slow', icon: '🐢', text: '가장 천천히 걷는 조원의 걸음 속도에 맞춰 도란도란 걷기' },
-  { id: 'rule_smile_photo', icon: '📸', text: '테마가든 미션 사진은 전원 빠짐없이 환하게 웃으며 찍기' },
+  {
+    id: 'rule_smile_photo',
+    icon: '📸',
+    text: IS_PILOT_MODE
+      ? '두산 저수지 미션 사진은 전원 빠짐없이 환하게 웃으며 찍기'
+      : '테마가든 미션 사진은 전원 빠짐없이 환하게 웃으며 찍기',
+  },
   { id: 'rule_talk', icon: '💬', text: '이동 중 모든 조원과 최소 1회 이상 취미·버킷리스트 대화 나누기' },
-  { id: 'rule_rest', icon: '☕', text: '발이 아프거나 힘들 땐 주저 없이 벤치와 카페에서 쉬어가기' },
+  { id: 'rule_rest', icon: '☕', text: '발이 아프거나 힘들 땐 주저 없이 벤치와 쉼터에서 쉬어가기' },
   { id: 'rule_no_work', icon: '📵', text: '트레킹 중에는 업무 이야기 대신 일상과 관심사에 집중하기' },
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// 8. 코스별 스팟 퀴즈 (사용자 요청으로 제거됨 - 빈 배열 유지)
+// 8. 코스별 스팟 퀴즈 (빈 배열 유지)
 // ─────────────────────────────────────────────────────────────────
 export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [];
 
 // ─────────────────────────────────────────────────────────────────
-// 9. 점수 동적 계산 헬퍼 함수 (점수 변경 시 자동 반영)
+// 9. 점수 동적 계산 헬퍼 함수
 // ─────────────────────────────────────────────────────────────────
 export function getCourseQuizTotalPoints(_courseKey: CourseKey = 'lake'): number {
   return 0;
@@ -218,23 +291,43 @@ export function getCourseTotalMaxPoints(_courseKey: CourseKey = 'lake'): number 
 // ─────────────────────────────────────────────────────────────────
 export const PRE_REGISTERED_PARTICIPANTS: PreRegisteredPerson[] = [];
 
-export const ACTIVE_VENUE = {
-  venueName: '서울대공원',
-  eventName: '2026 CHRO Trekking',
-  sessionKey: 'trekking2026',
-  departurePoint: {
-    name: '빵명장 [첫 집결지/출발]',
-    coords: { lat: 37.434610, lng: 127.009518 },
-  },
-  photoSpot: {
-    name: '세븐일레븐 앞 공터 [📸 4:30 최종 집결 / 단체사진]',
-    coords: { lat: 37.434120, lng: 127.009650 },
-  },
-  themeGardenSpot: {
-    name: '테마가든 [🌹 포토 스팟 / 단체사진 미션]',
-    coords: { lat: 37.430800, lng: 127.015500 },
-  },
-  mapLabel: '서울대공원 (동물원둘레길 코스 / 미술관 코스)',
-};
+export const ACTIVE_VENUE = IS_PILOT_MODE
+  ? {
+      venueName: '두산연강원',
+      eventName: '연강원 Team Activity',
+      sessionKey: 'trekking2026',
+      departurePoint: {
+        name: '카페쿰베오 [첫 집결지/출발]',
+        coords: { lat: 37.542680, lng: 127.148850 },
+      },
+      photoSpot: {
+        name: '연강원 강의장 [🏫 2:20 최종 집결 / Wrap-up Quiz]',
+        coords: { lat: 37.542420, lng: 127.148980 },
+      },
+      themeGardenSpot: {
+        name: '두산 저수지 [📸 조별 단체사진 미션]',
+        coords: { lat: 37.542620, lng: 127.150480 },
+      },
+      mapLabel: '두산연강원 트레킹 코스 (단일 코스)',
+    }
+  : {
+      venueName: '서울대공원',
+      eventName: '2026 CHRO Trekking',
+      sessionKey: 'trekking2026',
+      departurePoint: {
+        name: '빵명장 [첫 집결지/출발]',
+        coords: { lat: 37.434610, lng: 127.009518 },
+      },
+      photoSpot: {
+        name: '세븐일레븐 앞 공터 [📸 4:30 최종 집결 / 단체사진]',
+        coords: { lat: 37.434120, lng: 127.009650 },
+      },
+      themeGardenSpot: {
+        name: '테마가든 [🌹 포토 스팟 / 단체사진 미션]',
+        coords: { lat: 37.430800, lng: 127.015500 },
+      },
+      mapLabel: '서울대공원 (동물원둘레길 코스 / 미술관 코스)',
+    };
 
-export const DEFAULT_COURSE: CourseKey = 'lake';
+export const DEFAULT_COURSE: CourseKey = IS_PILOT_MODE ? 'forest' : 'lake';
+

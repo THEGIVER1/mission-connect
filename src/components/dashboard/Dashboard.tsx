@@ -15,6 +15,7 @@ import {
   THEME_GARDEN_MISSION,
   getCourseTotalMaxPoints,
   MY_INFO_QUESTIONS,
+  IS_PILOT_MODE,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
@@ -55,7 +56,11 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
       <div className="flex items-start justify-between mb-2.5">
         <div>
           <h1 className="font-['Bebas_Neue'] text-2xl tracking-widest text-white leading-none">
-            2026 CHRO <span className="text-red-500">TREKKING</span>
+            {IS_PILOT_MODE ? (
+              <>연강원 <span className="text-red-500">TEAM ACTIVITY</span></>
+            ) : (
+              <>2026 CHRO <span className="text-red-500">TREKKING</span></>
+            )}
           </h1>
           <p className="text-[12.5px] text-slate-400 mt-0.5 tracking-wider">
             {participantName ? `${participantName}님 (${myTeam?.name ?? '참가자'})` : 'CHRO Activity Platform'}
@@ -78,7 +83,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
       {/* 이벤트 & 팀/코스 칩 */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <span className="flex items-center gap-1 text-[13.5px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
-          🥐 빵명장 집결
+          {IS_PILOT_MODE ? '☕ 카페쿰베오 집결 (13:00~15:00)' : '🥐 빵명장 집결'}
         </span>
         {teamConfig && (
           <span className="flex items-center gap-1 text-[13.5px] font-bold rounded-full px-2.5 py-0.5"
@@ -223,7 +228,9 @@ const ActivitySection: React.FC<{
               🎉 축하합니다! 모든 미션을 완주하셨습니다!
             </h3>
             <p className="text-[13.5px] text-slate-300 mt-0.5">
-              테마가든 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.
+              {IS_PILOT_MODE
+                ? '두산 저수지 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.'
+                : '테마가든 단체사진과 피플퀘스트를 모두 완료하여 완주 증서가 발급되었습니다.'}
             </p>
           </div>
           <button
@@ -236,12 +243,12 @@ const ActivitySection: React.FC<{
         </div>
       )}
 
-      {/* 타임라인 단계 1: 오프닝 그라운드룰 & 몸풀기 Quiz (1:30~2:00) */}
+      {/* 타임라인 단계 1: 오프닝 그라운드룰 & 몸풀기 Quiz */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[14px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
-            <span>🥐</span>
-            <span>STEP 1 · 1:30~2:00 [빵명장]</span>
+            <span>{IS_PILOT_MODE ? '☕' : '🥐'}</span>
+            <span>{IS_PILOT_MODE ? 'STEP 1 · 1:00~1:20 (20분) [카페쿰베오]' : 'STEP 1 · 1:30~2:00 [빵명장]'}</span>
           </span>
           <span className="text-[12.5px] text-slate-400">오프닝 & 준비</span>
         </div>
@@ -275,11 +282,17 @@ const ActivitySection: React.FC<{
           </div>
 
           <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            빵명장에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 소보루 빵 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.
+            {IS_PILOT_MODE ? (
+              <>카페쿰베오에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 시그니처 메뉴 <strong>베오라떼</strong> 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.</>
+            ) : (
+              <>빵명장에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 소보루 빵 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.</>
+            )}
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">조장 · 어플담당 · 30분 자유 쉼 · 몸풀기 Quiz</span>
+            <span className="text-slate-400">
+              {IS_PILOT_MODE ? '조장 · 어플담당 · 베오라떼 몸풀기 Quiz' : '조장 · 어플담당 · 30분 자유 쉼 · 몸풀기 Quiz'}
+            </span>
             <span className="text-amber-400 font-bold flex items-center gap-0.5">
               확인 및 설정 →
             </span>
@@ -287,12 +300,16 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:30) */}
+      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 */}
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[14px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
             <span>🚶</span>
-            <span>STEP 2 · 2:00~4:30 [트레킹 코스 & 테마가든]</span>
+            <span>
+              {IS_PILOT_MODE
+                ? 'STEP 2 · 1:32~2:20 [트레킹 코스 & 두산 저수지]'
+                : 'STEP 2 · 2:00~4:30 [트레킹 코스 & 테마가든]'}
+            </span>
           </span>
           <span className="text-[12.5px] text-slate-400">2대 핵심 미션</span>
         </div>
@@ -334,7 +351,7 @@ const ActivitySection: React.FC<{
           </div>
         </button>
 
-        {/* 미션 2: 테마가든 단체사진 미션 (피플퀘스트 다음 순서) */}
+        {/* 미션 2: 단체사진 미션 (피플퀘스트 다음 순서) */}
         <button
           type="button"
           onClick={onOpenThemeGardenModal}
@@ -343,14 +360,14 @@ const ActivitySection: React.FC<{
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2.5">
               <span className="w-9 h-9 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-lg">
-                🌹
+                {IS_PILOT_MODE ? '📸' : '🌹'}
               </span>
               <div>
                 <span className="text-[12.5px] text-pink-400 font-extrabold uppercase tracking-wider block">
-                  테마가든 미션 · 조원 전원 +100pt
+                  {IS_PILOT_MODE ? '두산 저수지 미션 · 조원 전원 +100pt' : '테마가든 미션 · 조원 전원 +100pt'}
                 </span>
                 <h3 className="text-[17px] font-bold text-white group-hover:text-pink-300 transition-colors">
-                  숨어있는 포토 스팟 찾기 & 단체사진 업로드
+                  {IS_PILOT_MODE ? '두산 저수지 조별 단체사진 업로드' : '숨어있는 포토 스팟 찾기 & 단체사진 업로드'}
                 </h3>
               </div>
             </div>
@@ -364,11 +381,15 @@ const ActivitySection: React.FC<{
           </div>
 
           <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드하세요. (카메라 촬영 또는 사진첩 선택 가능)
+            {IS_PILOT_MODE
+              ? '두산 저수지(지도 노란색 동그라미 영역)에서 조원 전원이 보이도록 사진 촬영 후 업로드하세요. (카메라 촬영 또는 사진첩 선택 가능)'
+              : '테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드하세요. (카메라 촬영 또는 사진첩 선택 가능)'}
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">테마가든 포토 스팟 · 사진첩 선택 가능</span>
+            <span className="text-slate-400">
+              {IS_PILOT_MODE ? '두산 저수지 포토 스팟 · 사진첩 선택 가능' : '테마가든 포토 스팟 · 사진첩 선택 가능'}
+            </span>
             <span className="text-pink-400 font-bold flex items-center gap-0.5">
               미션 사진 올리기 →
             </span>
@@ -376,31 +397,86 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 3: 4:30 최종 집결 & 세븐일레븐 앞 공터 단체사진 */}
-      <div className="space-y-1.5 pt-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
-            <span>🏁</span>
-            <span>STEP 3 · 4:30 최종 집결 [세븐일레븐 앞 공터]</span>
-          </span>
-          <span className="text-[12.5px] text-slate-400">최종 집결 & 단체사진</span>
-        </div>
+      {/* 타임라인 단계 3: 최종 집결 */}
+      {IS_PILOT_MODE ? (
+        <>
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
+                <span>🏁</span>
+                <span>STEP 3 · 2:20 최종 집결 [연강원 강의장]</span>
+              </span>
+              <span className="text-[12.5px] text-slate-400">최종 집결</span>
+            </div>
 
-        <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
-              <span>📸</span>
-              <span>4:30 세븐일레븐 앞 공터 최종 집결 & 단체사진</span>
-            </span>
-            <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
-              전체 집결
-            </span>
+            <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
+                  <span>🏫</span>
+                  <span>2:20 연강원 강의장 최종 집결</span>
+                </span>
+                <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                  2:20 집결
+                </span>
+              </div>
+              <p className="text-[13.5px] text-slate-300 leading-relaxed">
+                트레킹과 미션을 마치고 <strong>2:20까지 연강원 강의장</strong>으로 최종 집결합니다.
+              </p>
+            </div>
           </div>
-          <p className="text-[13.5px] text-slate-300 leading-relaxed">
-            4:30까지 <strong>세븐일레븐 앞 공터</strong>로 최종 집결하여 전체 단체사진을 촬영합니다.
-          </p>
+
+          {/* 타임라인 단계 4: Wrap-up Quiz (2:20~2:40) */}
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[14px] font-bold text-purple-400 tracking-wide flex items-center gap-1">
+                <span>🎤</span>
+                <span>STEP 4 · 2:20~2:40 Wrap-up Quiz [연강원 강의장]</span>
+              </span>
+              <span className="text-[12.5px] text-slate-400">마무리 퀴즈쇼</span>
+            </div>
+
+            <div className="bg-gradient-to-br from-[#1C162E] to-[#121826] border border-purple-500/35 rounded-2xl p-3.5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
+                  <span>🏆</span>
+                  <span>2:20~2:40 Wrap-up Quiz 진행</span>
+                </span>
+                <span className="text-[12.5px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">
+                  강의장 진행
+                </span>
+              </div>
+              <p className="text-[13.5px] text-slate-300 leading-relaxed">
+                <strong>2:20~2:40 연강원 강의장</strong>에서 오늘 나눈 동료들의 이야기와 활동 결과를 바탕으로 <strong>Wrap-up Quiz</strong>가 진행됩니다.
+              </p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-1.5 pt-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
+              <span>🏁</span>
+              <span>STEP 3 · 4:30 최종 집결 [세븐일레븐 앞 공터]</span>
+            </span>
+            <span className="text-[12.5px] text-slate-400">최종 집결 & 단체사진</span>
+          </div>
+
+          <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
+                <span>📸</span>
+                <span>4:30 세븐일레븐 앞 공터 최종 집결 & 단체사진</span>
+              </span>
+              <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                전체 집결
+              </span>
+            </div>
+            <p className="text-[13.5px] text-slate-300 leading-relaxed">
+              4:30까지 <strong>세븐일레븐 앞 공터</strong>로 최종 집결하여 전체 단체사진을 촬영합니다.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

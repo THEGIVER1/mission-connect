@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { THEME_GARDEN_MISSION, WORKSHOP_TEAMS } from '../../config/workshopConfig';
+import { THEME_GARDEN_MISSION, WORKSHOP_TEAMS, IS_PILOT_MODE } from '../../config/workshopConfig';
 import { normalizeTeamId } from '../../utils/scoreCalculator';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import { ref, update } from 'firebase/database';
@@ -163,14 +163,14 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-base">
-              🌹
+              {IS_PILOT_MODE ? '📸' : '🌹'}
             </span>
             <div>
               <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">
-                2:00~4:30 트레킹 메인 미션
+                {IS_PILOT_MODE ? '1:32~2:20 트레킹 메인 미션' : '2:00~4:30 트레킹 메인 미션'}
               </span>
               <h3 className="text-[16px] font-bold text-white">
-                테마가든 단체사진 미션
+                {IS_PILOT_MODE ? '두산 저수지 단체사진 미션' : '테마가든 단체사진 미션'}
               </h3>
             </div>
           </div>
@@ -203,7 +203,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             </span>
           </div>
 
-          {/* 촬영 가이드 카드 (테마가든 안에 숨어있는 포토 스팟 찾기) */}
+          {/* 촬영 가이드 카드 */}
           <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
             <div className="flex items-center justify-between">
               <span className="text-[14px] font-bold text-pink-300 flex items-center gap-1">
@@ -222,17 +222,21 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             {/* 가이드 비주얼 영역 */}
             <div className="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#1C2538] to-[#101726] p-3 text-center space-y-2">
               <div className="h-24 rounded-lg bg-gradient-to-br from-rose-900/40 via-pink-950/30 to-sky-950/40 border border-pink-500/20 flex flex-col items-center justify-center p-2 relative overflow-hidden">
-                <div className="text-3xl mb-1">🌹 🔍 📸</div>
+                <div className="text-3xl mb-1">{IS_PILOT_MODE ? '🌲 📸 ✨' : '🌹 🔍 📸'}</div>
                 <p className="text-[14.5px] font-extrabold text-pink-200">
-                  테마가든 내 숨어있는 포토 스팟 찾기
+                  {IS_PILOT_MODE ? '두산 저수지(노란색 영역) 단체사진 촬영' : '테마가든 내 숨어있는 포토 스팟 찾기'}
                 </p>
                 <p className="text-[12.5px] text-slate-300">
-                  포토 스팟에서 조원 전원이 보이도록 단체사진 촬영!
+                  조원 전원이 보이도록 단체사진 촬영 후 업로드!
                 </p>
               </div>
 
               <p className="text-[14px] text-slate-300 leading-relaxed text-left px-1">
-                💡 <strong>미션 방법</strong>: 테마가든 안에 숨어있는 <strong>포토 스팟</strong>을 찾아, <strong>{teamConfig.name} 조원 전원이 보이도록 사진 촬영</strong> 후 업로드해 주세요!
+                {IS_PILOT_MODE ? (
+                  <>💡 <strong>미션 방법</strong>: 지도상 노란색 동그라미로 표시된 <strong>두산 저수지</strong>에서 <strong>{teamConfig.name} 조원 전원이 보이도록 사진 촬영</strong> 후 업로드해 주세요!</>
+                ) : (
+                  <>💡 <strong>미션 방법</strong>: 테마가든 안에 숨어있는 <strong>포토 스팟</strong>을 찾아, <strong>{teamConfig.name} 조원 전원이 보이도록 사진 촬영</strong> 후 업로드해 주세요!</>
+                )}
               </p>
             </div>
 

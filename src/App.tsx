@@ -29,8 +29,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+const routerBasename =
+  typeof window !== 'undefined' &&
+  (window.location.pathname === '/pilot' || window.location.pathname.startsWith('/pilot/'))
+    ? '/pilot'
+    : '/';
+
 const App: React.FC = () => (
-  <BrowserRouter>
+  <BrowserRouter basename={routerBasename}>
     {/* 실시간 관리자 긴급 공지 글로벌 팝업 배너 */}
     <GlobalNoticeBanner />
     <Suspense fallback={<LoadingSpinner />}>
