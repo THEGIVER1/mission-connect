@@ -223,7 +223,7 @@ export const ACTIVE_VENUE = {
   eventName: '2026 CHRO Trekking',
   sessionKey: 'trekking2026',
   departurePoint: {
-    name: '세븐일레븐 앞 테이블 [첫 집결지/출발]',
+    name: '빵명장 [첫 집결지/출발]',
     coords: { lat: 37.434610, lng: 127.009518 },
   },
   photoSpot: {

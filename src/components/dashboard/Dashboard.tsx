@@ -78,7 +78,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
       {/* 이벤트 & 팀/코스 칩 */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <span className="flex items-center gap-1 text-[13.5px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
-          🏪 세븐일레븐 집결
+          🥐 빵명장 집결
         </span>
         {teamConfig && (
           <span className="flex items-center gap-1 text-[13.5px] font-bold rounded-full px-2.5 py-0.5"
@@ -240,8 +240,8 @@ const ActivitySection: React.FC<{
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[14px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
-            <span>🏪</span>
-            <span>STEP 1 · 1:30~2:00 [세븐일레븐 앞 테이블]</span>
+            <span>🥐</span>
+            <span>STEP 1 · 1:30~2:00 [빵명장]</span>
           </span>
           <span className="text-[12.5px] text-slate-400">오프닝 & 준비</span>
         </div>
@@ -275,7 +275,7 @@ const ActivitySection: React.FC<{
           </div>
 
           <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            세븐일레븐 앞 야외 테이블에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 소보루 빵 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.
+            빵명장에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 소보루 빵 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
@@ -397,7 +397,7 @@ const ActivitySection: React.FC<{
             </span>
           </div>
           <p className="text-[13.5px] text-slate-300 leading-relaxed">
-            4:30까지 첫 집결지인 <strong>세븐일레븐 앞 공터</strong>로 최종 집결하여 전체 단체사진을 촬영합니다.
+            4:30까지 <strong>세븐일레븐 앞 공터</strong>로 최종 집결하여 전체 단체사진을 촬영합니다.
           </p>
         </div>
       </div>

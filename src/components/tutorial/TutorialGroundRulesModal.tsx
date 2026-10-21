@@ -353,7 +353,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 <span>🥐</span>
                 <span>어플 테스트 & 몸풀기 Quiz</span>
               </div>
-              출발 전 세븐일레븐 앞 야외 테이블에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (바로 옆 빵명장 매장 진열대를 확인하고 <strong>소보루 빵</strong>의 가격을 맞혀보세요.)
+              출발 전 빵명장에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (빵명장 매장 진열대를 확인하고 <strong>소보루 빵</strong>의 가격을 맞혀보세요.)
             </div>
 
             {/* 퀴즈 문제 카드 */}

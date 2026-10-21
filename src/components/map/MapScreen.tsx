@@ -939,11 +939,11 @@ const MapScreen: React.FC = () => {
   const venueSpots = useMemo(() => [
     {
       id: 'start' as const,
-      title: '세븐일레븐 앞 야외 테이블',
+      title: '빵명장',
       badge: '🚩 1:30~2:00 첫 집결지 / 출발',
-      subtitle: '조별 그라운드룰 의논 및 몸풀기 Quiz 장소',
+      subtitle: '빵명장에서 조별 그라운드룰 의논 및 몸풀기 Quiz 진행',
       coords: ACTIVE_VENUE.departurePoint.coords,
-      emoji: '🏪',
+      emoji: '🥐',
       color: '#FACC15',
     },
     {
@@ -959,7 +959,7 @@ const MapScreen: React.FC = () => {
       id: 'finishPhoto' as const,
       title: '세븐일레븐 앞 공터',
       badge: '📸 4:30 최종 집결 / 전체 단체사진',
-      subtitle: '4:30 첫 집결지(세븐일레븐 앞 공터)로 최종 복귀 후 전체 단체사진 촬영',
+      subtitle: '4:30 세븐일레븐 앞 공터로 최종 집결 후 전체 단체사진 촬영',
       coords: ACTIVE_VENUE.photoSpot.coords,
       emoji: '📸',
       color: '#E31837',
@@ -1041,7 +1041,7 @@ const MapScreen: React.FC = () => {
     };
   }, []);
 
-  // 3. 코스 트랙선, 첫 집결지, 테마가든 미션 스팟, 빵명장 단체사진, 내 위치 마커 렌더링
+  // 3. 코스 트랙선, 첫 집결지, 테마가든 미션 스팟, 단체사진, 내 위치 마커 렌더링
   useEffect(() => {
     if (!mapRef.current || !elementsLayerRef.current) return;
     elementsLayerRef.current.clearLayers();
@@ -1071,7 +1071,7 @@ const MapScreen: React.FC = () => {
       lineJoin: 'round',
     }).addTo(layer);
 
-    // 2) 세븐일레븐 앞 야외 테이블 [첫 집결지 · 출발 기점] 마커
+    // 2) 빵명장 [첫 집결지 · 출발 기점] 마커
     const startIcon = L.divIcon({
       className: 'custom-start-pin',
       html: `
@@ -1090,12 +1090,12 @@ const MapScreen: React.FC = () => {
           gap: 5px;
           cursor: pointer;
         ">
-          <span>🏪</span>
-          <span>세븐일레븐 [첫 집결지/출발]</span>
+          <span>🥐</span>
+          <span>빵명장 [첫 집결지/출발]</span>
         </div>
       `,
-      iconSize: [220, 36],
-      iconAnchor: [110, 18],
+      iconSize: [200, 36],
+      iconAnchor: [100, 18],
     });
 
     const startMarker = L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
@@ -1224,7 +1224,7 @@ const MapScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               SATELLITE <span className="text-sky-400">TREKKING MAP</span>
             </span>
-            <p className="text-[12.5px] text-slate-400">세븐일레븐 집결 / 순환 트레킹 코스 지도</p>
+            <p className="text-[12.5px] text-slate-400">빵명장 출발 / 순환 트레킹 코스 지도</p>
           </div>
           <span className="text-[13.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
