@@ -350,7 +350,7 @@ const ActivitySection: React.FC<{
                   테마가든 미션 · 조원 전원 +100pt
                 </span>
                 <h3 className="text-[17px] font-bold text-white group-hover:text-pink-300 transition-colors">
-                  지정 힌트 스팟 찾기 & 단체사진 업로드
+                  테마가든 조별 단체사진 업로드
                 </h3>
               </div>
             </div>
@@ -359,16 +359,16 @@ const ActivitySection: React.FC<{
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-pink-500/20 text-pink-300 border-pink-500/40'
             }`}>
-              {themeGardenDone ? '✅ 업로드 완료' : '📸 사진 촬영'}
+              {themeGardenDone ? '✅ 업로드 완료' : '📸 사진 업로드'}
             </span>
           </div>
 
           <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            테마가든 내 지정 장소 힌트 사진을 참고해 스팟을 찾고, 조원 전원이 참여하는 시그니처 단체사진을 촬영해 업로드하세요.
+            별도 힌트 없이 테마가든 안에서 자유롭게 조원 전원이 보이도록 단체사진을 촬영하거나 사진첩(갤러리)에서 선택해 업로드하세요.
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">장미원 & 호수 수변 테라스 스팟</span>
+            <span className="text-slate-400">테마가든 내 자유 촬영 · 사진첩 선택 가능</span>
             <span className="text-pink-400 font-bold flex items-center gap-0.5">
               미션 사진 올리기 →
             </span>

@@ -44,7 +44,8 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const dbUrl = FIREBASE_DB_URL;
 
   // 서버에서 조별 업로드 사진 불러오기
@@ -107,6 +108,8 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+    // 동일 파일 재선택 가능하도록 초기화
+    e.target.value = '';
   };
 
   // 사진 업로드 제출
@@ -124,7 +127,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
       uploadedCompany: participantCompany || '',
       uploadedAt: new Date().toISOString(),
       status: 'submitted',
-      caption: captionInput.trim() || '우리 조 테마가든 시그니처 단체사진',
+      caption: captionInput.trim() || '우리 조 테마가든 단체사진',
     };
 
     try {
@@ -200,11 +203,11 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             </span>
           </div>
 
-          {/* 힌트 사진 & 가이드 카드 */}
+          {/* 촬영 가이드 카드 (별도 힌트 없이 테마가든 내 자유 촬영) */}
           <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
             <div className="flex items-center justify-between">
               <span className="text-[14px] font-bold text-pink-300 flex items-center gap-1">
-                <span>🔍</span>
+                <span>📸</span>
                 <span>{THEME_GARDEN_MISSION.hintTitle}</span>
               </span>
               <button
@@ -212,24 +215,24 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
                 onClick={() => setShowFullHint(!showFullHint)}
                 className="text-[13.5px] text-sky-400 hover:text-sky-300 font-medium"
               >
-                {showFullHint ? '가이드 접기' : '미션 가이드 보기'}
+                {showFullHint ? '상세 안내 접기' : '상세 안내 보기'}
               </button>
             </div>
 
-            {/* 힌트 비주얼 영역 (장미원 & 호수 일러스트) */}
+            {/* 가이드 비주얼 영역 */}
             <div className="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#1C2538] to-[#101726] p-3 text-center space-y-2">
-              <div className="h-28 rounded-lg bg-gradient-to-br from-rose-900/40 via-pink-950/30 to-sky-950/40 border border-pink-500/20 flex flex-col items-center justify-center p-2 relative overflow-hidden">
-                <div className="text-3xl mb-1 animate-pulse">🌹 ⛲ 📸</div>
-                <p className="text-[14px] font-extrabold text-pink-200">
-                  테마가든 장미원 & 호수 수변 테라스
+              <div className="h-24 rounded-lg bg-gradient-to-br from-rose-900/40 via-pink-950/30 to-sky-950/40 border border-pink-500/20 flex flex-col items-center justify-center p-2 relative overflow-hidden">
+                <div className="text-3xl mb-1">🌹 🤝 📸</div>
+                <p className="text-[14.5px] font-extrabold text-pink-200">
+                  테마가든 내 자유 장소 · 조원 전원 단체사진
                 </p>
                 <p className="text-[12.5px] text-slate-300">
-                  분수대 주변 또는 호수가 내려다보이는 랜드마크 앞
+                  별도 힌트 없이 가든 안 어디서든 자유롭게 촬영!
                 </p>
               </div>
 
               <p className="text-[14px] text-slate-300 leading-relaxed text-left px-1">
-                💡 <strong>미션 방법</strong>: 테마가든 내 지정 스팟을 찾아, <strong>{teamConfig.name} 조원 전원</strong>이 함께 참여하는 개성 넘치는 포즈로 단체사진을 촬영해 주세요!
+                💡 <strong>미션 방법</strong>: 별도의 힌트나 지정 스팟 없이 <strong>테마가든 안에서 자유롭게 {teamConfig.name} 조원 전원</strong>이 보이도록 단체사진을 촬영해 업로드해 주세요!
               </p>
             </div>
 
@@ -262,7 +265,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
 
             {/* 업로드된 사진이 있는 경우 */}
             {photoRecord && !previewPhoto && (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div
                   onClick={() => setZoomPhotoUrl(photoRecord.photoUrl)}
                   className="relative rounded-xl overflow-hidden border-2 border-emerald-500/50 cursor-pointer group shadow-xl"
@@ -286,12 +289,24 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
 
                 <div className="flex items-center justify-between text-[13.5px] text-slate-400 px-1">
                   <span>촬영/등록자: <strong className="text-slate-200">{photoRecord.uploadedBy}</strong></span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-pink-400 hover:text-pink-300 font-bold underline"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="py-2.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 font-bold text-[13.5px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
                   >
-                    사진 다시 찍어 교체하기
+                    <span>🖼️</span>
+                    <span>갤러리에서 교체</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="py-2.5 px-3 rounded-xl bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/40 text-pink-300 font-bold text-[13.5px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                  >
+                    <span>📸</span>
+                    <span>카메라로 재촬영</span>
                   </button>
                 </div>
               </div>
@@ -319,7 +334,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
                   <label className="text-[13.5px] text-slate-400 block mb-1">한 줄 코멘트 (선택)</label>
                   <input
                     type="text"
-                    placeholder="예: 1조 테마가든 완벽 클리어! 🌸"
+                    placeholder="예: 1조 테마가든 단체사진 완료! 🌸"
                     value={captionInput}
                     onChange={e => setCaptionInput(e.target.value)}
                     maxLength={40}
@@ -331,27 +346,55 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
 
             {/* 사진이 없고 새로 선택도 안 한 초기 상태 */}
             {!photoRecord && !previewPhoto && (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-pink-500/40 hover:border-pink-400 bg-pink-950/10 rounded-2xl p-6 text-center cursor-pointer space-y-2 active:scale-98 transition-all"
-              >
-                <div className="w-12 h-12 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30 flex items-center justify-center text-2xl mx-auto">
-                  📸
-                </div>
-                <div>
+              <div className="border-2 border-dashed border-pink-500/40 bg-pink-950/10 rounded-2xl p-4 text-center space-y-3">
+                <div
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="cursor-pointer space-y-1.5"
+                >
+                  <div className="w-12 h-12 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30 flex items-center justify-center text-2xl mx-auto">
+                    📸
+                  </div>
                   <p className="text-[15px] font-bold text-white">
-                    조별 단체사진 촬영 / 갤러리 선택
+                    조원 전원이 나오게 촬영 후 업로드해 주세요
                   </p>
-                  <p className="text-[13.5px] text-slate-400 mt-0.5">
-                    터치하여 카메라로 촬영하거나 사진을 업로드하세요
+                  <p className="text-[13px] text-slate-400">
+                    사진첩(갤러리)에서 선택하거나 카메라로 바로 촬영할 수 있습니다
                   </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="py-3 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-[14px] flex items-center justify-center gap-1.5 shadow active:scale-95 transition-all"
+                  >
+                    <span>🖼️</span>
+                    <span>사진첩(갤러리)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="py-3 px-3 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/50 text-pink-200 font-extrabold text-[14px] flex items-center justify-center gap-1.5 shadow active:scale-95 transition-all"
+                  >
+                    <span>📸</span>
+                    <span>카메라 촬영</span>
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* 숨겨진 파일 인풋 */}
+            {/* 1) 사진첩(갤러리) 및 파일 선택용 인풋 (capture 속성 제거) */}
             <input
-              ref={fileInputRef}
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {/* 2) 카메라 즉시 촬영용 인풋 */}
+            <input
+              ref={cameraInputRef}
               type="file"
               accept="image/*"
               capture="environment"

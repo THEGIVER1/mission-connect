@@ -948,9 +948,9 @@ const MapScreen: React.FC = () => {
     },
     {
       id: 'themeGarden' as const,
-      title: '테마가든 장미원 & 호수 수변 테라스',
+      title: '서울대공원 테마가든',
       badge: '🌹 2:00~4:30 메인 단체사진 미션 (+100pt)',
-      subtitle: '힌트 사진 속 스팟을 찾아 조원 전원 단체 시그니처 포즈 촬영',
+      subtitle: '별도 힌트 없이 테마가든 안에서 자유롭게 조원 전원이 보이게 단체사진 촬영 및 업로드',
       coords: ACTIVE_VENUE.themeGardenSpot.coords,
       emoji: '🌹',
       color: '#DB2777',
