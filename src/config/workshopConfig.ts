@@ -51,15 +51,15 @@ export const WORKSHOP_COMPANIES = [
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────
-// 2. 6개 조 구성 (1~3조: 동물원둘레길 순환 / 4~6조: 호수둘레길 순환)
+// 2. 6개 조 구성 (1~3조: 동물원둘레길 코스 / 4~6조: 미술관 코스)
 // ─────────────────────────────────────────────────────────────────
 export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = [
-  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 (순환)', courseDistance: '4.5km' },
-  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 (순환)', courseDistance: '4.5km' },
-  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 (순환)', courseDistance: '4.5km' },
-  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 (순환)', courseDistance: '2.8km' },
-  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 (순환)', courseDistance: '2.8km' },
-  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌊', assignedCourse: 'lake', courseName: '호수둘레길 (순환)', courseDistance: '2.8km' },
+  { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
+  { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
+  { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
+  { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
+  { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
+  { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🏛️', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
   title: '🌹 테마가든 포토 스팟 & 조별 단체사진 미션',
   timeRange: '2:00 ~ 4:30 (트레킹 중)',
   locationName: '서울대공원 테마가든 내 포토 스팟',
-  coords: { lat: 37.4310, lng: 127.0185 },
+  coords: { lat: 37.430800, lng: 127.015500 },
   hintTitle: '테마가든 단체사진 촬영 가이드',
   hintDescription: '테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드해 주세요!',
   guideLines: [
@@ -139,7 +139,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 6. 몸풀기 Quiz (1:30~2:00 @ 세븐일레븐 앞 테이블)
+// 6. 몸풀기 Quiz (1:30~2:00 @ 빵명장)
 // ─────────────────────────────────────────────────────────────────
 export interface TutorialQuizConfig {
   id: string;
@@ -228,13 +228,13 @@ export const ACTIVE_VENUE = {
   },
   photoSpot: {
     name: '세븐일레븐 앞 공터 [📸 4:30 최종 집결 / 단체사진]',
-    coords: { lat: 37.434610, lng: 127.009518 },
+    coords: { lat: 37.434120, lng: 127.009650 },
   },
   themeGardenSpot: {
-    name: '테마가든 장미원/호수 수변 [🌹 테마가든 미션]',
-    coords: { lat: 37.4310, lng: 127.0185 },
+    name: '테마가든 [🌹 포토 스팟 / 단체사진 미션]',
+    coords: { lat: 37.430800, lng: 127.015500 },
   },
-  mapLabel: '서울대공원 (동물원둘레길 4.5km / 호수둘레길 2.8km 순환)',
+  mapLabel: '서울대공원 (동물원둘레길 코스 / 미술관 코스)',
 };
 
 export const DEFAULT_COURSE: CourseKey = 'lake';

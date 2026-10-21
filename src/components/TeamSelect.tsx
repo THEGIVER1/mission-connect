@@ -329,20 +329,20 @@ const TeamSelect: React.FC = () => {
             </label>
 
             <div className="space-y-3">
-              {/* 동물원둘레길 조 */}
+              {/* 동물원둘레길 코스 조 */}
               <div>
-                <p className="text-[13.5px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
-                  🦁 동물원둘레길 트레킹 (1~3조)
+                <p className="text-[13.5px] font-bold text-red-400 mb-1.5 flex items-center gap-1">
+                  🦁 동물원둘레길 코스 (1~3조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {forestTeams.map(renderTeamCard)}
                 </div>
               </div>
 
-              {/* 호수둘레길 조 */}
+              {/* 미술관 코스 조 */}
               <div>
                 <p className="text-[13.5px] font-bold text-sky-400 mb-1.5 flex items-center gap-1">
-                  🌊 호수둘레길 산책 (4~6조)
+                  🏛️ 미술관 코스 (4~6조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {lakeTeams.map(renderTeamCard)}
