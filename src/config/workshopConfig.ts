@@ -152,7 +152,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = IS_PILOT_MODE
       title: '📸 두산 저수지 조별 단체사진 미션',
       timeRange: '1:32 ~ 2:20 (트레킹 중)',
       locationName: '두산 저수지 (지도 노란색 표시 영역)',
-      coords: { lat: 37.542620, lng: 127.150480 },
+      coords: { lat: 37.541920, lng: 127.151580 },
       hintTitle: '두산 저수지 단체사진 촬영 가이드',
       hintDescription: '두산 저수지(노란색 동그라미 영역)에서 조원 전원이 보이도록 사진 촬영 후 업로드해 주세요!',
       guideLines: [
@@ -297,15 +297,15 @@ export const ACTIVE_VENUE = IS_PILOT_MODE
       sessionKey: 'trekking2026',
       departurePoint: {
         name: '카페쿰베오 [첫 집결지/출발]',
-        coords: { lat: 37.542680, lng: 127.148850 },
+        coords: { lat: 37.542580, lng: 127.148360 },
       },
       photoSpot: {
         name: '연강원 강의장 [🏫 2:20 최종 집결 / Wrap-up Quiz]',
-        coords: { lat: 37.542420, lng: 127.148980 },
+        coords: { lat: 37.542660, lng: 127.149250 },
       },
       themeGardenSpot: {
         name: '두산 저수지 [📸 조별 단체사진 미션]',
-        coords: { lat: 37.542620, lng: 127.150480 },
+        coords: { lat: 37.541920, lng: 127.151580 },
       },
       mapLabel: '두산연강원 트레킹 코스 (단일 코스)',
     }
