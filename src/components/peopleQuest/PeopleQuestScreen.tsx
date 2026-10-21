@@ -302,7 +302,7 @@ const PeopleQuestScreen: React.FC = () => {
       recommendation,
       status: 'draft',
       updatedAt: new Date().toISOString(),
-      updatedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
+      updatedBy: `${participantName || '익명'}(${myTeam.name})`,
     };
 
     try {
@@ -342,7 +342,7 @@ const PeopleQuestScreen: React.FC = () => {
         recommendation,
         status: 'submitted',
         submittedAt: nowIso,
-        submittedBy: `${participantName || '익명'}(${participantCompany || '소속'})`,
+        submittedBy: `${participantName || '익명'}(${myTeam.name})`,
       };
 
       // 1) 로컬 Zustand 스토어 즉시 반영 (0ms 낙관적 업데이트)
@@ -362,7 +362,7 @@ const PeopleQuestScreen: React.FC = () => {
           body: JSON.stringify(payload),
         });
 
-        if (participantName && participantCompany) {
+        if (participantName) {
           const participantId = createParticipantId(participantName, participantCompany);
           // 기존 참가자 퀴즈 점수 조회
           const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
@@ -386,7 +386,7 @@ const PeopleQuestScreen: React.FC = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: participantName.trim(),
-              company: participantCompany,
+              company: participantCompany || '',
               teamId,
               teamName: myTeam.name,
               score: newScore,
@@ -405,12 +405,12 @@ const PeopleQuestScreen: React.FC = () => {
         const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${teamId}`);
         set(pqRef, payload).catch(e => console.warn('SDK set PQ 경고:', e));
 
-        if (participantName && participantCompany) {
+        if (participantName) {
           const participantId = createParticipantId(participantName, participantCompany);
           const pRef = ref(rtdb, `sessions/trekking2026/participants/${participantId}`);
           update(pRef, {
             name: participantName.trim(),
-            company: participantCompany,
+            company: participantCompany || '',
             teamId,
             teamName: myTeam.name,
             peopleQuestCompleted: true,
@@ -526,7 +526,7 @@ const PeopleQuestScreen: React.FC = () => {
                 </span>
               </div>
               <p className="text-[17px] font-bold text-white">
-                👑 {submittedData?.recommendation?.recommendedPersonName} 님 ({submittedData?.recommendation?.recommendedPersonCompany})
+                👑 {submittedData?.recommendation?.recommendedPersonName} 님
               </p>
               <p className="text-[14px] text-slate-300 bg-white/5 p-2.5 rounded-lg italic">
                 "{submittedData?.recommendation?.reason}"
@@ -567,7 +567,7 @@ const PeopleQuestScreen: React.FC = () => {
                 <div className="flex items-center justify-between bg-black/40 border border-red-500/40 rounded-xl p-3">
                   <div>
                     <span className="text-[13.5px] text-red-400 font-bold block">
-                      {recommendation.recommendedPersonCompany}
+                      추천 대상 동료
                     </span>
                     <span className="text-[17px] font-bold text-white">
                       {recommendation.recommendedPersonName} 님
@@ -740,30 +740,15 @@ const PeopleQuestScreen: React.FC = () => {
 
             {modalTab === 'roster' ? (
               <>
-                {/* 검색창 & 소속 필터 */}
-                <div className="p-3 bg-[#0D1117] space-y-2 border-b border-white/5">
+                {/* 검색창 */}
+                <div className="p-3 bg-[#0D1117] border-b border-white/5">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="이름 또는 소속 검색 (예: 홍길동)"
+                    placeholder="이름 또는 조 검색 (예: 홍길동)"
                     className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-2.5 text-[15px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
                   />
-                  <div className="flex gap-1.5">
-                    {(['all', '㈜두산', '두산경영연구원'] as const).map(tab => (
-                      <button
-                        key={tab}
-                        onClick={() => setCompanyFilter(tab)}
-                        className={`flex-1 py-1.5 rounded-lg text-[13.5px] font-bold transition-all ${
-                          companyFilter === tab
-                            ? 'bg-red-500 text-white'
-                            : 'bg-[#1A2235] text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {tab === 'all' ? '전체' : tab}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* 참가자 리스트 */}
@@ -801,7 +786,7 @@ const PeopleQuestScreen: React.FC = () => {
                               {p.name}
                             </span>
                             <span className="text-[13.5px] text-slate-400">
-                              {p.company} {p.teamName ? `· ${p.teamName}` : ''}
+                              {p.teamName || '참가자'}
                             </span>
                           </div>
                         </div>
@@ -828,28 +813,6 @@ const PeopleQuestScreen: React.FC = () => {
                       placeholder="예: 홍길동"
                       className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-3 text-[16px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500"
                     />
-                  </div>
-
-                  <div>
-                    <label className="text-[14px] font-bold text-slate-300 block mb-1">
-                      소속 회사 *
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['㈜두산', '두산경영연구원'].map(comp => (
-                        <button
-                          key={comp}
-                          type="button"
-                          onClick={() => setManualCompany(comp)}
-                          className={`py-2.5 rounded-xl text-[14px] font-bold border transition-all ${
-                            manualCompany === comp
-                              ? 'bg-red-500/20 border-red-500 text-red-300 font-bold'
-                              : 'bg-black/30 border-white/10 text-slate-400'
-                          }`}
-                        >
-                          {comp}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </div>
 

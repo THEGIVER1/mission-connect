@@ -55,10 +55,10 @@ export function sanitizeFirebaseKey(raw: string | undefined | null): string {
   return String(raw).trim().replace(/[.#$[\]/()]/g, '_').replace(/\s+/g, '_');
 }
 
-export function createParticipantId(name: string | undefined | null, company: string | undefined | null): string {
+export function createParticipantId(name: string | undefined | null, company?: string | undefined | null): string {
   const cleanName = sanitizeFirebaseKey(name || '익명');
-  const cleanComp = sanitizeFirebaseKey(company || '소속');
-  return `${cleanName}_${cleanComp}`;
+  const cleanComp = company && String(company).trim() ? sanitizeFirebaseKey(company) : '';
+  return cleanComp ? `${cleanName}_${cleanComp}` : cleanName;
 }
 
 /**

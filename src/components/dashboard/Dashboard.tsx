@@ -58,7 +58,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
             2026 CHRO <span className="text-red-500">TREKKING</span>
           </h1>
           <p className="text-[12.5px] text-slate-400 mt-0.5 tracking-wider">
-            {participantName ? `${participantName}님 (${participantCompany})` : 'CHRO Activity Platform'}
+            {participantName ? `${participantName}님 (${myTeam?.name ?? '참가자'})` : 'CHRO Activity Platform'}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -236,7 +236,7 @@ const ActivitySection: React.FC<{
         </div>
       )}
 
-      {/* 타임라인 단계 1: 오프닝 & 튜토리얼 / 그라운드룰 (1:30~2:00) */}
+      {/* 타임라인 단계 1: 오프닝 그라운드룰 & 몸풀기 Quiz (1:30~2:00) */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[14px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
@@ -254,19 +254,19 @@ const ActivitySection: React.FC<{
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2.5">
               <span className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-lg">
-                🥐
+                🤝
               </span>
               <div>
                 <span className="text-[12.5px] text-amber-400 font-extrabold uppercase tracking-wider block">
-                  오프닝 튜토리얼 & 그라운드룰
+                  오프닝 그라운드룰 & 몸풀기 Quiz
                 </span>
                 <h3 className="text-[17px] font-bold text-white group-hover:text-amber-300 transition-colors">
-                  빵 가격 퀴즈 & 우리 조 약속 정하기
+                  조별 그라운드룰 & 몸풀기 Quiz
                 </h3>
               </div>
             </div>
             <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${
-              hasGroundRulesDone
+              hasGroundRulesDone && hasTutorialDone
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
             }`}>
@@ -275,11 +275,11 @@ const ActivitySection: React.FC<{
           </div>
 
           <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            세븐일레븐 앞 야외 테이블에서 빵명장 빵 가격 퀴즈로 앱을 테스트하고, 조별 역할(타임키퍼 등) 및 <strong>30분 개인 힐링 시간</strong> 등의 규칙을 정해보세요.
+            세븐일레븐 앞 야외 테이블에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 소보루 빵 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">타임키퍼 · 페이스메이커 · 30분 자유 쉼</span>
+            <span className="text-slate-400">조장 · 어플담당 · 30분 자유 쉼 · 몸풀기 Quiz</span>
             <span className="text-amber-400 font-bold flex items-center gap-0.5">
               확인 및 설정 →
             </span>
@@ -287,17 +287,54 @@ const ActivitySection: React.FC<{
         </button>
       </div>
 
-      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:15) */}
+      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 (2:00~4:30) */}
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[14px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
             <span>🚶</span>
-            <span>STEP 2 · 2:00~4:15 [테마가든 & 트레킹 코스]</span>
+            <span>STEP 2 · 2:00~4:30 [트레킹 코스 & 테마가든]</span>
           </span>
           <span className="text-[12.5px] text-slate-400">2대 핵심 미션</span>
         </div>
 
-        {/* 미션 1: 테마가든 단체사진 미션 */}
+        {/* 미션 1: People Quest (먼저 배치) */}
+        <button
+          type="button"
+          onClick={() => navigate('/people-quest')}
+          className="w-full text-left bg-gradient-to-br from-[#1A2235] to-[#141C2E] border border-red-500/30 hover:border-red-500/60 rounded-2xl p-4 shadow-lg active:scale-98 transition-all relative overflow-hidden"
+        >
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-base">
+                💬
+              </span>
+              <div>
+                <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">People Quest · 조원 전원 +100pt</span>
+                <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
+              </div>
+            </div>
+            <span className={`text-[13px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
+              pqSubmitted
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+            }`}>
+              {pqSubmitted ? '✅ 추천 완료' : '대화 진행 중'}
+            </span>
+          </div>
+
+          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
+            트레킹을 함께하며 조원들과 4가지 주제(취미, 버킷리스트, 다른 직업 등)로 대화하고 가장 인상 깊은 동료 1명을 추천해 주세요.
+          </p>
+
+          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
+            <span className="text-slate-400">조별 1명 추천 시 조원당 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
+            <span className="text-red-400 font-bold flex items-center gap-0.5">
+              추천 작성 →
+            </span>
+          </div>
+        </button>
+
+        {/* 미션 2: 테마가든 단체사진 미션 (피플퀘스트 다음 순서) */}
         <button
           type="button"
           onClick={onOpenThemeGardenModal}
@@ -337,67 +374,30 @@ const ActivitySection: React.FC<{
             </span>
           </div>
         </button>
-
-        {/* 미션 2: People Quest */}
-        <button
-          type="button"
-          onClick={() => navigate('/people-quest')}
-          className="w-full text-left bg-gradient-to-br from-[#1A2235] to-[#141C2E] border border-red-500/30 hover:border-red-500/60 rounded-2xl p-4 shadow-lg active:scale-98 transition-all relative overflow-hidden"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-base">
-                💬
-              </span>
-              <div>
-                <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">People Quest · 조원 전원 +100pt</span>
-                <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
-              </div>
-            </div>
-            <span className={`text-[13px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
-              pqSubmitted
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-            }`}>
-              {pqSubmitted ? '✅ 추천 완료' : '대화 진행 중'}
-            </span>
-          </div>
-
-          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            트레킹을 함께하며 조원들과 4가지 주제(취미, 버킷리스트, 다른 직업 등)로 대화하고 가장 인상 깊은 동료 1명을 추천해 주세요.
-          </p>
-
-          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">조별 1명 추천 시 조원당 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
-            <span className="text-red-400 font-bold flex items-center gap-0.5">
-              추천 작성 →
-            </span>
-          </div>
-        </button>
       </div>
 
-      {/* 타임라인 단계 3: 트레킹 종료 & 세븐일레븐 앞 공터 단체사진 (4:15~5:00) */}
+      {/* 타임라인 단계 3: 4:30 최종 집결 & 세븐일레븐 앞 공터 단체사진 */}
       <div className="space-y-1.5 pt-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
             <span>🏁</span>
-            <span>STEP 3 · 4:15~5:00 [세븐일레븐 공터 & 빵명장 내부]</span>
+            <span>STEP 3 · 4:30 최종 집결 [세븐일레븐 앞 공터]</span>
           </span>
-          <span className="text-[12.5px] text-slate-400">종료 & 시상</span>
+          <span className="text-[12.5px] text-slate-400">최종 집결 & 단체사진</span>
         </div>
 
         <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
               <span>📸</span>
-              <span>4:15~4:30 세븐일레븐 앞 공터 단체사진</span>
+              <span>4:30 세븐일레븐 앞 공터 최종 집결 & 단체사진</span>
             </span>
             <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
               전체 집결
             </span>
           </div>
           <p className="text-[13.5px] text-slate-300 leading-relaxed">
-            4:15까지 첫 집결지인 <strong>세븐일레븐 앞 공터</strong>로 복귀하여 전체 단체사진(4:15~4:30)을 촬영한 뒤, 빵명장 내부(4:30~5:00)로 입장합니다. (실내 퀴즈쇼 및 개인 시상 진행)
+            4:30까지 첫 집결지인 <strong>세븐일레븐 앞 공터</strong>로 최종 집결하여 전체 단체사진을 촬영합니다.
           </p>
         </div>
       </div>
@@ -410,7 +410,6 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   const { participantName, participantCompany, myTeam, selectTeam } = useAppStore();
   
   const [modalName, setModalName] = useState(participantName || '');
-  const [modalCompany, setModalCompany] = useState(participantCompany || '㈜두산');
   const [modalTeamId, setModalTeamId] = useState(myTeam?.id || 'team1');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -427,9 +426,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     setErrorMessage('');
 
     const currName = participantName || modalName || '';
-    const currCompany = participantCompany || modalCompany || '㈜두산';
     if (participantName) setModalName(participantName);
-    if (participantCompany) setModalCompany(participantCompany);
     if (myTeam?.id) setModalTeamId(myTeam.id);
 
     let localAnswers: Record<string, string> = {};
@@ -439,7 +436,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     } catch {}
 
     if (currName) {
-      const pId = createParticipantId(currName, currCompany);
+      const pId = createParticipantId(currName, participantCompany);
       fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json?t=${Date.now()}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -464,7 +461,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
   const handleSave = async () => {
     const finalName = (modalName || participantName || '').trim();
-    const finalCompany = modalCompany || participantCompany || '㈜두산';
+    const finalCompany = participantCompany || '';
     const finalTeam = WORKSHOP_TEAMS.find(t => t.id === modalTeamId) || myTeam || WORKSHOP_TEAMS[0];
 
     if (!finalName) {
@@ -568,32 +565,19 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               />
             </div>
             <div>
-              <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 회사 *</label>
+              <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 조 변경</label>
               <select
-                value={modalCompany}
-                onChange={e => setModalCompany(e.target.value)}
-                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2 py-1.5 text-white text-[14.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
+                value={modalTeamId}
+                onChange={e => setModalTeamId(e.target.value)}
+                className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[14.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
               >
-                {WORKSHOP_COMPANIES.map(c => (
-                  <option key={c} value={c} style={{ background: '#1A2235' }}>{c}</option>
+                {WORKSHOP_TEAMS.map(t => (
+                  <option key={t.id} value={t.id} style={{ background: '#1A2235' }}>
+                    {t.emoji} {t.name} ({t.courseDistance})
+                  </option>
                 ))}
               </select>
             </div>
-          </div>
-
-          <div>
-            <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 조 변경</label>
-            <select
-              value={modalTeamId}
-              onChange={e => setModalTeamId(e.target.value)}
-              className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-2.5 py-1.5 text-white text-[14.5px] font-bold focus:outline-none focus:border-sky-500 appearance-none"
-            >
-              {WORKSHOP_TEAMS.map(t => (
-                <option key={t.id} value={t.id} style={{ background: '#1A2235' }}>
-                  {t.emoji} {t.name} ({t.courseName} · {t.courseDistance})
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
@@ -725,7 +709,7 @@ const Dashboard: React.FC = () => {
   const [isThemeGardenModalOpen, setIsThemeGardenModalOpen] = useState(false);
 
   const teamId = normalizeTeamId(myTeam?.id);
-  const participantId = participantName && participantCompany
+  const participantId = participantName
     ? createParticipantId(participantName, participantCompany)
     : 'anonymous';
 
@@ -884,7 +868,7 @@ const Dashboard: React.FC = () => {
 
   // 6. 참가자 프로필 자동 동기화
   useEffect(() => {
-    if (!participantName || !participantCompany || !myTeam) return;
+    if (!participantName || !myTeam) return;
     const pId = createParticipantId(participantName, participantCompany);
 
     let localAnswers: Record<string, string> = {};
@@ -895,7 +879,7 @@ const Dashboard: React.FC = () => {
 
     const payload = {
       name: participantName.trim(),
-      company: participantCompany,
+      company: participantCompany || '',
       teamId: myTeam.id,
       teamName: myTeam.name,
       course: myTeam.assignedCourse || 'forest',

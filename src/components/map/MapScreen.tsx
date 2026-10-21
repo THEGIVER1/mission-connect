@@ -941,7 +941,7 @@ const MapScreen: React.FC = () => {
       id: 'start' as const,
       title: '세븐일레븐 앞 야외 테이블',
       badge: '🚩 1:30~2:00 첫 집결지 / 출발',
-      subtitle: '오프닝 튜토리얼 퀴즈 및 조별 그라운드룰 의논 장소',
+      subtitle: '조별 그라운드룰 의논 및 몸풀기 Quiz 장소',
       coords: ACTIVE_VENUE.departurePoint.coords,
       emoji: '🏪',
       color: '#FACC15',
@@ -949,7 +949,7 @@ const MapScreen: React.FC = () => {
     {
       id: 'themeGarden' as const,
       title: '테마가든 장미원 & 호수 수변 테라스',
-      badge: '🌹 2:00~4:15 메인 단체사진 미션 (+100pt)',
+      badge: '🌹 2:00~4:30 메인 단체사진 미션 (+100pt)',
       subtitle: '힌트 사진 속 스팟을 찾아 조원 전원 단체 시그니처 포즈 촬영',
       coords: ACTIVE_VENUE.themeGardenSpot.coords,
       emoji: '🌹',
@@ -958,8 +958,8 @@ const MapScreen: React.FC = () => {
     {
       id: 'finishPhoto' as const,
       title: '세븐일레븐 앞 공터',
-      badge: '📸 4:15~4:30 복귀 / 전체 단체사진',
-      subtitle: '첫 집결지 복귀 후 전체 단체사진 촬영 (4:30 빵명장 입장)',
+      badge: '📸 4:30 최종 집결 / 전체 단체사진',
+      subtitle: '4:30 첫 집결지(세븐일레븐 앞 공터)로 최종 복귀 후 전체 단체사진 촬영',
       coords: ACTIVE_VENUE.photoSpot.coords,
       emoji: '📸',
       color: '#E31837',
@@ -1174,11 +1174,11 @@ const MapScreen: React.FC = () => {
           cursor: pointer;
         ">
           <span>📸</span>
-          <span>세븐일레븐 공터 [4:15~4:30 단체사진]</span>
+          <span>세븐일레븐 공터 [4:30 최종 집결/단체사진]</span>
         </div>
       `,
-      iconSize: [245, 36],
-      iconAnchor: [122, 44],
+      iconSize: [255, 36],
+      iconAnchor: [127, 44],
     });
 
     const finishMarker = L.marker([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
@@ -1224,7 +1224,7 @@ const MapScreen: React.FC = () => {
             <span className="font-bebas text-xl tracking-widest text-white">
               SATELLITE <span className="text-sky-400">TREKKING MAP</span>
             </span>
-            <p className="text-[12.5px] text-slate-400">세븐일레븐 집결 / 빵명장 종료 순환 코스 지도</p>
+            <p className="text-[12.5px] text-slate-400">세븐일레븐 집결 / 순환 트레킹 코스 지도</p>
           </div>
           <span className="text-[13.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
@@ -1348,19 +1348,19 @@ const MapScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 하단 미션 이동 버튼 */}
+        {/* 하단 미션 이동 버튼 (순서: 1. 피플퀘스트 추천 -> 2. 테마가든 사진 올리기) */}
         <div className="pt-3 flex gap-2">
-          <button
-            onClick={() => navigate('/')}
-            className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1.5"
-          >
-            <span>🌹 테마가든 사진 올리기</span>
-          </button>
           <button
             onClick={() => navigate('/people-quest')}
             className="flex-1 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-1.5"
           >
             <span>💬 피플퀘스트 추천</span>
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[16px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1.5"
+          >
+            <span>🌹 테마가든 사진 올리기</span>
           </button>
         </div>
       </div>

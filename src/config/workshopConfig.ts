@@ -107,7 +107,7 @@ export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들�
 export const PEOPLE_QUEST_POINTS_PER_MEMBER = 100; // 조원당 100pt
 
 // ─────────────────────────────────────────────────────────────────
-// 5. Activity 2: 테마가든 메인 미션 (2:00~4:15 진행 중)
+// 5. Activity 2: 테마가든 메인 미션 (2:00~4:30 진행 중)
 // ─────────────────────────────────────────────────────────────────
 export interface ThemeGardenMissionConfig {
   id: string;
@@ -124,7 +124,7 @@ export interface ThemeGardenMissionConfig {
 export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
   id: 'theme_garden_photo',
   title: '🌹 테마가든 시그니처 스팟 찾기 & 조별 단체사진',
-  timeRange: '2:00 ~ 4:15 (트레킹 중)',
+  timeRange: '2:00 ~ 4:30 (트레킹 중)',
   locationName: '서울대공원 테마가든 (장미원 & 호수 수변 테라스)',
   coords: { lat: 37.4310, lng: 127.0185 },
   hintTitle: '테마가든 지정 장소 힌트',
@@ -133,13 +133,13 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
     '테마가든 내 힌트 사진 속 지정 장소를 찾아냅니다.',
     '조원 전원이 모여 개성 넘치고 재미있는 단체 시그니처 포즈를 취합니다.',
     '사진을 촬영하여 조별 대표 1명이 업로드하면 조원 전원에게 미션 점수가 부여됩니다!',
-    '업로드된 사진은 종료 후 빵명장 빔프로젝터 갤러리 및 우수 포즈 조 시상에 반영됩니다.',
+    '업로드된 사진은 실시간 갤러리 및 우수 포즈 조 시상에 반영됩니다.',
   ],
   pointsPerMember: 100,
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 6. 오프닝 & 튜토리얼 퀴즈 (1:30~2:00 @ 세븐일레븐 앞 테이블)
+// 6. 몸풀기 Quiz (1:30~2:00 @ 세븐일레븐 앞 테이블)
 // ─────────────────────────────────────────────────────────────────
 export interface TutorialQuizConfig {
   id: string;
@@ -154,13 +154,13 @@ export interface TutorialQuizConfig {
 
 export const TUTORIAL_QUIZ: TutorialQuizConfig = {
   id: 'tutorial_bbang_price',
-  title: '🥐 오프닝 튜토리얼 퀴즈: 빵명장 빵 가격 맞히기',
-  itemTitle: '빵명장 No.1 시그니처 빵 (육쪽마늘빵)',
-  questionText: '빵명장 서울대공원점의 대표 1위 시그니처 메뉴인 "육쪽마늘빵"의 판매 가격은 얼마일까요? (매장 진열대 확인!)',
-  options: ['5,500원', '6,500원', '7,000원', '7,800원'],
-  correctIndex: 1, // 6,500원
-  explanation: '정답입니다! 빵명장의 대표 베스트셀러 육쪽마늘빵의 가격은 6,500원입니다. 앱 작동 및 퀴즈 제출 튜토리얼이 완료되었습니다.',
-  hintText: '💡 빵명장 매장 앞/내부 쇼케이스의 인기 빵 가격표를 가볍게 확인해 보세요!',
+  title: '🥐 몸풀기 Quiz: 소보루 빵 가격 맞히기',
+  itemTitle: '빵명장 인기 메뉴 (소보루 빵)',
+  questionText: '빵명장 서울대공원점의 인기 메뉴인 "소보루 빵"의 판매 가격은 얼마일까요? (매장 진열대 확인!)',
+  options: ['3,200원', '3,800원', '4,300원', '4,800원'],
+  correctIndex: 1, // 3,800원
+  explanation: '정답입니다! 소보루 빵의 판매 가격은 3,800원입니다. 가벼운 몸풀기 Quiz와 앱 작동 테스트가 완료되었습니다.',
+  hintText: '💡 매장 진열대의 소보루 빵 가격표를 가볍게 확인해 보세요!',
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -174,7 +174,9 @@ export interface RoleOption {
 }
 
 export const GROUND_RULE_ROLE_OPTIONS: RoleOption[] = [
-  { id: 'timekeeper', title: '타임키퍼', icon: '⏱️', description: '트레킹 페이스와 4:15 세븐일레븐 앞 공터 복귀 시간을 챙기는 일정 매니저' },
+  { id: 'leader', title: '조장', icon: '👑', description: '우리 조의 중심! 조원들의 의견을 모으고 트레킹을 이끄는 리더' },
+  { id: 'app_manager', title: '어플담당', icon: '📱', description: '앱 미션 입력, 몸풀기 Quiz, 사진 업로드 및 동료 추천 작성을 주도' },
+  { id: 'timekeeper', title: '타임키퍼', icon: '⏱️', description: '트레킹 페이스와 4:30 세븐일레븐 앞 공터 최종 집결 시간을 챙기는 매니저' },
   { id: 'pacemaker', title: '페이스메이커', icon: '🚶', description: '가장 편안한 템포로 걸으며 조원들의 무리 없는 걷기를 리드' },
   { id: 'photographer', title: '전속 포토그래퍼', icon: '📸', description: '테마가든 미션 사진 및 조원들의 인생샷과 웃는 순간을 포착' },
   { id: 'vitamin', title: '비타민/리액션 캡틴', icon: '💊', description: '지치지 않는 긍정 에너지와 리액션으로 조의 활력을 불어넣음' },
@@ -225,7 +227,7 @@ export const ACTIVE_VENUE = {
     coords: { lat: 37.434610, lng: 127.009518 },
   },
   photoSpot: {
-    name: '세븐일레븐 앞 공터 [📸 4:15~4:30 전체 단체사진]',
+    name: '세븐일레븐 앞 공터 [📸 4:30 최종 집결 / 단체사진]',
     coords: { lat: 37.434610, lng: 127.009518 },
   },
   themeGardenSpot: {

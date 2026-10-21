@@ -379,7 +379,7 @@ const MissionTab: React.FC<{
           <div className="flex items-center gap-2">
             <span className="text-xl">🌹</span>
             <div>
-              <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">Activity 2 · 현장 인증 (2:00~4:15)</span>
+              <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">Activity 2 · 현장 인증 (2:00~4:30)</span>
               <h3 className="text-[17px] font-bold text-white">테마가든 시그니처 단체사진 미션</h3>
             </div>
           </div>

@@ -19,11 +19,10 @@ type Step = 'info' | 'myinfo';
 
 const TeamSelect: React.FC = () => {
   const navigate = useNavigate();
-  const { selectTeam, myTeam, participantName, participantCompany, logout } = useAppStore();
+  const { selectTeam, myTeam, participantName, logout } = useAppStore();
 
   const [step, setStep] = useState<Step>('info');
   const [name, setName] = useState(participantName || '');
-  const [company, setCompany] = useState(participantCompany || '');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(myTeam?.id || null);
 
   // 「나의 정보 4개 질문」 답변 상태 관리 (로컬 드래프트 우선 복원)
@@ -45,8 +44,8 @@ const TeamSelect: React.FC = () => {
 
   // 1. 기존 RTDB 데이터 불러오기 (서버 데이터 우선 병합)
   useEffect(() => {
-    if (!name || !company) return;
-    const participantId = createParticipantId(name, company);
+    if (!name.trim()) return;
+    const participantId = createParticipantId(name.trim(), '');
     fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json?t=${Date.now()}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
@@ -55,7 +54,7 @@ const TeamSelect: React.FC = () => {
         }
       })
       .catch(() => {});
-  }, [name, company, dbUrl]);
+  }, [name, dbUrl]);
 
   // 2. 실시간 입력 디바운스 로컬 & 서버 자동 저장 (작성 도중 유실 원천 방어)
   const handleAnswerChange = (qId: string, value: string) => {
@@ -70,14 +69,14 @@ const TeamSelect: React.FC = () => {
       }
 
       // 백그라운드 REST 즉시 동기화
-      if (name.trim() && company) {
-        const pId = createParticipantId(name.trim(), company);
+      if (name.trim()) {
+        const pId = createParticipantId(name.trim(), '');
         fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: name.trim(),
-            company,
+            company: '',
             teamId: selectedTeam?.id || myTeam?.id || 'team1',
             teamName: selectedTeam?.name || myTeam?.name || '1조',
             course: selectedTeam?.assignedCourse || myTeam?.assignedCourse || 'forest',
@@ -98,7 +97,6 @@ const TeamSelect: React.FC = () => {
   // Step 1 -> Step 2 검증
   const handleInfoNext = () => {
     if (!name.trim()) { setError('이름을 입력해주세요.'); return; }
-    if (!company) { setError('소속을 선택해주세요.'); return; }
     if (!selectedTeamId) { setError('배정받은 행사 조를 선택해주세요.'); return; }
     setError('');
     setStep('myinfo');
@@ -111,7 +109,7 @@ const TeamSelect: React.FC = () => {
     setError('');
 
     const trimmedName = name.trim();
-    const participantId = createParticipantId(trimmedName, company);
+    const participantId = createParticipantId(trimmedName, '');
 
     // 1. 즉시 로컬 스토어에 팀 및 참가자 정보 세팅 (0ms 지연)
     const initialScore = 0;
@@ -129,7 +127,7 @@ const TeamSelect: React.FC = () => {
       totalMissions: 2,
       lastActivity: new Date(),
       status: 'active',
-    }, trimmedName, company, selectedTeam.assignedCourse);
+    }, trimmedName, '', selectedTeam.assignedCourse);
 
     // 2. localStorage에 즉시 답변 드래프트 영구 저장
     try {
@@ -140,7 +138,7 @@ const TeamSelect: React.FC = () => {
     // 3. 페이로드 준비
     const payload = {
       name: trimmedName,
-      company,
+      company: '',
       teamId: selectedTeam.id,
       teamName: selectedTeam.name,
       course: selectedTeam.assignedCourse,
@@ -272,7 +270,7 @@ const TeamSelect: React.FC = () => {
                 ✓ 현재 로그인된 참가자
               </span>
               <p className="text-[16px] text-white">
-                <strong className="text-amber-400">{participantName}</strong>님 ({participantCompany} · {myTeam.name})
+                <strong className="text-amber-400">{participantName}</strong>님 ({myTeam.name})
               </p>
               <div className="space-y-1.5 pt-1">
                 <button
@@ -295,7 +293,6 @@ const TeamSelect: React.FC = () => {
                     onClick={() => {
                       logout();
                       setName('');
-                      setCompany('');
                       setSelectedTeamId(null);
                     }}
                     className="px-3 py-2 bg-black/40 text-slate-400 hover:text-white text-[13.5px] rounded-xl border border-white/10"
@@ -309,7 +306,7 @@ const TeamSelect: React.FC = () => {
 
           <div>
             <p className="text-[19px] font-bold text-white">참가자 정보 입력 👋</p>
-            <p className="text-[14px] text-slate-400">이름, 소속, 배정받은 행사 조를 선택하세요</p>
+            <p className="text-[14px] text-slate-400">이름과 배정받은 행사 조를 선택하세요</p>
           </div>
 
           <div>
@@ -323,21 +320,6 @@ const TeamSelect: React.FC = () => {
                 text-white text-[16px] placeholder-slate-600
                 focus:outline-none focus:border-red-500 transition-colors"
             />
-          </div>
-
-          <div>
-            <label className="text-[14px] text-slate-400 mb-1 block font-medium">소속 *</label>
-            <select
-              value={company}
-              onChange={e => setCompany(e.target.value)}
-              className="w-full bg-[#1A2235] border border-white/10 rounded-xl px-3.5 py-3
-                text-[16px] focus:outline-none focus:border-red-500 transition-colors appearance-none"
-              style={{ color: company ? 'white' : '#475569' }}>
-              <option value="" disabled>소속을 선택하세요</option>
-              {COMPANIES.map(c => (
-                <option key={c} value={c} style={{ color: 'white', background: '#1A2235' }}>{c}</option>
-              ))}
-            </select>
           </div>
 
           {/* 조 선택 */}

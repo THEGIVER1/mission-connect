@@ -28,9 +28,9 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
   const normTeamId = normalizeTeamId(teamId);
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normTeamId) || WORKSHOP_TEAMS[0];
 
-  const [activeTab, setActiveTab] = useState<'quiz' | 'rules'>('quiz');
+  const [activeTab, setActiveTab] = useState<'rules' | 'quiz'>('rules');
 
-  // 1. 튜토리얼 퀴즈 상태
+  // 1. 몸풀기 Quiz 상태
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isQuizSubmitted, setIsQuizSubmitted] = useState<boolean>(false);
   const [isQuizCorrect, setIsQuizCorrect] = useState<boolean>(false);
@@ -64,7 +64,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
       })
       .catch(err => console.warn('그라운드룰 로드 경고:', err));
 
-    // 2) 튜토리얼 완료 여부
+    // 2) 몸풀기 퀴즈 완료 여부
     if (participantName) {
       const pId = createParticipantId(participantName, participantCompany);
       fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}/tutorial.json?t=${Date.now()}`)
@@ -76,13 +76,13 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
             setIsQuizCorrect(data.isCorrect ?? true);
           }
         })
-        .catch(err => console.warn('튜토리얼 상태 로드 경고:', err));
+        .catch(err => console.warn('몸풀기 퀴즈 상태 로드 경고:', err));
     }
   }, [isOpen, normTeamId, participantName, participantCompany, dbUrl]);
 
   if (!isOpen) return null;
 
-  // 튜토리얼 퀴즈 제출
+  // 몸풀기 퀴즈 제출
   const handleQuizSubmit = async () => {
     if (selectedOption === null) return;
 
@@ -112,7 +112,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
         const tutRef = ref(rtdb, `sessions/trekking2026/participants/${pId}/tutorial`);
         update(tutRef, payload).catch(() => {});
       } catch (e) {
-        console.warn('튜토리얼 저장 경고:', e);
+        console.warn('몸풀기 퀴즈 저장 경고:', e);
       }
     }
   };
@@ -135,7 +135,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
     setCustomRulesList(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 그라운드룰 저장
+  // 그라운드룰 저장 후 몸풀기 Quiz 탭으로 이동
   const handleSaveGroundRules = async () => {
     setIsSavingRules(true);
     setSaveSuccess(false);
@@ -168,8 +168,8 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
     fireConfetti();
     setTimeout(() => {
       setSaveSuccess(false);
-      onClose();
-    }, 1200);
+      setActiveTab('quiz');
+    }, 900);
   };
 
   return (
@@ -187,7 +187,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 1:30~2:00 집결 오프닝
               </span>
               <h3 className="text-[16px] font-bold text-white">
-                {teamConfig.name} 튜토리얼 & 그라운드룰
+                {teamConfig.name} 그라운드룰 & 몸풀기 Quiz
               </h3>
             </div>
           </div>
@@ -199,20 +199,8 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 탭 전환 */}
+        {/* 탭 전환 (1. 조별 그라운드룰 -> 2. 몸풀기 Quiz) */}
         <div className="flex bg-[#101626] p-1.5 border-b border-white/8 gap-1.5 flex-shrink-0">
-          <button
-            onClick={() => setActiveTab('quiz')}
-            className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
-              activeTab === 'quiz'
-                ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>🥐</span>
-            <span>1. 빵 가격 튜토리얼</span>
-            {isQuizSubmitted && <span className="text-emerald-300 text-[12.5px]">✔</span>}
-          </button>
           <button
             onClick={() => setActiveTab('rules')}
             className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
@@ -222,100 +210,24 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
             }`}
           >
             <span>🤝</span>
-            <span>2. 조별 그라운드룰</span>
+            <span>1. 조별 그라운드룰</span>
             {selectedRules.length > 0 && <span className="text-sky-300 text-[12.5px]">({selectedRules.length})</span>}
+          </button>
+          <button
+            onClick={() => setActiveTab('quiz')}
+            className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
+              activeTab === 'quiz'
+                ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🥐</span>
+            <span>2. 몸풀기 Quiz</span>
+            {isQuizSubmitted && <span className="text-emerald-300 text-[12.5px]">✔</span>}
           </button>
         </div>
 
-        {/* 탭 1: 튜토리얼 퀴즈 */}
-        {activeTab === 'quiz' && (
-          <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
-            {/* 빵명장 튜토리얼 안내 배너 */}
-            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-red-500/15 border border-amber-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
-              <div className="flex items-center gap-1.5 font-bold text-amber-400 mb-1">
-                <span>🥐</span>
-                <span>어플 테스트 & 빵명장 시그니처 퀴즈</span>
-              </div>
-              출발 전 세븐일레븐 앞 야외 테이블에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (바로 옆 빵명장 매장 진열대를 확인하고 1위 시그니처 빵의 가격을 맞혀보세요.)
-            </div>
-
-            {/* 퀴즈 문제 카드 */}
-            <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-3 shadow-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-[13.5px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
-                  빵명장 서울대공원점
-                </span>
-                <span className="text-[13.5px] text-slate-400">
-                  앱 사용 튜토리얼
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <h4 className="text-[16px] font-bold text-white leading-snug">
-                  {TUTORIAL_QUIZ.questionText}
-                </h4>
-                <p className="text-[13.5px] text-amber-300/90 font-medium">
-                  {TUTORIAL_QUIZ.hintText}
-                </p>
-              </div>
-
-              {/* 보기 4지선다 */}
-              <div className="space-y-2 pt-1">
-                {TUTORIAL_QUIZ.options.map((opt, idx) => {
-                  const isSelected = selectedOption === idx;
-                  const isCorrectAnswer = idx === TUTORIAL_QUIZ.correctIndex;
-                  let btnStyle = 'bg-black/30 border-white/10 text-slate-200 hover:border-white/30';
-
-                  if (isQuizSubmitted) {
-                    if (isCorrectAnswer) {
-                      btnStyle = 'bg-emerald-500/20 border-emerald-400 text-emerald-300 font-extrabold';
-                    } else if (isSelected) {
-                      btnStyle = 'bg-red-500/20 border-red-400 text-red-300';
-                    }
-                  } else if (isSelected) {
-                    btnStyle = 'bg-sky-500/20 border-sky-400 text-white font-bold';
-                  }
-
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      disabled={isQuizSubmitted}
-                      onClick={() => setSelectedOption(idx)}
-                      className={`w-full text-left p-3 rounded-xl border text-[15px] flex items-center justify-between transition-all active:scale-98 ${btnStyle}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[13.5px] font-bold">
-                          {idx + 1}
-                        </span>
-                        <span>{opt}</span>
-                      </div>
-                      {isQuizSubmitted && isCorrectAnswer && (
-                        <span className="text-emerald-400 text-sm font-bold">정답 👏</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 제출 후 해설 */}
-              {isQuizSubmitted && (
-                <div className={`p-3 rounded-xl border text-[14px] leading-relaxed animate-fade-in ${
-                  isQuizCorrect
-                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
-                    : 'bg-red-950/40 border-red-500/40 text-red-200'
-                }`}>
-                  <p className="font-bold mb-1">
-                    {isQuizCorrect ? '🎉 완벽합니다! 정답입니다.' : '💡 오답입니다. 정답은 6,500원(2번)입니다.'}
-                  </p>
-                  <p>{TUTORIAL_QUIZ.explanation}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 탭 2: 조별 그라운드룰 & 역할 분담 */}
+        {/* 탭 1: 조별 그라운드룰 & 역할 분담 */}
         {activeTab === 'rules' && (
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
             {/* 30분 힐링 & 그라운드룰 안내 */}
@@ -324,7 +236,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 <span>🤝</span>
                 <span>출발 전 조별 자기소개 & 그라운드룰 약속</span>
               </div>
-              조원들과 역할을 나누고 우리 조만의 힐링 규칙을 정해보세요! (예: <strong>30분 개인 힐링 시간</strong>, 천천히 걷기 등)
+              조원들과 역할(조장, 어플담당 등)을 나누고 우리 조만의 힐링 규칙을 정해보세요! (예: <strong>30분 개인 힐링 시간</strong>, 천천히 걷기 등)
             </div>
 
             {/* 역할 배분 섹션 */}
@@ -432,9 +344,106 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           </div>
         )}
 
+        {/* 탭 2: 몸풀기 Quiz */}
+        {activeTab === 'quiz' && (
+          <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
+            {/* 몸풀기 Quiz 안내 배너 */}
+            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-red-500/15 border border-amber-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
+              <div className="flex items-center gap-1.5 font-bold text-amber-400 mb-1">
+                <span>🥐</span>
+                <span>어플 테스트 & 몸풀기 Quiz</span>
+              </div>
+              출발 전 세븐일레븐 앞 야외 테이블에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (바로 옆 빵명장 매장 진열대를 확인하고 <strong>소보루 빵</strong>의 가격을 맞혀보세요.)
+            </div>
+
+            {/* 퀴즈 문제 카드 */}
+            <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-[13.5px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
+                  빵명장 서울대공원점
+                </span>
+                <span className="text-[13.5px] text-slate-400">
+                  몸풀기 Quiz
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                <h4 className="text-[16px] font-bold text-white leading-snug">
+                  {TUTORIAL_QUIZ.questionText}
+                </h4>
+                <p className="text-[13.5px] text-amber-300/90 font-medium">
+                  {TUTORIAL_QUIZ.hintText}
+                </p>
+              </div>
+
+              {/* 보기 4지선다 */}
+              <div className="space-y-2 pt-1">
+                {TUTORIAL_QUIZ.options.map((opt, idx) => {
+                  const isSelected = selectedOption === idx;
+                  const isCorrectAnswer = idx === TUTORIAL_QUIZ.correctIndex;
+                  let btnStyle = 'bg-black/30 border-white/10 text-slate-200 hover:border-white/30';
+
+                  if (isQuizSubmitted) {
+                    if (isCorrectAnswer) {
+                      btnStyle = 'bg-emerald-500/20 border-emerald-400 text-emerald-300 font-extrabold';
+                    } else if (isSelected) {
+                      btnStyle = 'bg-red-500/20 border-red-400 text-red-300';
+                    }
+                  } else if (isSelected) {
+                    btnStyle = 'bg-sky-500/20 border-sky-400 text-white font-bold';
+                  }
+
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      disabled={isQuizSubmitted}
+                      onClick={() => setSelectedOption(idx)}
+                      className={`w-full text-left p-3 rounded-xl border text-[15px] flex items-center justify-between transition-all active:scale-98 ${btnStyle}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[13.5px] font-bold">
+                          {idx + 1}
+                        </span>
+                        <span>{opt}</span>
+                      </div>
+                      {isQuizSubmitted && isCorrectAnswer && (
+                        <span className="text-emerald-400 text-sm font-bold">정답 👏</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 제출 후 해설 */}
+              {isQuizSubmitted && (
+                <div className={`p-3 rounded-xl border text-[14px] leading-relaxed animate-fade-in ${
+                  isQuizCorrect
+                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                    : 'bg-red-950/40 border-red-500/40 text-red-200'
+                }`}>
+                  <p className="font-bold mb-1">
+                    {isQuizCorrect ? '🎉 완벽합니다! 정답입니다.' : '💡 오답입니다. 정답은 3,800원(2번)입니다.'}
+                  </p>
+                  <p>{TUTORIAL_QUIZ.explanation}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 하단 액션 버튼 */}
         <div className="bg-[#182035] border-t border-white/10 p-3 flex items-center gap-2 flex-shrink-0">
-          {activeTab === 'quiz' ? (
+          {activeTab === 'rules' ? (
+            <button
+              type="button"
+              disabled={isSavingRules}
+              onClick={handleSaveGroundRules}
+              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>{isSavingRules ? '저장 처리 중...' : saveSuccess ? '✅ 저장 완료! 몸풀기 Quiz로 이동 중...' : '우리 조 그라운드룰 저장 & 몸풀기 Quiz 이동 →'}</span>
+            </button>
+          ) : (
             <>
               {!isQuizSubmitted ? (
                 <button
@@ -443,27 +452,18 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                   onClick={handleQuizSubmit}
                   className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 disabled:opacity-40 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                  <span>정답 제출하고 튜토리얼 완료하기 🚀</span>
+                  <span>정답 제출하고 몸풀기 Quiz 완료하기 🚀</span>
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setActiveTab('rules')}
+                  onClick={onClose}
                   className="w-full py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                  <span>다음: 2단계 조별 그라운드룰 정하기 →</span>
+                  <span>몸풀기 Quiz 완료 & 닫기 ✓</span>
                 </button>
               )}
             </>
-          ) : (
-            <button
-              type="button"
-              disabled={isSavingRules}
-              onClick={handleSaveGroundRules}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-            >
-              <span>{isSavingRules ? '저장 처리 중...' : saveSuccess ? '✅ 저장 완료!' : '우리 조 그라운드룰 확정 & 저장 💾'}</span>
-            </button>
           )}
         </div>
       </div>

@@ -1885,6 +1885,14 @@ const AdminScreen: React.FC = () => {
                       <span className="text-[13.5px] font-bold text-sky-400 block">👥 조별 역할 배분</span>
                       <div className="grid grid-cols-2 gap-1.5 text-[14px]">
                         <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+                          <span className="text-slate-400 block text-[12.5px]">👑 조장</span>
+                          <strong className="text-white">{roles['leader'] || '(미정)'}</strong>
+                        </div>
+                        <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+                          <span className="text-slate-400 block text-[12.5px]">📱 어플담당</span>
+                          <strong className="text-white">{roles['app_manager'] || '(미정)'}</strong>
+                        </div>
+                        <div className="bg-black/30 p-2 rounded-xl border border-white/5">
                           <span className="text-slate-400 block text-[12.5px]">⏱️ 타임키퍼</span>
                           <strong className="text-white">{roles['timekeeper'] || '(미정)'}</strong>
                         </div>
@@ -1950,7 +1958,7 @@ const AdminScreen: React.FC = () => {
                   🌹 테마가든 조별 단체사진 실시간 갤러리
                 </span>
                 <span className="text-[13.5px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
-                  2:00~4:15 메인 미션
+                  2:00~4:30 메인 미션
                 </span>
               </div>
               <p className="text-[14px] text-slate-300 leading-relaxed">
@@ -2078,13 +2086,13 @@ const AdminScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSendBroadcast({
-                    title: '📸 세븐일레븐 앞 공터 전체 단체사진 집결 안내',
-                    message: '트레킹 복귀 후 4시 15분부터 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터에서 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 세븐일레븐 앞으로 모여주세요!',
+                    title: '📸 4:30 세븐일레븐 앞 공터 최종 집결 및 단체사진 안내',
+                    message: '트레킹 종료 후 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터로 최종 집결하여 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 세븐일레븐 앞으로 모여주세요!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
-                  <span>📸 <strong>[단체사진]</strong> 4:15~4:30 세븐일레븐 공터 집결</span>
+                  <span>📸 <strong>[단체사진]</strong> 4:30 세븐일레븐 공터 최종 집결</span>
                   <span className="text-[12.5px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
@@ -2092,12 +2100,12 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: '⏰ 트레킹 마감 15분 전 안내',
-                    message: '트레킹 미션 종료 15분 전입니다. 4시 15분까지 첫 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
+                    message: '트레킹 미션 종료 15분 전입니다. 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
-                  <span>⏰ <strong>[마감 15분 전]</strong> 복귀지(세븐일레븐 앞 공터) 복귀</span>
+                  <span>⏰ <strong>[마감 15분 전]</strong> 4:30 복귀지(세븐일레븐 앞 공터) 복귀</span>
                   <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 

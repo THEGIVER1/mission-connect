@@ -74,9 +74,6 @@ export const CompletionCertificateModal: React.FC<CompletionCertificateModalProp
               <h3 className="text-[18px] font-bold text-white mt-0.5">
                 {participantName || '두산 리더'} 님
               </h3>
-              <p className="text-[14px] text-slate-300">
-                {participantCompany || '㈜두산 / 두산경영연구원'}
-              </p>
             </div>
 
             <div className="h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
