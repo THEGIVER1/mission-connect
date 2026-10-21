@@ -203,7 +203,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             </span>
           </div>
 
-          {/* 촬영 가이드 카드 (별도 힌트 없이 테마가든 내 자유 촬영) */}
+          {/* 촬영 가이드 카드 (테마가든 안에 숨어있는 포토 스팟 찾기) */}
           <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
             <div className="flex items-center justify-between">
               <span className="text-[14px] font-bold text-pink-300 flex items-center gap-1">
@@ -222,17 +222,17 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             {/* 가이드 비주얼 영역 */}
             <div className="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#1C2538] to-[#101726] p-3 text-center space-y-2">
               <div className="h-24 rounded-lg bg-gradient-to-br from-rose-900/40 via-pink-950/30 to-sky-950/40 border border-pink-500/20 flex flex-col items-center justify-center p-2 relative overflow-hidden">
-                <div className="text-3xl mb-1">🌹 🤝 📸</div>
+                <div className="text-3xl mb-1">🌹 🔍 📸</div>
                 <p className="text-[14.5px] font-extrabold text-pink-200">
-                  테마가든 내 자유 장소 · 조원 전원 단체사진
+                  테마가든 내 숨어있는 포토 스팟 찾기
                 </p>
                 <p className="text-[12.5px] text-slate-300">
-                  별도 힌트 없이 가든 안 어디서든 자유롭게 촬영!
+                  포토 스팟에서 조원 전원이 보이도록 단체사진 촬영!
                 </p>
               </div>
 
               <p className="text-[14px] text-slate-300 leading-relaxed text-left px-1">
-                💡 <strong>미션 방법</strong>: 별도의 힌트나 지정 스팟 없이 <strong>테마가든 안에서 자유롭게 {teamConfig.name} 조원 전원</strong>이 보이도록 단체사진을 촬영해 업로드해 주세요!
+                💡 <strong>미션 방법</strong>: 테마가든 안에 숨어있는 <strong>포토 스팟</strong>을 찾아, <strong>{teamConfig.name} 조원 전원이 보이도록 사진 촬영</strong> 후 업로드해 주세요!
               </p>
             </div>
 

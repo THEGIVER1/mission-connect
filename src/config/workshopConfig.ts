@@ -103,7 +103,7 @@ export const PEOPLE_QUEST_TOPIC_OPTIONS = [
 // 4. Activity 1: People Quest (단일 통합 조별 대화 & 추천 미션)
 // ─────────────────────────────────────────────────────────────────
 export const PEOPLE_QUEST_MISSION_TITLE = "우리 조가 발견한 '최고의 스토리 동료' 추천";
-export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들과 4가지 주제(취미, 버킷리스트, 다른 직업, 의외의 사실 등)에 대해 자유롭게 대화해 보세요. 대화 중 가장 인상 깊었던 동료 1명을 선택하고 나누었던 스토리를 작성해 주세요. (저녁 퀴즈 및 네트워킹에 활용됩니다)";
+export const PEOPLE_QUEST_MISSION_GUIDE = "트레킹을 함께하며 조원들과 4가지 주제(취미, 버킷리스트, 다른 직업, 의외의 사실 등)에 대해 자유롭게 대화해 보세요. 대화 중 가장 인상 깊었던 동료 1명을 선택하고 나누었던 스토리를 작성해 주세요. (조원 중 대표 1명만 작성·제출하면 마감됩니다)";
 export const PEOPLE_QUEST_POINTS_PER_MEMBER = 100; // 조원당 100pt
 
 // ─────────────────────────────────────────────────────────────────
@@ -123,15 +123,15 @@ export interface ThemeGardenMissionConfig {
 
 export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = {
   id: 'theme_garden_photo',
-  title: '🌹 테마가든 조별 단체사진 미션',
+  title: '🌹 테마가든 포토 스팟 & 조별 단체사진 미션',
   timeRange: '2:00 ~ 4:30 (트레킹 중)',
-  locationName: '서울대공원 테마가든 내 자유 장소',
+  locationName: '서울대공원 테마가든 내 포토 스팟',
   coords: { lat: 37.4310, lng: 127.0185 },
   hintTitle: '테마가든 단체사진 촬영 가이드',
-  hintDescription: '테마가든 안에서 별도의 지정 장소나 힌트 없이 자유롭게 조원 전원이 보이도록 촬영해 주세요!',
+  hintDescription: '테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드해 주세요!',
   guideLines: [
-    '별도의 지정 힌트 없이 테마가든 안 어디서든 자유롭게 촬영할 수 있습니다.',
-    '우리 조원 전원이 빠짐없이 화면에 보이도록 함께 모여 단체사진을 촬영해 주세요.',
+    '테마가든 안에 숨어있는 포토 스팟을 찾아 이동합니다.',
+    '포토 스팟에서 우리 조원 전원이 빠짐없이 화면에 보이도록 단체사진을 촬영해 주세요.',
     '카메라로 직접 촬영하거나, 사진첩(갤러리)에서 촬영된 사진을 선택해 업로드할 수 있습니다.',
     '조별 대표 1명이 업로드하면 조원 전원에게 미션 점수(+100pt)가 부여됩니다!',
   ],

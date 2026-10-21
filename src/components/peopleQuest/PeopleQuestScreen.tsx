@@ -167,11 +167,14 @@ const PeopleQuestScreen: React.FC = () => {
 
     fetchPQ();
     fetchParticipants();
+    const pollInterval = setInterval(fetchPQ, 3000);
 
     // 2) WebSocket 실시간 리스너
+    let unsubscribePQ = () => {};
+    let unsubscribeP = () => {};
     try {
       const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${teamId}`);
-      const unsubscribePQ = onValue(
+      unsubscribePQ = onValue(
         pqRef,
         (snapshot) => {
           if (snapshot.exists()) {
@@ -209,7 +212,7 @@ const PeopleQuestScreen: React.FC = () => {
       );
 
       const pRef = ref(rtdb, 'sessions/trekking2026/participants');
-      const unsubscribeP = onValue(
+      unsubscribeP = onValue(
         pRef,
         (snapshot) => {
           if (snapshot.exists()) {
@@ -227,15 +230,16 @@ const PeopleQuestScreen: React.FC = () => {
           console.warn('참가자 목록 동기화 경고:', error);
         }
       );
-
-      return () => {
-        unsubscribePQ();
-        unsubscribeP();
-      };
     } catch (e) {
       console.warn('Firebase 리스너 연결 경고:', e);
     }
-  }, [myTeam?.id, dbUrl, lastResetAt, resetLocalProgress]);
+
+    return () => {
+      clearInterval(pollInterval);
+      unsubscribePQ();
+      unsubscribeP();
+    };
+  }, [myTeam?.id, teamId, dbUrl, lastResetAt, resetLocalProgress]);
 
   // 2. 추천 대상자 검색 및 필터링 (본인 제외, 실제 접속 참가자 통합)
   const availablePeople = useMemo(() => {
@@ -292,20 +296,34 @@ const PeopleQuestScreen: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  // 4. 임시 저장 (Dual: REST + SDK)
+  // 4. 임시 저장 (Dual: REST + SDK, 이미 제출된 경우 덮어쓰기 방지)
   const handleDraftSave = async () => {
-    if (!myTeam?.id) return;
+    if (!myTeam?.id || isSubmitted) return;
     setIsSaving(true);
-    const draftPayload = {
-      teamId,
-      teamName: myTeam.name,
-      recommendation,
-      status: 'draft',
-      updatedAt: new Date().toISOString(),
-      updatedBy: `${participantName || '익명'}(${myTeam.name})`,
-    };
 
     try {
+      // 서버에 이미 다른 조원이 최종 제출했는지 사전 검증
+      const checkRes = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (checkRes.ok) {
+        const existingPq = await checkRes.json();
+        if (existingPq && existingPq.status === 'submitted') {
+          setIsSubmitted(true);
+          setSubmittedData(existingPq);
+          setPeopleQuestSubmitted(true);
+          showToast(`🔒 이미 ${existingPq.submittedBy || '우리 조원'}님이 추천 작성을 완료했습니다!`);
+          return;
+        }
+      }
+
+      const draftPayload = {
+        teamId,
+        teamName: myTeam.name,
+        recommendation,
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+        updatedBy: `${participantName || '익명'}(${myTeam.name})`,
+      };
+
       // 1) REST
       await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json`, {
         method: 'PUT',
@@ -328,13 +346,26 @@ const PeopleQuestScreen: React.FC = () => {
     }
   };
 
-  // 5. 최종 제출 실행 (Dual: REST + SDK + 0ms Optimistic Update)
+  // 5. 최종 제출 실행 (조원 중 1명만 제출 가능하도록 서버 선검증 포함)
   const executeSubmit = async () => {
-    if (!myTeam?.id) return;
+    if (!myTeam?.id || isSubmitted) return;
     setIsSaving(true);
     setIsConfirmModalOpen(false);
 
     try {
+      // 0) 서버에 이미 다른 조원이 먼저 제출했는지 실시간 확인 (중복 제출 원천 차단)
+      const checkRes = await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${teamId}.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (checkRes.ok) {
+        const existingPq = await checkRes.json();
+        if (existingPq && existingPq.status === 'submitted') {
+          setIsSubmitted(true);
+          setSubmittedData(existingPq);
+          setPeopleQuestSubmitted(true);
+          showToast(`🔒 이미 ${existingPq.submittedBy || '우리 조원'}님이 추천 제출을 완료했습니다! (조별 1명만 작성 가능)`);
+          return;
+        }
+      }
+
       const nowIso = new Date().toISOString();
       const payload = {
         teamId,
@@ -364,7 +395,6 @@ const PeopleQuestScreen: React.FC = () => {
 
         if (participantName) {
           const participantId = createParticipantId(participantName, participantCompany);
-          // 기존 참가자 퀴즈 점수 조회
           const pRes = await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(participantId)}.json`);
           let existingData: any = null;
           if (pRes.ok) existingData = await pRes.json();
@@ -435,6 +465,10 @@ const PeopleQuestScreen: React.FC = () => {
   };
 
   const handleOpenConfirm = () => {
+    if (isSubmitted) {
+      showToast('🔒 이미 우리 조의 추천 제출이 완료되었습니다.');
+      return;
+    }
     if (!recommendation.recommendedPersonName) {
       alert('추천할 동료를 먼저 선택해주세요.');
       return;
@@ -487,11 +521,11 @@ const PeopleQuestScreen: React.FC = () => {
             </span>
             {isSubmitted ? (
               <span className="text-[13.5px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                ✓ 제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
+                🔒 제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
               </span>
             ) : (
               <span className="text-[13.5px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                진행 중 (조별 1명 추천)
+                진행 중 (조원 중 1명만 작성)
               </span>
             )}
           </div>
@@ -503,16 +537,19 @@ const PeopleQuestScreen: React.FC = () => {
           </p>
         </div>
 
-        {/* 이미 제출 완료된 경우 결과 카드 표시 */}
+        {/* 이미 제출 완료된 경우 결과 카드 표시 (추가 작성 불가 잠금) */}
         {isSubmitted ? (
           <div className="bg-[#1A2235] border border-green-500/30 rounded-2xl p-4 space-y-4 shadow-xl text-center">
             <div className="w-14 h-14 bg-green-500/20 text-green-400 border border-green-500/40 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
               🎉
             </div>
             <div>
+              <span className="inline-block text-[12.5px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold mb-1">
+                🔒 조별 1회 작성 완료 (추가 작성 마감)
+              </span>
               <h3 className="text-[19px] font-bold text-white">우리 조의 추천 제출 완료!</h3>
               <p className="text-[14px] text-slate-300 mt-1">
-                저녁 식사 자리의 <strong>퀴즈 대항전 및 네트워킹 하이라이트</strong>에서 공개됩니다.
+                조원 중 대표 1명이 제출을 완료하여 <strong>우리 조 전원에게 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 부여되었습니다.
               </p>
             </div>
 
@@ -522,7 +559,7 @@ const PeopleQuestScreen: React.FC = () => {
                   {submittedData?.recommendation?.selectedTopic || '추천 스토리'}
                 </span>
                 <span className="text-[13.5px] text-slate-400">
-                  {submittedData?.submittedBy}
+                  작성자: {submittedData?.submittedBy}
                 </span>
               </div>
               <p className="text-[17px] font-bold text-white">

@@ -327,9 +327,9 @@ const ActivitySection: React.FC<{
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">조별 1명 추천 시 조원당 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
+            <span className="text-slate-400">조원 중 1명만 작성 · 조원 전원 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
             <span className="text-red-400 font-bold flex items-center gap-0.5">
-              추천 작성 →
+              {pqSubmitted ? '추천 내역 확인 →' : '추천 작성 →'}
             </span>
           </div>
         </button>
@@ -350,7 +350,7 @@ const ActivitySection: React.FC<{
                   테마가든 미션 · 조원 전원 +100pt
                 </span>
                 <h3 className="text-[17px] font-bold text-white group-hover:text-pink-300 transition-colors">
-                  테마가든 조별 단체사진 업로드
+                  숨어있는 포토 스팟 찾기 & 단체사진 업로드
                 </h3>
               </div>
             </div>
@@ -364,11 +364,11 @@ const ActivitySection: React.FC<{
           </div>
 
           <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            별도 힌트 없이 테마가든 안에서 자유롭게 조원 전원이 보이도록 단체사진을 촬영하거나 사진첩(갤러리)에서 선택해 업로드하세요.
+            테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드하세요. (카메라 촬영 또는 사진첩 선택 가능)
           </p>
 
           <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">테마가든 내 자유 촬영 · 사진첩 선택 가능</span>
+            <span className="text-slate-400">테마가든 포토 스팟 · 사진첩 선택 가능</span>
             <span className="text-pink-400 font-bold flex items-center gap-0.5">
               미션 사진 올리기 →
             </span>
