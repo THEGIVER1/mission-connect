@@ -597,7 +597,6 @@ const PeopleQuestScreen: React.FC = () => {
                   </span>
                   추천할 동료 선택 *
                 </label>
-                <span className="text-[13.5px] text-slate-400">(본인 제외)</span>
               </div>
 
               {recommendation.recommendedPersonName ? (

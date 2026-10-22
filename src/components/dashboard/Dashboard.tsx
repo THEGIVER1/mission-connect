@@ -83,7 +83,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
       {/* 이벤트 & 팀/코스 칩 */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <span className="flex items-center gap-1 text-[13.5px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
-          {IS_PILOT_MODE ? '☕ 카페쿰베오 집결 (13:00~15:00)' : '🥐 빵명장 집결'}
+          {IS_PILOT_MODE ? '☕ 카페쿰베오 집결 13시' : '🥐 빵명장 집결'}
         </span>
         {teamConfig && (
           <span className="flex items-center gap-1 text-[13.5px] font-bold rounded-full px-2.5 py-0.5"
@@ -92,7 +92,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
                   color: teamConfig.assignedCourse === 'forest' ? '#34D399' : '#38BDF8',
                   border: `1px solid ${teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.3)' : 'rgba(56,189,248,0.3)'}`,
                 }}>
-            {teamConfig.emoji} {teamConfig.name} · {teamConfig.courseName} ({teamConfig.courseDistance})
+            {teamConfig.emoji} {teamConfig.name} · {teamConfig.courseName}{teamConfig.courseDistance ? ` (${teamConfig.courseDistance})` : ''}
           </span>
         )}
       </div>
@@ -307,7 +307,7 @@ const ActivitySection: React.FC<{
             <span>🚶</span>
             <span>
               {IS_PILOT_MODE
-                ? 'STEP 2 · 1:32~2:20 [트레킹 코스 & 두산 저수지]'
+                ? 'STEP 2 · 1:20~2:20 [트레킹 코스 & 두산 저수지]'
                 : 'STEP 2 · 2:00~4:30 [트레킹 코스 & 테마가든]'}
             </span>
           </span>
@@ -649,7 +649,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               >
                 {WORKSHOP_TEAMS.map(t => (
                   <option key={t.id} value={t.id} style={{ background: '#1A2235' }}>
-                    {t.emoji} {t.name} ({t.courseDistance})
+                    {t.emoji} {t.name}{t.courseDistance ? ` (${t.courseDistance})` : ''}
                   </option>
                 ))}
               </select>

@@ -206,7 +206,7 @@ const TeamSelect: React.FC = () => {
           </div>
           <div className="flex-1">
             <span className="text-[17px] font-bold text-white">{team.name}</span>
-            <span className="text-[12.5px] ml-2 text-slate-400">({team.courseDistance})</span>
+            {team.courseDistance && <span className="text-[12.5px] ml-2 text-slate-400">({team.courseDistance})</span>}
           </div>
           <div className="w-5 h-5 rounded-full border flex items-center justify-center"
                style={{
@@ -332,7 +332,7 @@ const TeamSelect: React.FC = () => {
             {IS_PILOT_MODE ? (
               <div>
                 <p className="text-[13.5px] font-bold text-red-400 mb-1.5 flex items-center gap-1">
-                  🌲 연강원 트레킹 코스 (1~6조 단일 코스)
+                  🌲 연강원 트레킹 코스 (1~6조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {TEAMS.map(renderTeamCard)}

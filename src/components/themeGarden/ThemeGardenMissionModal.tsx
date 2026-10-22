@@ -167,7 +167,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
             </span>
             <div>
               <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">
-                {IS_PILOT_MODE ? '1:32~2:20 트레킹 메인 미션' : '2:00~4:30 트레킹 메인 미션'}
+                {IS_PILOT_MODE ? '1:20~2:20 트레킹 메인 미션' : '2:00~4:30 트레킹 메인 미션'}
               </span>
               <h3 className="text-[16px] font-bold text-white">
                 {IS_PILOT_MODE ? '두산 저수지 단체사진 미션' : '테마가든 단체사진 미션'}

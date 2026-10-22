@@ -1868,7 +1868,7 @@ const AdminScreen: React.FC = () => {
                         </span>
                         <div>
                           <strong className="text-[16px] text-white">{team.name}</strong>
-                          <span className="text-[13.5px] text-slate-400 ml-1.5">({team.courseName} · {team.courseDistance})</span>
+                          <span className="text-[13.5px] text-slate-400 ml-1.5">({team.courseName}{team.courseDistance ? ` · ${team.courseDistance}` : ''})</span>
                         </div>
                       </div>
                       <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full border ${

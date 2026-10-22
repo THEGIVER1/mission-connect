@@ -71,12 +71,12 @@ export const WORKSHOP_COMPANIES = [
 // ─────────────────────────────────────────────────────────────────
 export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = IS_PILOT_MODE
   ? [
-      { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
-      { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
-      { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
-      { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
-      { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
-      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '단일 코스' },
+      { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
+      { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
+      { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
+      { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
+      { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
+      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '🌲', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
     ]
   : [
       { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '🦁', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
@@ -150,7 +150,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = IS_PILOT_MODE
   ? {
       id: 'theme_garden_photo',
       title: '📸 두산 저수지 조별 단체사진 미션',
-      timeRange: '1:32 ~ 2:20 (트레킹 중)',
+      timeRange: '1:20 ~ 2:20 (트레킹 중)',
       locationName: '두산 저수지 (지도 노란색 표시 영역)',
       coords: { lat: 37.541920, lng: 127.151580 },
       hintTitle: '두산 저수지 단체사진 촬영 가이드',
@@ -307,7 +307,7 @@ export const ACTIVE_VENUE = IS_PILOT_MODE
         name: '두산 저수지 [📸 조별 단체사진 미션]',
         coords: { lat: 37.541920, lng: 127.151580 },
       },
-      mapLabel: '두산연강원 트레킹 코스 (단일 코스)',
+      mapLabel: '두산연강원 트레킹 코스',
     }
   : {
       venueName: '서울대공원',

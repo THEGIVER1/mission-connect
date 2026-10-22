@@ -931,7 +931,7 @@ const MapScreen: React.FC = () => {
         {
           id: 'themeGarden' as const,
           title: '두산 저수지',
-          badge: '📸 1:32~2:20 조별 단체사진 미션 (+100pt)',
+          badge: '📸 1:20~2:20 조별 단체사진 미션 (+100pt)',
           subtitle: '지도상 노란색 동그라미 영역(두산 저수지)에서 조원 전원이 보이도록 단체사진 촬영 및 업로드',
           coords: ACTIVE_VENUE.themeGardenSpot.coords,
           emoji: '📸',
