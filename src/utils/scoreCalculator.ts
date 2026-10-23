@@ -255,23 +255,24 @@ export function calculateLeaderboardData(
       rank: idx + 1,
     }));
 
-  // 5. 6개 조 순위 및 총점 산출 (소속 조원 점수 100% 합산)
+  // 5. 6개 조 순위 및 총점 산출 (조별 기준 점수 집계: 미션당 100pt, 최대 200pt)
   const teams: Team[] = WORKSHOP_TEAMS.map((teamConfig) => {
     const teamMembers = individuals.filter((ind) => ind.teamId === teamConfig.id);
-    const totalScore = teamMembers.reduce((sum, m) => sum + m.pts, 0);
-    const totalMissions = teamMembers.reduce((sum, m) => sum + m.missions, 0);
     const isPqDone = isPqSubmittedForTeam(teamConfig.id, peopleQuestsData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
     const isThemeDone = isThemeGardenDoneForTeam(teamConfig.id, themeGardenPhotosData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
+
+    const teamScore = (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) + (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0);
+    const completedCount = (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
 
     return {
       id: teamConfig.id,
       name: teamConfig.name,
       shortCode: teamConfig.shortCode,
       color: teamConfig.color,
-      score: totalScore,
-      missionsCompleted: Math.max(totalMissions, (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0)),
+      score: teamScore,
+      missionsCompleted: completedCount,
       memberCount: teamMembers.length,
-      totalMissions: 2, // 1 테마가든 단체사진, 1 피플퀘스트 동료추천
+      totalMissions: 2, // 1 단체사진, 1 최고의 스토리 동료 추천
       lastActivity: new Date(),
       status: 'active' as const,
       rank: 1,

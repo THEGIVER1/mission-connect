@@ -5,11 +5,10 @@ import { LiveBadge, Card, ScoreBar, AnimatedScoreCounter } from '../shared';
 import { CompletionCertificateModal } from '../common/CompletionCertificateModal';
 import { TutorialGroundRulesModal } from '../tutorial/TutorialGroundRulesModal';
 import { ThemeGardenMissionModal } from '../themeGarden/ThemeGardenMissionModal';
+import { PhotoVoteModal } from '../photoVote/PhotoVoteModal';
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
-  ACTIVE_VENUE,
-  WORKSHOP_COMPANIES,
   WORKSHOP_TEAMS,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   THEME_GARDEN_MISSION,
@@ -24,13 +23,11 @@ import {
   isThemeGardenDoneForTeam,
   getPqForTeam,
   createParticipantId,
-  sanitizeFirebaseKey,
 } from '../../utils/scoreCalculator';
-import type { Team } from '../../types';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
 const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
-  const { myTeam, session, participantName, participantCompany } = useAppStore();
+  const { myTeam, session, participantName } = useAppStore();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -50,10 +47,10 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
   return (
-    <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-4 relative">
+    <header className="bg-[#13192A] border-b border-white/8 px-4 pt-3 pb-3.5 relative">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-600 to-orange-500" />
 
-      <div className="flex items-start justify-between mb-2.5">
+      <div className="flex items-start justify-between mb-2">
         <div>
           <h1 className="font-['Bebas_Neue'] text-2xl tracking-widest text-white leading-none">
             {IS_PILOT_MODE ? (
@@ -62,7 +59,7 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
               <>2026 CHRO <span className="text-red-500">TREKKING</span></>
             )}
           </h1>
-          <p className="text-[12.5px] text-slate-400 mt-0.5 tracking-wider">
+          <p className="text-[12.5px] text-slate-400 mt-0.5">
             {participantName ? `${participantName}님 (${myTeam?.name ?? '참가자'})` : 'CHRO Activity Platform'}
           </p>
         </div>
@@ -70,29 +67,29 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
           <button
             type="button"
             onClick={onOpenProfile}
-            className="text-[12.5px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all shadow"
-            title="4개 질문 답변 확인 및 수정"
+            className="text-[12.5px] bg-[#1A2235] hover:bg-[#232D45] text-sky-300 border border-sky-500/30 px-2.5 py-1 rounded-lg font-bold active:scale-95 transition-all"
           >
-            <span>👤</span>
-            <span className="font-bold">내 답변 수정</span>
+            내 답변 수정
           </button>
           <LiveBadge />
         </div>
       </div>
 
       {/* 이벤트 & 팀/코스 칩 */}
-      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-        <span className="flex items-center gap-1 text-[13.5px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5">
-          {IS_PILOT_MODE ? '☕ 카페쿰베오 집결 13시' : '🥐 빵명장 집결'}
+      <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
+        <span className="text-[13px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 font-medium">
+          {IS_PILOT_MODE ? '카페쿰베오 집결 13시' : '빵명장 집결'}
         </span>
         {teamConfig && (
-          <span className="flex items-center gap-1 text-[13.5px] font-bold rounded-full px-2.5 py-0.5"
-                style={{
-                  background: teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.15)' : 'rgba(56,189,248,0.15)',
-                  color: teamConfig.assignedCourse === 'forest' ? '#34D399' : '#38BDF8',
-                  border: `1px solid ${teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.3)' : 'rgba(56,189,248,0.3)'}`,
-                }}>
-            {teamConfig.emoji} {teamConfig.name} · {teamConfig.courseName}{teamConfig.courseDistance ? ` (${teamConfig.courseDistance})` : ''}
+          <span
+            className="text-[13px] font-bold rounded-full px-2.5 py-0.5"
+            style={{
+              background: teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.15)' : 'rgba(56,189,248,0.15)',
+              color: teamConfig.assignedCourse === 'forest' ? '#34D399' : '#38BDF8',
+              border: `1px solid ${teamConfig.assignedCourse === 'forest' ? 'rgba(16,185,129,0.3)' : 'rgba(56,189,248,0.3)'}`,
+            }}
+          >
+            {teamConfig.name} · {teamConfig.courseName}{teamConfig.courseDistance ? ` (${teamConfig.courseDistance})` : ''}
           </span>
         )}
       </div>
@@ -100,17 +97,19 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
       {/* 팀 요약 & 남은 시간 */}
       <div className="flex items-center justify-between bg-black/30 p-2.5 rounded-xl border border-white/5">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow"
-               style={{ background: teamConfig?.color || '#E31837' }}>
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow"
+            style={{ background: teamConfig?.color || '#E31837' }}
+          >
             {myTeam?.shortCode ?? '--'}
           </div>
           <div>
-            <p className="text-[12.5px] text-slate-400">우리 조</p>
+            <p className="text-[12px] text-slate-400">우리 조</p>
             <p className="text-[15px] font-bold text-white leading-tight">{myTeam?.name ?? '—'}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[12.5px] text-slate-400">트레킹 잔여 시간</p>
+          <p className="text-[12px] text-slate-400">남은 시간</p>
           <p className="text-[15px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest">{timeLeft}</p>
         </div>
       </div>
@@ -118,13 +117,12 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
   );
 };
 
-// ─── 점수 & 순위 카드 ──────────────────────────────────────────
+// ─── 조별 점수 & 순위 카드 (개인 기여도 삭제, 조별 기준) ──────────────────
 const ScoreCard: React.FC<{
   teamScore: number;
   teamRank: number;
-  personalScore: number;
   maxScore: number;
-}> = ({ teamScore, teamRank, personalScore, maxScore }) => {
+}> = ({ teamScore, teamRank, maxScore }) => {
   const { myTeam } = useAppStore();
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
@@ -135,7 +133,7 @@ const ScoreCard: React.FC<{
     const prev = prevRankRef.current;
     if (prev && prev !== teamRank) {
       if (teamRank < prev) {
-        setRankChangeText(`▲ ${prev - teamRank}계단 상승!`);
+        setRankChangeText(`▲ ${prev - teamRank}계단 상승`);
       } else {
         setRankChangeText(`▼ ${teamRank - prev}계단`);
       }
@@ -148,24 +146,24 @@ const ScoreCard: React.FC<{
 
   return (
     <Card className="mx-4 mt-3 p-3.5 shadow-xl">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[13.5px] text-slate-400 font-bold uppercase tracking-wider">
-          {myTeam?.name ?? '우리 조'} 실시간 획득 점수
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[13.5px] text-slate-300 font-bold">
+          {myTeam?.name ?? '우리 조'} 점수
         </span>
         <div className="flex items-center gap-1.5">
           {rankChangeText && (
-            <span className={`text-[12.5px] font-extrabold px-2 py-0.5 rounded-full animate-bounce ${
+            <span className={`text-[12px] font-extrabold px-2 py-0.5 rounded-full ${
               rankChangeText.includes('▲') ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
             }`}>
               {rankChangeText}
             </span>
           )}
-          <span className={`text-[13.5px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+          <span className={`text-[13px] font-bold px-2.5 py-0.5 rounded-full border ${
             teamRank === 1
-              ? 'text-amber-300 bg-amber-500/20 border-amber-400/40 shadow-sm shadow-amber-500/30'
+              ? 'text-amber-300 bg-amber-500/20 border-amber-400/40'
               : 'text-amber-400 bg-amber-400/10 border-amber-400/20'
           }`}>
-            <span>{teamRank === 1 ? '👑 현재 1위 (선두)' : `현재 ${teamRank}위 🏆`}</span>
+            {teamRank === 1 ? '현재 1위' : `현재 ${teamRank}위`}
           </span>
         </div>
       </div>
@@ -175,11 +173,9 @@ const ScoreCard: React.FC<{
           <AnimatedScoreCounter value={teamScore} className="text-white" />
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
-        <div className="text-right">
-          <span className="text-[13.5px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold block">
-            내 기여: {personalScore}pt
-          </span>
-        </div>
+        <span className="text-[12.5px] text-slate-400">
+          조 대표 입력 · 최대 {maxScore}pt
+        </span>
       </div>
 
       <ScoreBar value={teamScore} max={maxScore} color={teamConfig?.color || '#E31837'} />
@@ -187,15 +183,18 @@ const ScoreCard: React.FC<{
   );
 };
 
-// ─── 워크샵 타임라인 & 단계별 미션 섹션 (스팟 퀴즈 제외 2대 핵심 액티비티) ────────
+// ─── 워크샵 타임라인 & 단계별 미션 섹션 (STEP 1, 2, 3, 4 글자 확대 & 문구 간소화) ────────
 const ActivitySection: React.FC<{
   hasTutorialDone: boolean;
   hasGroundRulesDone: boolean;
   themeGardenDone: boolean;
   pqSubmitted: boolean;
   isAllCompleted: boolean;
+  uploadedPhotosCount: number;
+  myTeamVoted: boolean;
   onOpenTutorialModal: () => void;
   onOpenThemeGardenModal: () => void;
+  onOpenPhotoVoteModal: () => void;
   onOpenCertificate: () => void;
 }> = ({
   hasTutorialDone,
@@ -203,280 +202,203 @@ const ActivitySection: React.FC<{
   themeGardenDone,
   pqSubmitted,
   isAllCompleted,
+  uploadedPhotosCount,
+  myTeamVoted,
   onOpenTutorialModal,
   onOpenThemeGardenModal,
+  onOpenPhotoVoteModal,
   onOpenCertificate,
 }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="mx-4 mt-4 space-y-3">
-      {/* 👑 전 코스 완주 달성 시 골든 배너 */}
+    <div className="mx-4 mt-4 space-y-4">
+      {/* 전 코스 완주 배너 */}
       {isAllCompleted && (
-        <div className="bg-gradient-to-r from-amber-500/25 via-yellow-500/15 to-amber-600/25 border-2 border-amber-400/60 rounded-2xl p-4 text-center space-y-2.5 shadow-2xl shadow-amber-500/20 animate-fade-in relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-[12.5px] bg-amber-400 text-slate-950 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
-              CHRO ALL MISSIONS CLEARED
-            </span>
-            <span className="text-xs text-amber-300 font-bold flex items-center gap-1">
-              <span>✨</span>
-              <span>명예의 전당</span>
-            </span>
-          </div>
+        <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/15 border border-amber-400/60 rounded-2xl p-3.5 flex items-center justify-between shadow-lg">
           <div>
-            <h3 className="text-[18px] font-extrabold text-white">
-              🎉 축하합니다! 모든 미션을 완주하셨습니다!
+            <h3 className="text-[16px] font-extrabold text-white">
+              우리 조 모든 미션 완료!
             </h3>
-            <p className="text-[13.5px] text-slate-300 mt-0.5">
-              {IS_PILOT_MODE
-                ? '두산 저수지 단체사진과 최고의 스토리 동료 추천을 모두 완료하여 완주 증서가 발급되었습니다.'
-                : '테마가든 단체사진과 최고의 스토리 동료 추천을 모두 완료하여 완주 증서가 발급되었습니다.'}
+            <p className="text-[13px] text-slate-300">
+              완주 증서가 발급되었습니다.
             </p>
           </div>
           <button
             type="button"
             onClick={onOpenCertificate}
-            className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg shadow-amber-500/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[13.5px] rounded-xl shadow active:scale-95 transition-all"
           >
-            <span>👑 나의 완주 인증서 보기 (골드 엠블럼)</span>
+            완주 증서 보기
           </button>
         </div>
       )}
 
-      {/* 타임라인 단계 1: 오프닝 그라운드룰 & 몸풀기 Quiz */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[14px] font-bold text-amber-400 tracking-wide flex items-center gap-1">
-            <span>{IS_PILOT_MODE ? '☕' : '🥐'}</span>
-            <span>{IS_PILOT_MODE ? 'STEP 1 · 1:00~1:20 (20분) [카페쿰베오]' : 'STEP 1 · 1:30~2:00 [빵명장]'}</span>
-          </span>
-          <span className="text-[12.5px] text-slate-400">오프닝 & 준비</span>
+      {/* ─── STEP 1 ─── */}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between px-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[22px] font-black text-amber-400 tracking-tight leading-none">
+              STEP 1
+            </span>
+            <span className="text-[14px] font-bold text-slate-200">
+              {IS_PILOT_MODE ? '1:00~1:20 카페쿰베오' : '1:30~2:00 빵명장'}
+            </span>
+          </div>
+          <span className="text-[12.5px] text-slate-400">조 대표 입력</span>
         </div>
 
         <button
           type="button"
           onClick={onOpenTutorialModal}
-          className="w-full text-left bg-gradient-to-br from-[#1E1B2E] via-[#1A2235] to-[#141C2E] border border-amber-500/40 hover:border-amber-400 rounded-2xl p-4 shadow-lg active:scale-98 transition-all relative overflow-hidden group"
+          className="w-full text-left bg-[#171F32] border border-amber-500/40 hover:border-amber-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
         >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-lg">
-                🤝
-              </span>
-              <div>
-                <span className="text-[12.5px] text-amber-400 font-extrabold uppercase tracking-wider block">
-                  오프닝 그라운드룰 & 몸풀기 Quiz
-                </span>
-                <h3 className="text-[17px] font-bold text-white group-hover:text-amber-300 transition-colors">
-                  조별 그라운드룰 & 몸풀기 Quiz
-                </h3>
-              </div>
-            </div>
-            <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-[16.5px] font-bold text-white">
+              조별 그라운드룰 & 연습 Quiz
+            </h3>
+            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
               hasGroundRulesDone && hasTutorialDone
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
-            }`}>
-              {hasGroundRulesDone ? '✅ 설정 완료' : '✍️ 룰 설정하기'}
-            </span>
-          </div>
-
-          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            {IS_PILOT_MODE ? (
-              <>카페쿰베오에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 시그니처 메뉴 <strong>베오라떼</strong> 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.</>
-            ) : (
-              <>빵명장에서 조별 역할(<strong>조장, 어플담당</strong> 등)과 그라운드룰을 먼저 정한 뒤, 소보루 빵 가격을 맞히는 <strong>몸풀기 Quiz</strong>를 진행해 보세요.</>
-            )}
-          </p>
-
-          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">
-              {IS_PILOT_MODE ? '조장 · 어플담당 · 베오라떼 몸풀기 Quiz' : '조장 · 어플담당 · 소보루 빵 몸풀기 Quiz'}
-            </span>
-            <span className="text-amber-400 font-bold flex items-center gap-0.5">
-              확인 및 설정 →
-            </span>
-          </div>
-        </button>
-      </div>
-
-      {/* 타임라인 단계 2: 트레킹 & 2대 핵심 미션 */}
-      <div className="space-y-2 pt-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[14px] font-bold text-sky-400 tracking-wide flex items-center gap-1">
-            <span>🚶</span>
-            <span>
-              {IS_PILOT_MODE
-                ? 'STEP 2 · 1:20~2:20 [트레킹 코스 & 두산 저수지]'
-                : 'STEP 2 · 2:00~4:30 [트레킹 코스 & 테마가든]'}
-            </span>
-          </span>
-          <span className="text-[12.5px] text-slate-400">2대 핵심 미션</span>
-        </div>
-
-        {/* 미션 1: 최고의 스토리 동료 추천 (먼저 배치) */}
-        <button
-          type="button"
-          onClick={() => navigate('/people-quest')}
-          className="w-full text-left bg-gradient-to-br from-[#1A2235] to-[#141C2E] border border-red-500/30 hover:border-red-500/60 rounded-2xl p-4 shadow-lg active:scale-98 transition-all relative overflow-hidden"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-base">
-                💬
-              </span>
-              <div>
-                <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">최고의 스토리 동료 추천 · 조원 전원 +100pt</span>
-                <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
-              </div>
-            </div>
-            <span className={`text-[13px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
-              pqSubmitted
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
             }`}>
-              {pqSubmitted ? '✅ 추천 완료' : '대화 진행 중'}
+              {hasGroundRulesDone && hasTutorialDone ? '완료' : '입력하기 →'}
             </span>
           </div>
-
-          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
-            트레킹을 함께하며 조원들과 4가지 주제(취미, 버킷리스트, 다른 직업 등)로 대화하고 가장 인상 깊은 동료 1명을 추천해 주세요.
+          <p className="text-[13.5px] text-slate-400">
+            {IS_PILOT_MODE
+              ? '조별 역할·그라운드룰 설정 및 베오라떼 가격 맞히기'
+              : '조별 역할·그라운드룰 설정 및 소보루 빵 가격 맞히기'}
           </p>
+        </button>
+      </div>
 
-          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">조원 중 1명만 작성 · 조원 전원 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong></span>
-            <span className="text-red-400 font-bold flex items-center gap-0.5">
-              {pqSubmitted ? '추천 내역 확인 →' : '추천 작성 →'}
+      {/* ─── STEP 2 ─── */}
+      <div className="space-y-2 pt-1">
+        <div className="flex items-baseline justify-between px-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[22px] font-black text-sky-400 tracking-tight leading-none">
+              STEP 2
+            </span>
+            <span className="text-[14px] font-bold text-slate-200">
+              {IS_PILOT_MODE ? '1:20~2:20 트레킹 미션' : '2:00~4:30 트레킹 미션'}
             </span>
           </div>
+          <span className="text-[12.5px] text-slate-400">조별 각 +100pt</span>
+        </div>
+
+        {/* 미션 1: 최고의 스토리 동료 추천 */}
+        <button
+          type="button"
+          onClick={() => navigate('/people-quest')}
+          className="w-full text-left bg-[#171F32] border border-red-500/35 hover:border-red-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-[16.5px] font-bold text-white">
+              1. 최고의 스토리 동료 추천
+            </h3>
+            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+              pqSubmitted
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-red-500/20 text-red-300 border-red-500/40'
+            }`}>
+              {pqSubmitted ? '완료 (+100pt)' : '작성하기 →'}
+            </span>
+          </div>
+          <p className="text-[13.5px] text-slate-400">
+            조원들과 대화 후 가장 인상 깊은 동료 1명 추천 (조 대표 1명 작성)
+          </p>
         </button>
 
-        {/* 미션 2: 단체사진 미션 (최고의 스토리 동료 추천 다음 순서) */}
+        {/* 미션 2: 조별 단체사진 업로드 */}
         <button
           type="button"
           onClick={onOpenThemeGardenModal}
-          className="w-full text-left bg-gradient-to-br from-[#231526] via-[#1D1B30] to-[#141C2E] border border-pink-500/40 hover:border-pink-400 rounded-2xl p-4 shadow-lg active:scale-98 transition-all relative overflow-hidden group"
+          className="w-full text-left bg-[#171F32] border border-pink-500/35 hover:border-pink-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
         >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-lg">
-                {IS_PILOT_MODE ? '📸' : '🌹'}
-              </span>
-              <div>
-                <span className="text-[12.5px] text-pink-400 font-extrabold uppercase tracking-wider block">
-                  {IS_PILOT_MODE ? '두산 저수지 미션 · 조원 전원 +100pt' : '테마가든 미션 · 조원 전원 +100pt'}
-                </span>
-                <h3 className="text-[17px] font-bold text-white group-hover:text-pink-300 transition-colors">
-                  {IS_PILOT_MODE ? '두산 저수지 조별 단체사진 업로드' : '숨어있는 포토 스팟 찾기 & 단체사진 업로드'}
-                </h3>
-              </div>
-            </div>
-            <span className={`text-[13px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-[16.5px] font-bold text-white">
+              {IS_PILOT_MODE ? '2. 두산 저수지 단체사진 업로드' : '2. 테마가든 단체사진 업로드'}
+            </h3>
+            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
               themeGardenDone
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-pink-500/20 text-pink-300 border-pink-500/40'
             }`}>
-              {themeGardenDone ? '✅ 업로드 완료' : '📸 사진 업로드'}
+              {themeGardenDone ? '완료 (+100pt)' : '사진 등록 →'}
             </span>
           </div>
-
-          <p className="text-[14px] text-slate-300 leading-relaxed mb-2.5">
+          <p className="text-[13.5px] text-slate-400">
             {IS_PILOT_MODE
-              ? '두산 저수지(지도 노란색 동그라미 영역)에서 조원 전원이 보이도록 사진 촬영 후 업로드하세요. (카메라 촬영 또는 사진첩 선택 가능)'
-              : '테마가든 안에 숨어있는 포토 스팟을 찾아 조원 전원이 보이도록 사진 촬영 후 업로드하세요. (카메라 촬영 또는 사진첩 선택 가능)'}
+              ? '두산 저수지에서 조원 전원 단체사진 촬영 및 업로드'
+              : '테마가든 포토 스팟에서 조원 전원 단체사진 촬영 및 업로드'}
           </p>
-
-          <div className="flex items-center justify-between text-[13.5px] pt-2 border-t border-white/5">
-            <span className="text-slate-400">
-              {IS_PILOT_MODE ? '두산 저수지 포토 스팟 · 사진첩 선택 가능' : '테마가든 포토 스팟 · 사진첩 선택 가능'}
-            </span>
-            <span className="text-pink-400 font-bold flex items-center gap-0.5">
-              미션 사진 올리기 →
-            </span>
-          </div>
         </button>
       </div>
 
-      {/* 타임라인 단계 3: 최종 집결 */}
-      {IS_PILOT_MODE ? (
-        <>
-          <div className="space-y-1.5 pt-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
-                <span>🏁</span>
-                <span>STEP 3 · 2:20 최종 집결 [연강원 강의장]</span>
-              </span>
-              <span className="text-[12.5px] text-slate-400">최종 집결</span>
-            </div>
-
-            <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                  <span>🏫</span>
-                  <span>2:20 연강원 강의장 최종 집결</span>
-                </span>
-                <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
-                  2:20 집결
-                </span>
-              </div>
-              <p className="text-[13.5px] text-slate-300 leading-relaxed">
-                트레킹과 미션을 마치고 <strong>2:20까지 연강원 강의장</strong>으로 최종 집결합니다.
-              </p>
-            </div>
-          </div>
-
-          {/* 타임라인 단계 4: Wrap-up Quiz (2:20~2:40) */}
-          <div className="space-y-1.5 pt-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[14px] font-bold text-purple-400 tracking-wide flex items-center gap-1">
-                <span>🎤</span>
-                <span>STEP 4 · 2:20~2:40 Wrap-up Quiz [연강원 강의장]</span>
-              </span>
-              <span className="text-[12.5px] text-slate-400">마무리 퀴즈쇼</span>
-            </div>
-
-            <div className="bg-gradient-to-br from-[#1C162E] to-[#121826] border border-purple-500/35 rounded-2xl p-3.5 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                  <span>🏆</span>
-                  <span>2:20~2:40 Wrap-up Quiz 진행</span>
-                </span>
-                <span className="text-[12.5px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">
-                  강의장 진행
-                </span>
-              </div>
-              <p className="text-[13.5px] text-slate-300 leading-relaxed">
-                <strong>2:20~2:40 연강원 강의장</strong>에서 오늘 나눈 동료들의 이야기와 활동 결과를 바탕으로 <strong>Wrap-up Quiz</strong>가 진행됩니다.
-              </p>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="space-y-1.5 pt-2">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[14px] font-bold text-emerald-400 tracking-wide flex items-center gap-1">
-              <span>🏁</span>
-              <span>STEP 3 · 4:30 최종 집결 [세븐일레븐 앞 공터]</span>
+      {/* ─── STEP 3 ─── */}
+      <div className="space-y-2 pt-1">
+        <div className="flex items-baseline justify-between px-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[22px] font-black text-emerald-400 tracking-tight leading-none">
+              STEP 3
             </span>
-            <span className="text-[12.5px] text-slate-400">최종 집결 & 단체사진</span>
-          </div>
-
-          <div className="bg-[#121826] border border-emerald-500/30 rounded-2xl p-3.5 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                <span>📸</span>
-                <span>4:30 세븐일레븐 앞 공터 최종 집결 & 단체사진</span>
-              </span>
-              <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
-                전체 집결
-              </span>
-            </div>
-            <p className="text-[13.5px] text-slate-300 leading-relaxed">
-              4:30까지 <strong>세븐일레븐 앞 공터</strong>로 최종 집결하여 전체 단체사진을 촬영합니다.
-            </p>
+            <span className="text-[14px] font-bold text-slate-200">
+              {IS_PILOT_MODE ? '2:20 최종 집결' : '4:30 최종 집결'}
+            </span>
           </div>
         </div>
-      )}
+
+        <div className="bg-[#141C2B] border border-emerald-500/30 rounded-2xl p-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[16px] font-bold text-white">
+              {IS_PILOT_MODE ? '연강원 강의장 집결' : '세븐일레븐 앞 공터 집결'}
+            </span>
+            <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold">
+              {IS_PILOT_MODE ? '2:20까지' : '4:30까지'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── STEP 4: 실시간 단체사진 투표 & Wrap-up ─── */}
+      <div className="space-y-2 pt-1">
+        <div className="flex items-baseline justify-between px-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[22px] font-black text-purple-400 tracking-tight leading-none">
+              STEP 4
+            </span>
+            <span className="text-[14px] font-bold text-slate-200">
+              {IS_PILOT_MODE ? '2:20~2:40 단체사진 투표 & Wrap-up' : '4:30~ 단체사진 실시간 투표'}
+            </span>
+          </div>
+          <span className="text-[12.5px] text-purple-300 font-bold">
+            사진 {uploadedPhotosCount}/6조 등록
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenPhotoVoteModal}
+          className="w-full text-left bg-gradient-to-br from-[#1C162E] to-[#141C2B] border border-purple-500/45 hover:border-purple-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-[16.5px] font-bold text-white">
+              실시간 조별 단체사진 보기 & 투표
+            </h3>
+            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+              myTeamVoted
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+            }`}>
+              {myTeamVoted ? '투표 완료' : '투표하기 →'}
+            </span>
+          </div>
+          <p className="text-[13.5px] text-slate-300">
+            STEP 2에서 업로드된 6개 조 단체사진을 실시간으로 확인하고 베스트 포토에 투표하세요.
+          </p>
+        </button>
+      </div>
     </div>
   );
 };
@@ -601,7 +523,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     setTimeout(() => {
       setSaveSuccess(false);
       onClose();
-    }, 1000);
+    }, 800);
   };
 
   if (!isOpen) return null;
@@ -611,14 +533,9 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       <div className="bg-[#13192A] border border-white/15 w-full max-w-[380px] max-h-[90vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden animate-fade-in">
         {/* 모달 상단 헤더 */}
         <div className="bg-[#182035] border-b border-white/10 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
-          <div>
-            <span className="text-[12.5px] text-sky-400 font-bold uppercase tracking-wider block">
-              MY PROFILE & 4-SURVEY
-            </span>
-            <h3 className="text-[17px] font-bold text-white">
-              내 정보 및 4문항 답변 수정
-            </h3>
-          </div>
+          <h3 className="text-[17px] font-bold text-white">
+            내 정보 및 답변 수정
+          </h3>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/10 text-slate-300 flex items-center justify-center hover:bg-white/20 active:scale-95"
@@ -631,7 +548,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
         <div className="bg-[#101626] p-3.5 border-b border-white/5 space-y-2.5 flex-shrink-0">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[13px] text-slate-400 block mb-1 font-medium">참가자 이름 *</label>
+              <label className="text-[13px] text-slate-400 block mb-1 font-medium">이름 *</label>
               <input
                 type="text"
                 value={modalName}
@@ -641,7 +558,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               />
             </div>
             <div>
-              <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 조 변경</label>
+              <label className="text-[13px] text-slate-400 block mb-1 font-medium">소속 조</label>
               <select
                 value={modalTeamId}
                 onChange={e => setModalTeamId(e.target.value)}
@@ -649,7 +566,7 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               >
                 {WORKSHOP_TEAMS.map(t => (
                   <option key={t.id} value={t.id} style={{ background: '#1A2235' }}>
-                    {t.emoji} {t.name}{t.courseDistance ? ` (${t.courseDistance})` : ''}
+                    {t.name}{t.courseDistance ? ` (${t.courseDistance})` : ''}
                   </option>
                 ))}
               </select>
@@ -658,57 +575,50 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
         </div>
 
         {/* 4개 문항 리스트 */}
-        <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
+        <div className="p-4 space-y-3 flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="py-12 text-center text-slate-400 text-[15px]">
-              <span className="animate-spin inline-block text-xl mb-2">🔄</span>
-              <p>답변을 불러오는 중입니다...</p>
+              불러오는 중...
             </div>
           ) : (
-            <>
-              <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 text-[13.5px] text-slate-300 leading-relaxed">
-                💡 입력하신 답변은 트레킹 대화 및 <strong>저녁 퀴즈쇼 힌트</strong>로 실시간 연동됩니다.
-              </div>
-
-              {MY_INFO_QUESTIONS.map((q, idx) => {
-                const currentVal = answers[q.id] || '';
-                return (
-                  <div key={q.id} className="bg-black/40 border border-white/8 rounded-2xl p-3 space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <label className="text-[14px] font-bold text-slate-200 leading-snug">
-                        <span className="text-sky-400 font-extrabold mr-1">Q{idx + 1}.</span>
-                        {q.title}
-                      </label>
-                      <span className={`text-[12.5px] font-bold flex-shrink-0 ${currentVal.length >= 90 ? 'text-amber-400' : 'text-slate-500'}`}>
-                        {currentVal.length}/100자
-                      </span>
-                    </div>
-                    <textarea
-                      rows={2}
-                      maxLength={100}
-                      value={currentVal}
-                      onChange={e => handleTextChange(q.id, e.target.value)}
-                      placeholder={q.placeholder}
-                      className="w-full bg-[#13192A] border border-white/10 rounded-xl p-2 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 resize-none"
-                    />
+            MY_INFO_QUESTIONS.map((q, idx) => {
+              const currentVal = answers[q.id] || '';
+              return (
+                <div key={q.id} className="bg-black/40 border border-white/8 rounded-2xl p-3 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <label className="text-[14px] font-bold text-slate-200 leading-snug">
+                      <span className="text-sky-400 font-extrabold mr-1">Q{idx + 1}.</span>
+                      {q.title}
+                    </label>
+                    <span className="text-[12px] text-slate-500 flex-shrink-0">
+                      {currentVal.length}/100
+                    </span>
                   </div>
-                );
-              })}
-            </>
+                  <textarea
+                    rows={2}
+                    maxLength={100}
+                    value={currentVal}
+                    onChange={e => handleTextChange(q.id, e.target.value)}
+                    placeholder={q.placeholder}
+                    className="w-full bg-[#13192A] border border-white/10 rounded-xl p-2 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 resize-none"
+                  />
+                </div>
+              );
+            })
           )}
         </div>
 
         {/* 하단 액션 */}
         <div className="bg-[#182035] border-t border-white/10 p-4 space-y-2 flex-shrink-0">
           {errorMessage && (
-            <div className="bg-red-500/20 border border-red-500/40 text-red-300 text-[14px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
-              ⚠️ {errorMessage}
+            <div className="bg-red-500/20 border border-red-500/40 text-red-300 text-[14px] font-bold py-1.5 px-3 rounded-xl text-center">
+              {errorMessage}
             </div>
           )}
 
           {saveSuccess && (
-            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[14px] font-bold py-1.5 px-3 rounded-xl text-center animate-fade-in">
-              ✅ 정보와 4문항 답변이 성공적으로 저장되었습니다!
+            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[14px] font-bold py-1.5 px-3 rounded-xl text-center">
+              저장되었습니다.
             </div>
           )}
 
@@ -722,9 +632,9 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             <button
               onClick={handleSave}
               disabled={isSaving || isLoading}
-              className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold text-[15px] rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-bold text-[15px] rounded-xl shadow active:scale-95 transition-all"
             >
-              <span>{isSaving ? '저장 처리 중...' : '저장하기 💾'}</span>
+              {isSaving ? '저장 중...' : '저장하기'}
             </button>
           </div>
         </div>
@@ -739,7 +649,7 @@ const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   const NAV = [
     { key: '/',            icon: '🏠', label: '홈' },
     { key: '/map',         icon: '🗺️', label: '코스지도' },
-    { key: '/leaderboard', icon: '🏆', label: '실시간순위' },
+    { key: '/leaderboard', icon: '🏆', label: '조별순위' },
   ];
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-[#13192A] border-t border-white/8 flex justify-around items-center py-2.5 pb-5 z-40">
@@ -774,7 +684,6 @@ const Dashboard: React.FC = () => {
     syncSessionData,
     lastResetAt,
     resetLocalProgress,
-    setAnsweredQuizIds,
     setPeopleQuestSubmitted,
   } = useAppStore();
 
@@ -783,6 +692,7 @@ const Dashboard: React.FC = () => {
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isThemeGardenModalOpen, setIsThemeGardenModalOpen] = useState(false);
+  const [isPhotoVoteModalOpen, setIsPhotoVoteModalOpen] = useState(false);
 
   const teamId = normalizeTeamId(myTeam?.id);
   const participantId = participantName
@@ -791,8 +701,8 @@ const Dashboard: React.FC = () => {
 
   const dbUrl = FIREBASE_DB_URL;
 
-  // 1. RTDB 데이터를 단일 진실 공급원(Single Source of Truth)으로 삼는 100% 통합 점수 계산
-  const { individuals, teams } = useMemo(() => {
+  // 1. RTDB 데이터를 단일 진실 공급원(Single Source of Truth)으로 삼는 조별 점수 계산
+  const { teams } = useMemo(() => {
     const participants = (rawSessionData?.participants && typeof rawSessionData.participants === 'object')
       ? rawSessionData.participants
       : {};
@@ -818,20 +728,13 @@ const Dashboard: React.FC = () => {
     );
   }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 
-  // 2. 파생 점수 및 상태 산출
+  // 2. 파생 점수 및 상태 산출 (모두 조별 기준)
   const myRankObj = useMemo(() => {
     return teams.find(t => t.id === teamId) || teams[0];
   }, [teams, teamId]);
 
-  const myIndividual = useMemo(() => {
-    if (!participantName) return null;
-    const trimmed = participantName.trim();
-    return individuals.find(ind => ind.name.trim() === trimmed) || null;
-  }, [individuals, participantName]);
-
   const teamScore = myRankObj ? myRankObj.score : 0;
   const teamRank = myRankObj ? myRankObj.rank : 1;
-  const personalScore = myIndividual ? myIndividual.pts : 0;
 
   const pqSubmitted = useMemo(() => {
     const quests = (rawSessionData?.peopleQuest && typeof rawSessionData.peopleQuest === 'object')
@@ -852,9 +755,17 @@ const Dashboard: React.FC = () => {
   }, [rawSessionData, teamId]);
 
   const hasTutorialDone = useMemo(() => {
-    const myP = rawSessionData?.participants?.[participantId];
-    return !!(myP?.tutorial?.completed);
-  }, [rawSessionData, participantId]);
+    return !!(rawSessionData?.tutorials?.[teamId]?.completed);
+  }, [rawSessionData, teamId]);
+
+  const uploadedPhotosCount = useMemo(() => {
+    const themePhotos = rawSessionData?.themeGardenPhotos || {};
+    return WORKSHOP_TEAMS.filter(t => !!(themePhotos[t.id]?.photoUrl)).length;
+  }, [rawSessionData]);
+
+  const myTeamVoted = useMemo(() => {
+    return !!(rawSessionData?.photoVotes?.[teamId]?.votedTeamId);
+  }, [rawSessionData, teamId]);
 
   const maxScore = useMemo(() => {
     return Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
@@ -939,8 +850,8 @@ const Dashboard: React.FC = () => {
     };
   }, [teamId, participantId, dbUrl, lastResetAt]);
 
-  const totalMissions = (myIndividual?.missions || 0);
-  const isAllCompleted = (pqSubmitted && themeGardenDone) || (totalMissions >= 2);
+  const totalMissions = (pqSubmitted ? 1 : 0) + (themeGardenDone ? 1 : 0);
+  const isAllCompleted = pqSubmitted && themeGardenDone;
 
   // 6. 참가자 프로필 자동 동기화
   useEffect(() => {
@@ -980,7 +891,6 @@ const Dashboard: React.FC = () => {
       <ScoreCard
         teamScore={teamScore}
         teamRank={teamRank}
-        personalScore={personalScore}
         maxScore={maxScore}
       />
       <ActivitySection
@@ -989,13 +899,16 @@ const Dashboard: React.FC = () => {
         themeGardenDone={themeGardenDone}
         pqSubmitted={pqSubmitted}
         isAllCompleted={isAllCompleted}
+        uploadedPhotosCount={uploadedPhotosCount}
+        myTeamVoted={myTeamVoted}
         onOpenTutorialModal={() => setIsTutorialModalOpen(true)}
         onOpenThemeGardenModal={() => setIsThemeGardenModalOpen(true)}
+        onOpenPhotoVoteModal={() => setIsPhotoVoteModalOpen(true)}
         onOpenCertificate={() => setIsCertModalOpen(true)}
       />
       <BottomNav active="/" />
 
-      {/* 1단계: 튜토리얼 빵 가격 퀴즈 & 조별 그라운드룰 모달 */}
+      {/* STEP 1: 조별 그라운드룰 & 연습 퀴즈 모달 */}
       <TutorialGroundRulesModal
         isOpen={isTutorialModalOpen}
         onClose={() => setIsTutorialModalOpen(false)}
@@ -1004,7 +917,7 @@ const Dashboard: React.FC = () => {
         participantCompany={participantCompany}
       />
 
-      {/* 2단계: 테마가든 시그니처 단체사진 촬영 & 업로드 모달 */}
+      {/* STEP 2: 조별 단체사진 촬영 & 업로드 모달 */}
       <ThemeGardenMissionModal
         isOpen={isThemeGardenModalOpen}
         onClose={() => setIsThemeGardenModalOpen(false)}
@@ -1019,17 +932,24 @@ const Dashboard: React.FC = () => {
         }}
       />
 
+      {/* STEP 4: 실시간 단체사진 갤러리 & 투표 모달 */}
+      <PhotoVoteModal
+        isOpen={isPhotoVoteModalOpen}
+        onClose={() => setIsPhotoVoteModalOpen(false)}
+        teamId={teamId}
+        participantName={participantName}
+      />
+
       {/* 내 프로필 및 4문항 답변 실시간 수정 모달 */}
       <MyProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
       />
 
-      {/* 👑 2026 CHRO 트레킹 전 코스 완주 인증서 모달 */}
+      {/* 트레킹 완주 인증서 모달 */}
       <CompletionCertificateModal
         isOpen={isCertModalOpen}
         onClose={() => setIsCertModalOpen(false)}
-        personalScore={personalScore}
         teamScore={teamScore}
         totalMissions={totalMissions}
       />

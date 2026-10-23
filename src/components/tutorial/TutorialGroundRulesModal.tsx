@@ -6,7 +6,7 @@ import {
   WORKSHOP_TEAMS,
   IS_PILOT_MODE,
 } from '../../config/workshopConfig';
-import { normalizeTeamId, createParticipantId } from '../../utils/scoreCalculator';
+import { normalizeTeamId } from '../../utils/scoreCalculator';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import { ref, update } from 'firebase/database';
 import { fireConfetti } from '../../lib/confetti';
@@ -24,23 +24,21 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
   onClose,
   teamId,
   participantName,
-  participantCompany,
 }) => {
   const normTeamId = normalizeTeamId(teamId);
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normTeamId) || WORKSHOP_TEAMS[0];
 
   const [activeTab, setActiveTab] = useState<'rules' | 'quiz'>('rules');
 
-  // 1. 몸풀기 Quiz 상태
+  // 1. 몸풀기 Quiz 상태 (조별 기준)
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isQuizSubmitted, setIsQuizSubmitted] = useState<boolean>(false);
   const [isQuizCorrect, setIsQuizCorrect] = useState<boolean>(false);
+  const [quizSubmittedBy, setQuizSubmittedBy] = useState<string>('');
 
   // 2. 조별 그라운드룰 상태
-  const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({}); // { roleId: memberName }
-  const [selectedRules, setSelectedRules] = useState<string[]>([
-    'rule_slow',
-  ]);
+  const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({});
+  const [selectedRules, setSelectedRules] = useState<string[]>(['rule_slow']);
   const [customRuleText, setCustomRuleText] = useState<string>('');
   const [customRulesList, setCustomRulesList] = useState<string[]>([]);
   const [isSavingRules, setIsSavingRules] = useState<boolean>(false);
@@ -48,11 +46,11 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
   const dbUrl = FIREBASE_DB_URL;
 
-  // 서버 데이터 동기화
+  // 서버 데이터 동기화 (조별 기준)
   useEffect(() => {
     if (!isOpen) return;
 
-    // 1) 기존 저장된 조별 그라운드룰 불러오기
+    // 1) 조별 그라운드룰 로드
     fetch(`${dbUrl}/sessions/trekking2026/groundRules/${normTeamId}.json?t=${Date.now()}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
@@ -66,67 +64,66 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
       })
       .catch(err => console.warn('그라운드룰 로드 경고:', err));
 
-    // 2) 몸풀기 퀴즈 완료 여부
-    if (participantName) {
-      const pId = createParticipantId(participantName, participantCompany);
-      fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}/tutorial.json?t=${Date.now()}`)
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          if (data && data.completed) {
-            setSelectedOption(data.selectedOption ?? TUTORIAL_QUIZ.correctIndex);
-            setIsQuizSubmitted(true);
-            setIsQuizCorrect(data.isCorrect ?? true);
-          }
-        })
-        .catch(err => console.warn('몸풀기 퀴즈 상태 로드 경고:', err));
-    }
-  }, [isOpen, normTeamId, participantName, participantCompany, dbUrl]);
+    // 2) 조별 몸풀기 퀴즈 완료 여부 로드
+    fetch(`${dbUrl}/sessions/trekking2026/tutorials/${normTeamId}.json?t=${Date.now()}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.completed) {
+          setSelectedOption(data.selectedOption ?? TUTORIAL_QUIZ.correctIndex);
+          setIsQuizSubmitted(true);
+          setIsQuizCorrect(data.isCorrect ?? true);
+          setQuizSubmittedBy(data.submittedBy || '');
+        } else {
+          setIsQuizSubmitted(false);
+        }
+      })
+      .catch(err => console.warn('몸풀기 퀴즈 상태 로드 경고:', err));
+  }, [isOpen, normTeamId, dbUrl]);
 
   if (!isOpen) return null;
 
-  // 몸풀기 퀴즈 제출
+  // 조별 몸풀기 퀴즈 제출
   const handleQuizSubmit = async () => {
     if (selectedOption === null) return;
 
     const correct = selectedOption === TUTORIAL_QUIZ.correctIndex;
     setIsQuizCorrect(correct);
     setIsQuizSubmitted(true);
+    setQuizSubmittedBy(participantName || teamConfig.name);
 
     if (correct) {
       fireConfetti();
     }
 
-    if (participantName) {
-      const pId = createParticipantId(participantName, participantCompany);
-      const payload = {
-        completed: true,
-        selectedOption,
-        isCorrect: correct,
-        completedAt: new Date().toISOString(),
-      };
+    const payload = {
+      teamId: normTeamId,
+      teamName: teamConfig.name,
+      completed: true,
+      selectedOption,
+      isCorrect: correct,
+      submittedBy: participantName || teamConfig.name,
+      completedAt: new Date().toISOString(),
+    };
 
-      try {
-        await fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}/tutorial.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const tutRef = ref(rtdb, `sessions/trekking2026/participants/${pId}/tutorial`);
-        update(tutRef, payload).catch(() => {});
-      } catch (e) {
-        console.warn('몸풀기 퀴즈 저장 경고:', e);
-      }
+    try {
+      await fetch(`${dbUrl}/sessions/trekking2026/tutorials/${normTeamId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const tutRef = ref(rtdb, `sessions/trekking2026/tutorials/${normTeamId}`);
+      update(tutRef, payload).catch(() => {});
+    } catch (e) {
+      console.warn('몸풀기 퀴즈 저장 경고:', e);
     }
   };
 
-  // 룰 토글
   const toggleRule = (ruleId: string) => {
     setSelectedRules(prev =>
       prev.includes(ruleId) ? prev.filter(id => id !== ruleId) : [...prev, ruleId]
     );
   };
 
-  // 커스텀 룰 추가
   const handleAddCustomRule = () => {
     if (!customRuleText.trim()) return;
     setCustomRulesList(prev => [...prev, customRuleText.trim()]);
@@ -137,7 +134,6 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
     setCustomRulesList(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 그라운드룰 저장 후 몸풀기 Quiz 탭으로 이동
   const handleSaveGroundRules = async () => {
     setIsSavingRules(true);
     setSaveSuccess(false);
@@ -149,7 +145,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
       selectedRuleIds: selectedRules,
       selectedRuleTexts: selectedRules.map(id => GROUND_RULE_PRESETS.find(p => p.id === id)?.text || id),
       customRules: customRulesList,
-      updatedBy: participantName || '익명',
+      updatedBy: participantName || teamConfig.name,
       updatedAt: new Date().toISOString(),
     };
 
@@ -171,7 +167,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
     setTimeout(() => {
       setSaveSuccess(false);
       setActiveTab('quiz');
-    }, 900);
+    }, 800);
   };
 
   return (
@@ -179,18 +175,18 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
       <div className="bg-[#13192A] border border-white/15 w-full max-w-[430px] max-h-[92vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden">
         {/* 상단 헤더 */}
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-sm font-bold text-white"
-                  style={{ background: teamConfig.color }}>
+          <div className="flex items-center gap-2.5">
+            <span
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: teamConfig.color }}
+            >
               {teamConfig.shortCode}
             </span>
             <div>
-              <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">
-                {IS_PILOT_MODE ? '1:00~1:20 카페쿰베오 오프닝 (20분)' : '1:30~2:00 집결 오프닝'}
-              </span>
               <h3 className="text-[16px] font-bold text-white">
-                {teamConfig.name} 그라운드룰 & 몸풀기 Quiz
+                {teamConfig.name} 그라운드룰 & 연습 퀴즈
               </h3>
+              <span className="text-[12.5px] text-slate-400">조 대표 1명이 입력하면 조 전체에 반영됩니다</span>
             </div>
           </div>
           <button
@@ -201,59 +197,44 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 탭 전환 (1. 조별 그라운드룰 -> 2. 몸풀기 Quiz) */}
+        {/* 탭 전환 */}
         <div className="flex bg-[#101626] p-1.5 border-b border-white/8 gap-1.5 flex-shrink-0">
           <button
             onClick={() => setActiveTab('rules')}
-            className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all ${
               activeTab === 'rules'
-                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md'
+                ? 'bg-sky-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>🤝</span>
-            <span>1. 조별 그라운드룰</span>
+            1. 조별 그라운드룰
           </button>
           <button
             onClick={() => setActiveTab('quiz')}
             className={`flex-1 py-2 rounded-xl text-[14px] font-bold transition-all flex items-center justify-center gap-1 ${
               activeTab === 'quiz'
-                ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md'
+                ? 'bg-red-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>{IS_PILOT_MODE ? '☕' : '🥐'}</span>
-            <span>2. 몸풀기 Quiz</span>
-            {isQuizSubmitted && <span className="text-emerald-300 text-[12.5px]">✔</span>}
+            <span>2. 연습 Quiz</span>
+            {isQuizSubmitted && <span className="text-emerald-300 text-[12.5px]">✓</span>}
           </button>
         </div>
 
         {/* 탭 1: 조별 그라운드룰 & 역할 분담 */}
         {activeTab === 'rules' && (
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-            {/* 그라운드룰 안내 */}
-            <div className="bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
-              <div className="flex items-center gap-1.5 font-bold text-sky-400 mb-1">
-                <span>🤝</span>
-                <span>출발 전 조별 자기소개 & 그라운드룰 약속</span>
-              </div>
-              조원들과 역할(조장, 어플담당 등)을 나누고 우리 조만의 힐링 규칙을 정해보세요!
-            </div>
-
             {/* 역할 배분 섹션 */}
             <div className="space-y-2">
-              <h4 className="text-[15px] font-bold text-white flex items-center gap-1">
-                <span>👥</span>
-                <span>우리 조 역할 배분 (담당 조원명 입력)</span>
+              <h4 className="text-[15px] font-bold text-white">
+                조별 역할 배분
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {GROUND_RULE_ROLE_OPTIONS.map(role => (
                   <div key={role.id} className="bg-[#182035] border border-white/8 rounded-xl p-2.5 space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base">{role.icon}</span>
-                      <strong className="text-[14px] text-white">{role.title}</strong>
-                    </div>
-                    <p className="text-[12.5px] text-slate-400 leading-tight">
+                    <strong className="text-[14px] text-white block">{role.title}</strong>
+                    <p className="text-[12px] text-slate-400 leading-tight">
                       {role.description}
                     </p>
                     <input
@@ -270,9 +251,8 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
             {/* 추천 그라운드룰 체크리스트 */}
             <div className="space-y-2">
-              <h4 className="text-[15px] font-bold text-white flex items-center gap-1">
-                <span>🌿</span>
-                <span>우리 조의 약속 (그라운드룰) 선택</span>
+              <h4 className="text-[15px] font-bold text-white">
+                우리 조 그라운드룰 선택
               </h4>
               <div className="space-y-1.5">
                 {GROUND_RULE_PRESETS.map(preset => {
@@ -288,12 +268,11 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                           : 'bg-black/20 border-white/5 text-slate-400 hover:border-white/15'
                       }`}
                     >
-                      <span className={`w-4 h-4 rounded flex items-center justify-center text-[12.5px] font-bold ${
+                      <span className={`w-4 h-4 rounded flex items-center justify-center text-[12px] font-bold ${
                         isChecked ? 'bg-sky-500 text-slate-950' : 'border border-slate-500'
                       }`}>
                         {isChecked ? '✓' : ''}
                       </span>
-                      <span>{preset.icon}</span>
                       <span className="flex-1 leading-snug">{preset.text}</span>
                     </button>
                   );
@@ -303,14 +282,13 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
 
             {/* 직접 입력 커스텀 그라운드룰 */}
             <div className="space-y-2">
-              <h4 className="text-[14.5px] font-bold text-slate-300 flex items-center gap-1">
-                <span>✍️</span>
-                <span>우리 조만의 특별한 룰 직접 추가</span>
+              <h4 className="text-[14.5px] font-bold text-slate-300">
+                우리 조만의 룰 추가 (선택)
               </h4>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="예: 20분 동안 혼자 산책하며 사진 3장 찍기"
+                  placeholder="예: 20분 동안 산책하며 사진 찍기"
                   value={customRuleText}
                   onChange={e => setCustomRuleText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddCustomRule()}
@@ -329,7 +307,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 <div className="space-y-1 pt-1">
                   {customRulesList.map((cr, idx) => (
                     <div key={idx} className="bg-sky-950/30 border border-sky-500/20 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-[14px] text-sky-200">
-                      <span>✨ {cr}</span>
+                      <span>• {cr}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveCustomRule(idx)}
@@ -345,30 +323,16 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
           </div>
         )}
 
-        {/* 탭 2: 몸풀기 Quiz */}
+        {/* 탭 2: 연습 Quiz (조별 기준) */}
         {activeTab === 'quiz' && (
           <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
-            {/* 몸풀기 Quiz 안내 배너 */}
-            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-red-500/15 border border-amber-500/30 rounded-2xl p-3 text-[14px] text-slate-200 leading-relaxed">
-              <div className="flex items-center gap-1.5 font-bold text-amber-400 mb-1">
-                <span>{IS_PILOT_MODE ? '☕' : '🥐'}</span>
-                <span>어플 테스트 & 몸풀기 Quiz</span>
-              </div>
-              {IS_PILOT_MODE ? (
-                <>출발 전 카페쿰베오에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (카페쿰베오 시그니처 메뉴인 <strong>베오라떼</strong>의 가격을 맞혀보세요.)</>
-              ) : (
-                <>출발 전 빵명장에서 조원들과 가볍게 어플 작동을 테스트해 보세요! (빵명장 매장 진열대를 확인하고 <strong>소보루 빵</strong>의 가격을 맞혀보세요.)</>
-              )}
-            </div>
-
-            {/* 퀴즈 문제 카드 */}
-            <div className="bg-[#182035] border border-white/10 rounded-2xl p-3.5 space-y-3 shadow-lg">
+            <div className="bg-[#182035] border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
-                <span className="text-[13.5px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
-                  {IS_PILOT_MODE ? '카페쿰베오 (두산연강원)' : '빵명장 서울대공원점'}
+                <span className="text-[13px] bg-red-500/20 text-red-300 border border-red-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                  {IS_PILOT_MODE ? '카페쿰베오' : '빵명장'}
                 </span>
-                <span className="text-[13.5px] text-slate-400">
-                  몸풀기 Quiz
+                <span className="text-[13px] text-slate-400">
+                  {isQuizSubmitted ? `${teamConfig.name} 완료 (${quizSubmittedBy})` : '조 대표 1명 제출'}
                 </span>
               </div>
 
@@ -376,7 +340,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 <h4 className="text-[16px] font-bold text-white leading-snug">
                   {TUTORIAL_QUIZ.questionText}
                 </h4>
-                <p className="text-[13.5px] text-amber-300/90 font-medium">
+                <p className="text-[13.5px] text-amber-300/90">
                   {TUTORIAL_QUIZ.hintText}
                 </p>
               </div>
@@ -407,34 +371,32 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                       className={`w-full text-left p-3 rounded-xl border text-[15px] flex items-center justify-between transition-all active:scale-98 ${btnStyle}`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[13.5px] font-bold">
+                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[13px] font-bold">
                           {idx + 1}
                         </span>
                         <span>{opt}</span>
                       </div>
                       {isQuizSubmitted && isCorrectAnswer && (
-                        <span className="text-emerald-400 text-sm font-bold">정답 👏</span>
+                        <span className="text-emerald-400 text-sm font-bold">정답</span>
                       )}
                     </button>
                   );
                 })}
               </div>
 
-              {/* 제출 후 해설 */}
               {isQuizSubmitted && (
-                <div className={`p-3 rounded-xl border text-[14px] leading-relaxed animate-fade-in ${
+                <div className={`p-3 rounded-xl border text-[14px] leading-relaxed ${
                   isQuizCorrect
                     ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
                     : 'bg-red-950/40 border-red-500/40 text-red-200'
                 }`}>
-                  <p className="font-bold mb-1">
+                  <p className="font-bold">
                     {isQuizCorrect
-                      ? '🎉 완벽합니다! 정답입니다.'
+                      ? TUTORIAL_QUIZ.explanation
                       : IS_PILOT_MODE
-                      ? '💡 오답입니다. 정답은 6,500원(3번)입니다.'
-                      : '💡 오답입니다. 정답은 3,800원(2번)입니다.'}
+                      ? '오답입니다. 정답은 6,500원입니다.'
+                      : '오답입니다. 정답은 3,800원입니다.'}
                   </p>
-                  <p>{TUTORIAL_QUIZ.explanation}</p>
                 </div>
               )}
             </div>
@@ -448,9 +410,9 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
               type="button"
               disabled={isSavingRules}
               onClick={handleSaveGroundRules}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all"
             >
-              <span>{isSavingRules ? '저장 처리 중...' : saveSuccess ? '✅ 저장 완료! 몸풀기 Quiz로 이동 중...' : '우리 조 그라운드룰 저장 & 몸풀기 Quiz 이동 →'}</span>
+              {isSavingRules ? '저장 중...' : saveSuccess ? '저장 완료! 연습 퀴즈로 이동...' : '그라운드룰 저장 & 연습 Quiz 이동 →'}
             </button>
           ) : (
             <>
@@ -459,17 +421,17 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                   type="button"
                   disabled={selectedOption === null}
                   onClick={handleQuizSubmit}
-                  className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 disabled:opacity-40 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  className="w-full py-3 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all"
                 >
-                  <span>정답 제출하고 몸풀기 Quiz 완료하기 🚀</span>
+                  조 대표 정답 제출하기
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all"
                 >
-                  <span>몸풀기 Quiz 완료 & 닫기 ✓</span>
+                  연습 Quiz 완료 (닫기)
                 </button>
               )}
             </>

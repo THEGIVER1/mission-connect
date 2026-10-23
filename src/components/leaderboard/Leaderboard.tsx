@@ -9,10 +9,10 @@ import {
   WORKSHOP_TEAMS,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   THEME_GARDEN_MISSION,
+  IS_PILOT_MODE,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
-  IndividualItem,
   normalizeTeamId,
   isPqSubmittedForTeam,
   isThemeGardenDoneForTeam,
@@ -20,10 +20,10 @@ import {
 } from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
-type TabKey = 'team' | 'mission' | 'individual';
+type TabKey = 'team' | 'mission';
 
 // ─────────────────────────────────────────────────────────────────
-// 세션 타이머 (1초 단위 실시간 갱신)
+// 세션 타이머
 // ─────────────────────────────────────────────────────────────────
 function useSessionTimer() {
   const session = useAppStore((s) => s.session);
@@ -46,7 +46,7 @@ function useSessionTimer() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// 통계 카드 행 (실시간 타이머 + 완료 미션 수)
+// 통계 카드 행
 // ─────────────────────────────────────────────────────────────────
 const StatsRow: React.FC<{ teams: Team[] }> = ({ teams }) => {
   const timer = useSessionTimer();
@@ -57,39 +57,13 @@ const StatsRow: React.FC<{ teams: Team[] }> = ({ teams }) => {
       {[
         { val: `${teams.length}개 조`, label: '참가 조', color: 'text-amber-400' },
         { val: `${totalCompleted}건`, label: '완료 미션', color: 'text-green-400' },
-        { val: `${timer.h}:${timer.m}:${timer.s}`, label: '남은 시간 (실시간)', color: timer.urgent ? 'text-red-400 animate-pulse' : 'text-sky-400 font-mono' },
+        { val: `${timer.h}:${timer.m}:${timer.s}`, label: '남은 시간', color: timer.urgent ? 'text-red-400 animate-pulse' : 'text-sky-400 font-mono' },
       ].map(({ val, label, color }) => (
         <div key={label} className="bg-[#1A2235] border border-white/8 rounded-xl p-2.5 text-center shadow">
           <div className={`font-bebas text-2xl leading-none ${color}`}>{val}</div>
-          <div className="text-[12.5px] text-slate-400 mt-1">{label}</div>
+          <div className="text-[12px] text-slate-400 mt-1">{label}</div>
         </div>
       ))}
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────
-// 세션 진행 바
-// ─────────────────────────────────────────────────────────────────
-const SessionProgressBar: React.FC = () => {
-  const timer = useSessionTimer();
-  return (
-    <div className="px-4 pb-2">
-      <div className="flex justify-between text-[12.5px] text-slate-400 mb-1 font-medium">
-        <span>세션 진행률</span>
-        <span className="text-white font-bold">{timer.pct}%</span>
-      </div>
-      <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-1000"
-          style={{
-            width: `${timer.pct}%`,
-            background: timer.urgent
-              ? 'linear-gradient(90deg,#E31837,#FF6B35)'
-              : 'linear-gradient(90deg,#0284C7,#10B981)',
-          }}
-        />
-      </div>
     </div>
   );
 };
@@ -103,7 +77,7 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
   const podiumOrder = [top3[1], top3[0], top3[2]];
 
   return (
-    <div className="flex items-end justify-center gap-2 py-4 px-2">
+    <div className="flex items-end justify-center gap-2 py-3 px-2">
       {podiumOrder.map((team) => {
         if (!team) return null;
         const actualRank = team.rank;
@@ -111,23 +85,20 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
         const isSecond = actualRank === 2;
         const isMe = team.id === myTeamId;
 
-        const heights = isFirst ? 'h-28' : isSecond ? 'h-22' : 'h-18';
+        const heights = isFirst ? 'h-26' : isSecond ? 'h-20' : 'h-16';
         const bgColors = isFirst
-          ? 'bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-amber-500/5 border-amber-400/50 shadow-lg shadow-amber-500/15'
+          ? 'bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-amber-500/5 border-amber-400/50 shadow-lg'
           : isSecond
           ? 'bg-gradient-to-t from-slate-400/20 to-slate-400/5 border-slate-400/30'
           : 'bg-gradient-to-t from-amber-700/20 to-amber-700/5 border-amber-700/30';
 
-        const teamConfig = WORKSHOP_TEAMS.find(t => t.id === team.id);
-
         return (
           <div key={team.id} className="flex-1 flex flex-col items-center max-w-[105px]">
-            <div className="text-xl mb-1">{isFirst ? '👑' : (teamConfig?.emoji || '🌲')}</div>
             <div className={`w-full border rounded-t-2xl flex flex-col items-center justify-between p-2 ${heights} ${bgColors} ${isMe ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0D1117]' : ''}`}>
-              <span className={`font-bebas text-2xl font-bold ${
+              <span className={`font-bebas text-xl font-bold ${
                 isFirst ? 'text-amber-300' : isSecond ? 'text-slate-300' : 'text-amber-600'
               }`}>
-                {actualRank === 1 ? '1위 🥇' : actualRank === 2 ? '2위 🥈' : '3위 🥉'}
+                {actualRank}위
               </span>
               <div className="text-center w-full">
                 <p className="text-[14px] font-bold text-white truncate">{team.name}</p>
@@ -144,10 +115,21 @@ const Podium: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 1: 팀 순위 (실시간 순위 변동 & 롤링 카운터 & 완주 뱃지)
+// 탭 1: 조별 순위
 // ─────────────────────────────────────────────────────────────────
-const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamId }) => {
-  const maxScore = useMemo(() => Math.max(...teams.map(t => t.score), 100), [teams]);
+const TeamTab: React.FC<{ teams: Team[]; myTeamId: string; photoVotes: Record<string, any> }> = ({ teams, myTeamId, photoVotes }) => {
+  const maxScore = useMemo(() => Math.max(...teams.map(t => t.score), 200), [teams]);
+
+  const voteCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.values(photoVotes || {}).forEach((v: any) => {
+      if (v && v.votedTeamId) {
+        const target = normalizeTeamId(v.votedTeamId);
+        counts[target] = (counts[target] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [photoVotes]);
 
   const prevRanksRef = useRef<Record<string, number>>({});
   const [rankDiffs, setRankDiffs] = useState<Record<string, number>>({});
@@ -157,7 +139,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
     teams.forEach(t => {
       const prev = prevRanksRef.current[t.id];
       if (prev !== undefined && prev !== t.rank) {
-        diffs[t.id] = prev - t.rank; // 양수면 순위 상승(예: 3->1 = +2)
+        diffs[t.id] = prev - t.rank;
       }
       prevRanksRef.current[t.id] = t.rank;
     });
@@ -170,15 +152,16 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
   }, [teams]);
 
   return (
-    <div className="px-4 pb-28 space-y-3 pt-2">
+    <div className="px-4 pb-28 space-y-3 pt-1">
       <Podium teams={teams} myTeamId={myTeamId} />
 
-      <div className="space-y-2 pt-2">
+      <div className="space-y-2">
         {teams.map((team) => {
           const isMe = team.id === myTeamId;
           const teamConfig = WORKSHOP_TEAMS.find(t => t.id === team.id);
           const diff = rankDiffs[team.id];
           const isFullCompleted = (team.missionsCompleted || 0) >= 2;
+          const votes = voteCounts[team.id] || 0;
 
           return (
             <div
@@ -193,47 +176,48 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex flex-col items-center justify-center w-7">
+                  <div className="flex flex-col items-center justify-center w-6">
                     <span className={`font-bebas text-xl leading-none ${
                       team.rank === 1 ? 'text-amber-400 font-bold' : 'text-slate-400'
                     }`}>
                       {team.rank}
                     </span>
-                    {diff !== undefined && diff !== 0 ? (
-                      <span className={`text-[12px] font-extrabold leading-none mt-0.5 ${
+                    {diff !== undefined && diff !== 0 && (
+                      <span className={`text-[11px] font-extrabold leading-none mt-0.5 ${
                         diff > 0 ? 'text-emerald-400' : 'text-rose-400'
                       }`}>
                         {diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`}
                       </span>
-                    ) : (
-                      <span className="text-[12px] text-slate-600 leading-none mt-0.5">—</span>
                     )}
                   </div>
 
-                  <div className="w-8 h-8 rounded-lg bg-[#212C42] border border-white/8 flex items-center justify-center text-base">
-                    {teamConfig?.emoji || '🌲'}
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+                    style={{ background: teamConfig?.color || '#E31837' }}
+                  >
+                    {team.shortCode}
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <strong className="text-[16px] text-white">{team.name}</strong>
                       {isMe && (
-                        <span className="text-[12px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">
+                        <span className="text-[11.5px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">
                           우리 조
                         </span>
                       )}
-                      {team.rank === 1 && (
-                        <span className="text-[12px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-extrabold flex items-center gap-0.5">
-                          👑 1위
+                      {isFullCompleted && (
+                        <span className="text-[11.5px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">
+                          완주
                         </span>
                       )}
-                      {isFullCompleted && (
-                        <span className="text-[12px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">
-                          🏅 완주
+                      {votes > 0 && (
+                        <span className="text-[11.5px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-bold">
+                          사진 {votes}표
                         </span>
                       )}
                     </div>
                     <span className="text-[12.5px] text-slate-400">
-                      {teamConfig?.courseName} ({team.memberCount}명 참여)
+                      {teamConfig?.courseName}
                     </span>
                   </div>
                 </div>
@@ -243,8 +227,8 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
                     <AnimatedScoreCounter value={team.score} className="text-white" />
                     <span className="text-red-500 text-sm ml-0.5">pt</span>
                   </div>
-                  <span className="text-[12.5px] text-slate-400 block">
-                    완료 미션 {team.missionsCompleted}건
+                  <span className="text-[12px] text-slate-400 block">
+                    미션 {team.missionsCompleted}/2 완료
                   </span>
                 </div>
               </div>
@@ -259,21 +243,29 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string }> = ({ teams, myTeamI
 };
 
 // ─────────────────────────────────────────────────────────────────
-// 탭 2: 미션별 현황 (동적 배점 연동 & 실시간 인원수 집계)
-// ─────────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────────
-// 탭 2: 미션별 현황 (2대 핵심 액티비티 실시간 현황)
+// 탭 2: 미션별 현황
 // ─────────────────────────────────────────────────────────────────
 const MissionTab: React.FC<{
   peopleQuests: Record<string, any>;
   themeGardenPhotos: Record<string, any>;
-}> = ({ peopleQuests, themeGardenPhotos }) => {
+  photoVotes: Record<string, any>;
+}> = ({ peopleQuests, themeGardenPhotos, photoVotes }) => {
   const isPeopleQuestSubmitted = useAppStore((s) => s.isPeopleQuestSubmitted);
   const isThemeGardenSubmitted = useAppStore((s) => s.isThemeGardenSubmitted);
   const myTeam = useAppStore((s) => s.myTeam);
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
 
-  // People Quest 제출 완료 팀 수
+  const voteCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.values(photoVotes || {}).forEach((v: any) => {
+      if (v && v.votedTeamId) {
+        const target = normalizeTeamId(v.votedTeamId);
+        counts[target] = (counts[target] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [photoVotes]);
+
   const pqCompletedTeams = useMemo(() => {
     return WORKSHOP_TEAMS.filter(t => {
       const isSub = isPqSubmittedForTeam(t.id, peopleQuests);
@@ -282,7 +274,6 @@ const MissionTab: React.FC<{
     });
   }, [peopleQuests, myTeam?.id, isPeopleQuestSubmitted]);
 
-  // 테마가든 사진 업로드 완료 팀 수
   const themeCompletedTeams = useMemo(() => {
     return WORKSHOP_TEAMS.filter(t => {
       const isDone = isThemeGardenDoneForTeam(t.id, themeGardenPhotos);
@@ -293,132 +284,68 @@ const MissionTab: React.FC<{
 
   return (
     <div className="px-4 pb-28 space-y-4 pt-2">
-      {/* Activity 1: 최고의 스토리 동료 추천 */}
+      {/* 미션 1: 최고의 스토리 동료 추천 */}
       <div className="bg-[#1A2235] border border-red-500/30 rounded-2xl p-4 shadow-lg space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">💬</span>
-            <div>
-              <span className="text-[12.5px] text-red-400 font-bold uppercase tracking-wider block">Activity 1 · 대화형 (조별 1명 추천)</span>
-              <h3 className="text-[17px] font-bold text-white">최고의 스토리 동료 추천</h3>
-            </div>
-          </div>
-          <span className="text-[13.5px] font-bold text-amber-400">
-            +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt/인
+        <div className="flex items-center justify-between">
+          <h3 className="text-[16.5px] font-bold text-white">1. 최고의 스토리 동료 추천</h3>
+          <span className="text-[13px] font-bold text-amber-400">
+            조별 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt ({pqCompletedTeams.length}/6조 완료)
           </span>
         </div>
 
-        <p className="text-[14px] text-slate-300 leading-relaxed">
-          트레킹 중 조원들과 대화하며 인상 깊었던 동료 1명을 추천합니다. 제출 시 <strong>조원 전원에게 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 부여됩니다.
-        </p>
-
-        {/* 진행률 바 */}
-        <div>
-          <div className="flex justify-between text-[13.5px] text-slate-400 mb-1">
-            <span>6개 조 제출 완료율</span>
-            <span className="text-green-400 font-bold">
-              {pqCompletedTeams.length} / {WORKSHOP_TEAMS.length}개 조 완료 ({Math.round((pqCompletedTeams.length / WORKSHOP_TEAMS.length) * 100)}%)
-            </span>
-          </div>
-          <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-red-600 to-green-500 rounded-full transition-all duration-700"
-              style={{ width: `${(pqCompletedTeams.length / WORKSHOP_TEAMS.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 조별 현황 뱃지 (6개 조) */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-2 gap-2">
           {WORKSHOP_TEAMS.map(team => {
             const pq = getPqForTeam(team.id, peopleQuests);
             const isMyTeam = team.id === normalizeTeamId(myTeam?.id);
             const isSubmitted = isPqSubmittedForTeam(team.id, peopleQuests) || (isMyTeam && isPeopleQuestSubmitted);
-            const isDraft = pq?.status === 'draft';
             const recName = pq?.recommendation?.recommendedPersonName;
-            const topic = pq?.recommendation?.selectedTopic;
 
             return (
               <div
                 key={team.id}
-                className={`p-2.5 rounded-xl border text-left text-[13.5px] transition-all ${
+                className={`p-2.5 rounded-xl border text-left text-[13px] ${
                   isSubmitted
                     ? 'bg-green-500/15 border-green-500/30 text-green-300'
-                    : isDraft
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
                     : 'bg-black/20 border-white/5 text-slate-500'
                 }`}
               >
                 <div className="flex justify-between items-center mb-0.5">
-                  <span className="font-bold text-white flex items-center gap-1">
-                    {team.emoji} {team.name}
-                    {isMyTeam && <span className="text-[12px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
-                  </span>
-                  <span className={`text-[12.5px] font-bold px-1.5 py-0.2 rounded ${
-                    isSubmitted ? 'bg-green-500/30 text-green-300' : isDraft ? 'bg-amber-500/30 text-amber-300' : 'text-slate-500'
-                  }`}>
-                    {isSubmitted ? '완료 ✓' : isDraft ? '작성중 💾' : '미진행'}
+                  <span className="font-bold text-white">{team.name}</span>
+                  <span className="text-[12px] font-bold">
+                    {isSubmitted ? '완료' : '대기'}
                   </span>
                 </div>
-                {recName ? (
-                  <p className="text-[12.5px] text-slate-300 truncate">
-                    👑 {recName} 님 {topic ? `(${topic.slice(0, 10)}...)` : ''}
-                  </p>
-                ) : (
-                  <p className="text-[12.5px] text-slate-500">대화 진행 중</p>
-                )}
+                <p className="text-[12.5px] text-slate-300 truncate">
+                  {recName ? `${recName} 님 추천` : '미작성'}
+                </p>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Activity 2: 테마가든 단체사진 미션 */}
+      {/* 미션 2: 조별 단체사진 */}
       <div className="bg-[#1A2235] border border-pink-500/30 rounded-2xl p-4 shadow-lg space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🌹</span>
-            <div>
-              <span className="text-[12.5px] text-pink-400 font-bold uppercase tracking-wider block">Activity 2 · 현장 인증 (2:00~4:30)</span>
-              <h3 className="text-[17px] font-bold text-white">테마가든 시그니처 단체사진 미션</h3>
-            </div>
-          </div>
-          <span className="text-[13.5px] font-bold text-amber-400">
-            +{THEME_GARDEN_MISSION.pointsPerMember}pt/인
+        <div className="flex items-center justify-between">
+          <h3 className="text-[16.5px] font-bold text-white">
+            {IS_PILOT_MODE ? '2. 두산 저수지 단체사진' : '2. 테마가든 단체사진'}
+          </h3>
+          <span className="text-[13px] font-bold text-amber-400">
+            조별 +{THEME_GARDEN_MISSION.pointsPerMember}pt ({themeCompletedTeams.length}/6조 완료)
           </span>
         </div>
 
-        <p className="text-[14px] text-slate-300 leading-relaxed">
-          테마가든 지정 장소를 찾아 조원 전원과 단체사진을 촬영 후 업로드합니다. 업로드 시 <strong>조원 전원에게 +{THEME_GARDEN_MISSION.pointsPerMember}pt</strong>가 부여됩니다.
-        </p>
-
-        {/* 진행률 바 */}
-        <div>
-          <div className="flex justify-between text-[13.5px] text-slate-400 mb-1">
-            <span>6개 조 사진 업로드 완료율</span>
-            <span className="text-pink-400 font-bold">
-              {themeCompletedTeams.length} / {WORKSHOP_TEAMS.length}개 조 업로드 ({Math.round((themeCompletedTeams.length / WORKSHOP_TEAMS.length) * 100)}%)
-            </span>
-          </div>
-          <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-pink-600 to-rose-400 rounded-full transition-all duration-700"
-              style={{ width: `${(themeCompletedTeams.length / WORKSHOP_TEAMS.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 6개 조 사진 업로드 갤러리/현황 그리드 */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-2 gap-2">
           {WORKSHOP_TEAMS.map(team => {
             const photoRec = themeGardenPhotos[team.id] || themeGardenPhotos[normalizeTeamId(team.id)];
             const isMyTeam = team.id === normalizeTeamId(myTeam?.id);
             const isDone = isThemeGardenDoneForTeam(team.id, themeGardenPhotos) || (isMyTeam && isThemeGardenSubmitted);
+            const votes = voteCounts[team.id] || 0;
 
             return (
               <div
                 key={team.id}
-                className={`p-2.5 rounded-xl border text-left text-[13.5px] transition-all flex flex-col justify-between ${
+                className={`p-2.5 rounded-xl border text-left text-[13px] flex flex-col justify-between ${
                   isDone
                     ? 'bg-pink-950/20 border-pink-500/40 text-pink-200'
                     : 'bg-black/20 border-white/5 text-slate-500'
@@ -426,53 +353,35 @@ const MissionTab: React.FC<{
               >
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-bold text-white flex items-center gap-1">
-                      {team.emoji} {team.name}
-                      {isMyTeam && <span className="text-[12px] bg-red-600 text-white px-1 rounded font-normal">우리 조</span>}
-                    </span>
-                    <span className={`text-[12px] font-bold px-1.5 py-0.2 rounded ${
-                      isDone ? 'bg-pink-500/30 text-pink-300' : 'text-slate-500'
-                    }`}>
-                      {isDone ? '업로드 완료 ✓' : '미업로드'}
+                    <span className="font-bold text-white">{team.name}</span>
+                    <span className="text-[12px] font-bold text-amber-300">
+                      {votes > 0 ? `${votes}표` : isDone ? '완료' : '미등록'}
                     </span>
                   </div>
 
                   {photoRec?.photoUrl ? (
                     <div
                       onClick={() => setZoomPhotoUrl(photoRec.photoUrl)}
-                      className="relative rounded-lg overflow-hidden border border-pink-500/40 cursor-pointer group mb-1 h-20 bg-black/50"
+                      className="relative rounded-lg overflow-hidden border border-pink-500/40 cursor-pointer group h-20 bg-black/50"
                     >
                       <img
                         src={photoRec.photoUrl}
                         alt={`${team.name} 단체사진`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-1">
-                        <span className="text-[12px] text-white font-medium truncate">
-                          {photoRec.caption || '단체사진'}
-                        </span>
-                      </div>
                     </div>
                   ) : (
-                    <div className="h-16 rounded-lg bg-black/30 border border-dashed border-white/10 flex flex-col items-center justify-center text-slate-500 text-[12.5px] mb-1">
-                      <span className="text-sm mb-0.5">📸</span>
-                      <span>촬영 진행 중</span>
+                    <div className="h-20 rounded-lg bg-black/30 border border-dashed border-white/10 flex items-center justify-center text-slate-500 text-[12px]">
+                      대기 중
                     </div>
                   )}
                 </div>
-
-                {photoRec?.uploadedBy && (
-                  <p className="text-[12px] text-slate-400 truncate">
-                    등록: {photoRec.uploadedBy}
-                  </p>
-                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 사진 전체화면 확대 모달 */}
       {zoomPhotoUrl && (
         <div
           onClick={() => setZoomPhotoUrl(null)}
@@ -488,7 +397,7 @@ const MissionTab: React.FC<{
               onClick={() => setZoomPhotoUrl(null)}
               className="mt-3 px-5 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-xs font-bold"
             >
-              ✕ 닫기
+              닫기
             </button>
           </div>
         </div>
@@ -497,97 +406,12 @@ const MissionTab: React.FC<{
   );
 };
 
-const IndividualTab: React.FC<{
-  individuals: IndividualItem[];
-  participantName: string | null;
-}> = ({ individuals, participantName }) => {
-  return (
-    <div className="px-4 pb-28 space-y-2 pt-2">
-      <div className="bg-[#1A2235] border border-white/8 rounded-xl p-3 text-center mb-2">
-        <p className="text-[14px] font-bold text-white">
-          개인 미션 기여 순위 (전체 {individuals.length}명)
-        </p>
-        <p className="text-[12.5px] text-slate-400 mt-0.5">
-          개인 획득 점수 = 조별 단체사진 완료(+100pt) + 최고의 스토리 동료 추천 완료(+100pt)
-        </p>
-      </div>
-
-      {individuals.length === 0 ? (
-        <div className="bg-[#1A2235] border border-white/8 rounded-2xl p-8 text-center space-y-2 my-4">
-          <div className="text-3xl">👥</div>
-          <h4 className="text-[16px] font-bold text-white">아직 등록된 참가자가 없습니다</h4>
-          <p className="text-[14px] text-slate-400">
-            참가자가 로그인하고 미션에 참여하면 실시간으로 순위표에 등록됩니다.
-          </p>
-        </div>
-      ) : (
-        individuals.map((p) => {
-          const isMe = !!participantName && p.name.trim() === participantName.trim();
-          return (
-            <div
-              key={p.id || p.name}
-              className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl border transition-all ${
-                isMe
-                  ? 'bg-red-500/15 border-red-500 shadow-lg shadow-red-500/10 ring-1 ring-red-500'
-                  : p.rank === 1
-                  ? 'bg-gradient-to-r from-[#1A2235] to-[#252018] border-amber-400/40 shadow-sm'
-                  : 'bg-[#1A2235] border-white/6'
-              }`}
-            >
-              <span className={`font-bebas text-xl w-7 text-center ${
-                p.rank === 1
-                  ? 'text-amber-400 text-2xl font-bold'
-                  : p.rank === 2
-                  ? 'text-slate-300 text-xl font-bold'
-                  : p.rank === 3
-                  ? 'text-amber-600 text-xl font-bold'
-                  : 'text-slate-500'
-              }`}>
-                {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-[#212C42] border border-white/8 flex items-center justify-center text-lg flex-shrink-0">
-                {p.emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-[16px] font-bold ${isMe ? 'text-red-400' : 'text-white'}`}>
-                    {p.name}
-                  </span>
-                  {isMe && (
-                    <span className="text-[12px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">나</span>
-                  )}
-                  {p.company && (
-                    <span className="text-[12.5px] text-slate-500">({p.company})</span>
-                  )}
-                  {p.missions >= 2 && (
-                    <span className="text-[12px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded">
-                      👑 완주
-                    </span>
-                  )}
-                </div>
-                <span className="text-[13.5px] text-slate-400">{p.team} · {p.missions}개 미션 완주</span>
-              </div>
-              <div className="flex flex-col items-end">
-                <div className={`font-bebas text-[22px] leading-none ${p.pts > 0 ? 'text-amber-400' : 'text-slate-400'} flex items-baseline`}>
-                  <AnimatedScoreCounter value={p.pts} className={p.pts > 0 ? 'text-amber-400' : 'text-slate-400'} />
-                  <span className="text-[13.5px] text-slate-400 ml-0.5">pt</span>
-                </div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
-  );
-};
-
 // ─────────────────────────────────────────────────────────────────
-// Leaderboard 메인 (Dual-Channel 실시간 동기화)
+// Leaderboard 메인 (조별 순위 & 미션 현황)
 // ─────────────────────────────────────────────────────────────────
 const Leaderboard: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>('team');
-  const teamsFromStore = useAppStore((s) => s.teams);
   const myTeam = useAppStore((s) => s.myTeam);
   const participantName = useAppStore((s) => s.participantName);
   const participantCompany = useAppStore((s) => s.participantCompany);
@@ -601,14 +425,14 @@ const Leaderboard: React.FC = () => {
   const [participantsData, setParticipantsData] = useState<Record<string, any>>({});
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
   const [themeGardenPhotosData, setThemeGardenPhotosData] = useState<Record<string, any>>({});
+  const [photoVotesData, setPhotoVotesData] = useState<Record<string, any>>({});
   const dbUrl = FIREBASE_DB_URL;
 
   const isMyTeamPqSubmitted = useMemo(() => {
     return isPqSubmittedForTeam(myTeamId, peopleQuestsData) || isPeopleQuestSubmitted;
   }, [myTeamId, peopleQuestsData, isPeopleQuestSubmitted]);
 
-  // 1. 실시간 개인 순위표(전체 참가자) 및 6개 조 랭킹 통합 계산
-  const { individuals, teams: computedTeams } = useMemo(() => {
+  const { teams: computedTeams } = useMemo(() => {
     return calculateLeaderboardData(
       participantsData,
       peopleQuestsData,
@@ -632,12 +456,10 @@ const Leaderboard: React.FC = () => {
     isMyTeamPqSubmitted,
   ]);
 
-  // Zustand 스토어 동기화
   useEffect(() => {
     syncSessionData({ teams: computedTeams });
   }, [computedTeams, syncSessionData]);
 
-  // 3. Dual-Channel 실시간 데이터 로드 (REST 2.5s Polling + WebSocket)
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
@@ -651,14 +473,11 @@ const Leaderboard: React.FC = () => {
             setParticipantsData(data.participants || {});
             setPeopleQuestsData(data.peopleQuest || {});
             setThemeGardenPhotosData(data.themeGardenPhotos || {});
-          } else {
-            setParticipantsData({});
-            setPeopleQuestsData({});
-            setThemeGardenPhotosData({});
+            setPhotoVotesData(data.photoVotes || {});
           }
         }
       } catch (err) {
-        console.warn('리더보드 REST 조회 경고:', err);
+        console.warn('리더보드 조회 경고:', err);
       }
     };
     fetchLeaderboard();
@@ -671,12 +490,7 @@ const Leaderboard: React.FC = () => {
       unsubscribe = onValue(
         sessionRef,
         (snapshot) => {
-          if (!snapshot.exists()) {
-            setParticipantsData({});
-            setPeopleQuestsData({});
-            setThemeGardenPhotosData({});
-            return;
-          }
+          if (!snapshot.exists()) return;
           const data = snapshot.val();
           if (data && typeof data === 'object') {
             if (data.lastResetAt && (!lastResetAt || data.lastResetAt > lastResetAt)) {
@@ -685,19 +499,11 @@ const Leaderboard: React.FC = () => {
             setParticipantsData(data.participants || {});
             setPeopleQuestsData(data.peopleQuest || {});
             setThemeGardenPhotosData(data.themeGardenPhotos || {});
-          } else {
-            setParticipantsData({});
-            setPeopleQuestsData({});
-            setThemeGardenPhotosData({});
+            setPhotoVotesData(data.photoVotes || {});
           }
-        },
-        (error) => {
-          console.warn('리더보드 실시간 동기화 경고:', error);
         }
       );
-    } catch (e) {
-      console.warn('Firebase 리스너 등록 경고:', e);
-    }
+    } catch (e) {}
 
     return () => {
       clearInterval(pollInterval);
@@ -706,9 +512,8 @@ const Leaderboard: React.FC = () => {
   }, [dbUrl, lastResetAt, resetLocalProgress]);
 
   const TABS: { key: TabKey; label: string }[] = [
-    { key: 'team',       label: '팀 순위'   },
-    { key: 'mission',    label: '미션별'    },
-    { key: 'individual', label: '개인 기여' },
+    { key: 'team',    label: '조별 순위' },
+    { key: 'mission', label: '미션·사진 현황' },
   ];
 
   return (
@@ -723,11 +528,9 @@ const Leaderboard: React.FC = () => {
           >
             ←
           </button>
-          <div className="flex items-center gap-2">
-            <span className="font-bebas text-xl tracking-widest text-white">
-              LEADER<span className="text-amber-400">BOARD</span>
-            </span>
-          </div>
+          <span className="font-bebas text-xl tracking-widest text-white">
+            TEAM <span className="text-amber-400">RANKING</span>
+          </span>
           <LiveBadge label="LIVE" />
         </div>
       </header>
@@ -749,17 +552,15 @@ const Leaderboard: React.FC = () => {
         ))}
       </div>
 
-      {/* 통계 & 실시간 타이머 바 */}
+      {/* 통계 */}
       <div className="flex-shrink-0">
         <StatsRow teams={computedTeams} />
-        <SessionProgressBar />
       </div>
 
       {/* 탭 본문 콘텐츠 */}
       <div className="flex-1 overflow-y-auto">
-        {tab === 'team'       && <TeamTab teams={computedTeams} myTeamId={myTeamId} />}
-        {tab === 'mission'    && <MissionTab peopleQuests={peopleQuestsData} themeGardenPhotos={themeGardenPhotosData} />}
-        {tab === 'individual' && <IndividualTab individuals={individuals} participantName={participantName} />}
+        {tab === 'team'    && <TeamTab teams={computedTeams} myTeamId={myTeamId} photoVotes={photoVotesData} />}
+        {tab === 'mission' && <MissionTab peopleQuests={peopleQuestsData} themeGardenPhotos={themeGardenPhotosData} photoVotes={photoVotesData} />}
       </div>
 
       <BottomNav active="/leaderboard" />

@@ -197,12 +197,11 @@ const TeamSelect: React.FC = () => {
           ? { borderColor: team.color, background: `${team.color}18`, boxShadow: `0 2px 10px ${team.color}20` }
           : { borderColor: 'rgba(255,255,255,0.08)', background: '#1A2235' }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg border"
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
                style={{
-                 background: isSel ? `${team.color}25` : 'rgba(255,255,255,0.05)',
-                 borderColor: isSel ? team.color : 'rgba(255,255,255,0.1)',
+                 background: team.color,
                }}>
-            {team.emoji}
+            {team.shortCode}
           </div>
           <div className="flex-1">
             <span className="text-[17px] font-bold text-white">{team.name}</span>
@@ -306,8 +305,8 @@ const TeamSelect: React.FC = () => {
           )}
 
           <div>
-            <p className="text-[19px] font-bold text-white">참가자 정보 입력 👋</p>
-            <p className="text-[14px] text-slate-400">이름과 배정받은 행사 조를 선택하세요</p>
+            <p className="text-[19px] font-bold text-white">참가자 정보 입력</p>
+            <p className="text-[14px] text-slate-400">이름과 배정받은 조를 선택하세요</p>
           </div>
 
           <div>
@@ -331,8 +330,8 @@ const TeamSelect: React.FC = () => {
 
             {IS_PILOT_MODE ? (
               <div>
-                <p className="text-[13.5px] font-bold text-red-400 mb-1.5 flex items-center gap-1">
-                  🌲 연강원 트레킹 코스 (1~6조)
+                <p className="text-[13.5px] font-bold text-red-400 mb-1.5">
+                  연강원 트레킹 코스 (1~6조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {TEAMS.map(renderTeamCard)}
@@ -342,8 +341,8 @@ const TeamSelect: React.FC = () => {
               <div className="space-y-3">
                 {/* 동물원둘레길 코스 조 */}
                 <div>
-                  <p className="text-[13.5px] font-bold text-red-400 mb-1.5 flex items-center gap-1">
-                    🦁 동물원둘레길 코스 (1~3조)
+                  <p className="text-[13.5px] font-bold text-red-400 mb-1.5">
+                    동물원둘레길 코스 (1~3조)
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {forestTeams.map(renderTeamCard)}
@@ -352,8 +351,8 @@ const TeamSelect: React.FC = () => {
 
                 {/* 미술관 코스 조 */}
                 <div>
-                  <p className="text-[13.5px] font-bold text-sky-400 mb-1.5 flex items-center gap-1">
-                    🏛️ 미술관 코스 (4~6조)
+                  <p className="text-[13.5px] font-bold text-sky-400 mb-1.5">
+                    미술관 코스 (4~6조)
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {lakeTeams.map(renderTeamCard)}
@@ -386,14 +385,13 @@ const TeamSelect: React.FC = () => {
         <div className="px-5 pt-4 flex flex-col gap-4 flex-1 overflow-y-auto pb-8">
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-[19px] font-bold text-white">나의 정보 입력 💡</p>
-              <span className="text-[13.5px] bg-green-500/15 text-green-400 px-2.5 py-0.5 rounded-full border border-green-500/30 font-bold flex items-center gap-1">
-                <span>💾</span>
-                <span>{lastSavedTime ? `${lastSavedTime} 자동 저장됨` : '실시간 자동 저장 중'}</span>
+              <p className="text-[19px] font-bold text-white">나의 정보 입력</p>
+              <span className="text-[13px] bg-green-500/15 text-green-400 px-2.5 py-0.5 rounded-full border border-green-500/30 font-bold">
+                {lastSavedTime ? `${lastSavedTime} 저장됨` : '자동 저장'}
               </span>
             </div>
-            <p className="text-[14px] text-slate-300 mt-1 leading-relaxed bg-[#1A2235] p-3 rounded-xl border border-white/5">
-              동료들과 나눌 <strong>나만의 관심사, 경험, 커리어 이야기</strong>를 작성해 주세요. (저녁 퀴즈쇼 및 네트워킹의 기초자료로 활용됩니다)
+            <p className="text-[14px] text-slate-300 mt-1">
+              동료들과 나눌 관심사와 이야기를 간단히 작성해 주세요.
             </p>
           </div>
 
@@ -462,11 +460,7 @@ const TeamSelect: React.FC = () => {
               className="flex-1 py-3.5 rounded-xl font-bold text-[17px] text-white flex items-center justify-center gap-2
                 bg-red-500 hover:bg-red-600 active:scale-98 transition-all shadow-md shadow-red-500/20"
             >
-              {isSubmitting ? (
-                <>저장 처리 중...</>
-              ) : (
-                <>입장 완료 및 정보 저장 🚀</>
-              )}
+              {isSubmitting ? '저장 중...' : '입장 완료'}
             </button>
           </div>
         </div>

@@ -455,10 +455,10 @@ const PeopleQuestScreen: React.FC = () => {
 
       // 축하 컨페티 효과 실행
       fireConfetti({ count: 80, spread: 85 });
-      showToast(`🎉 조별 추천 미션 완료! (조원 전원 +${PEOPLE_QUEST_POINTS_PER_MEMBER}pt)`);
+      showToast(`우리 조 추천 미션 완료! (+${PEOPLE_QUEST_POINTS_PER_MEMBER}pt)`);
     } catch (e: any) {
       console.error('PeopleQuest 제출 에러:', e);
-      showToast(`⚠️ 제출 중 오류가 발생했습니다: ${e?.message || '네트워크 확인 필요'}`);
+      showToast(`제출 중 오류가 발생했습니다: ${e?.message || '네트워크 확인 필요'}`);
     } finally {
       setIsSaving(false);
     }
@@ -466,7 +466,7 @@ const PeopleQuestScreen: React.FC = () => {
 
   const handleOpenConfirm = () => {
     if (isSubmitted) {
-      showToast('🔒 이미 우리 조의 추천 제출이 완료되었습니다.');
+      showToast('이미 우리 조의 추천 제출이 완료되었습니다.');
       return;
     }
     if (!recommendation.recommendedPersonName) {
@@ -484,7 +484,7 @@ const PeopleQuestScreen: React.FC = () => {
     <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR'] flex flex-col text-slate-100 select-none">
       {/* 토스트 메시지 */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1E293B] border border-red-500/40 text-white text-[15px] px-4 py-2.5 rounded-xl shadow-2xl animate-bounce">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1E293B] border border-red-500/40 text-white text-[15px] px-4 py-2.5 rounded-xl shadow-2xl">
           {toastMessage}
         </div>
       )}
@@ -501,9 +501,8 @@ const PeopleQuestScreen: React.FC = () => {
           </button>
           <div className="text-center">
             <span className="font-bold text-[17px] tracking-tight text-white">
-              ACTIVITY 1 · <span className="text-red-500">최고의 스토리 동료 추천</span>
+              최고의 스토리 동료 추천
             </span>
-            <p className="text-[12.5px] text-slate-400">조별 대화 & 최고의 스토리 동료 추천 미션</p>
           </div>
           <span className="text-[13.5px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">
             +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt
@@ -513,59 +512,49 @@ const PeopleQuestScreen: React.FC = () => {
 
       <div className="p-4 space-y-4 flex-1 overflow-y-auto">
         {/* 미션 안내 카드 */}
-        <div className="bg-[#13192A] border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
+        <div className="bg-[#13192A] border border-white/10 rounded-2xl p-4 space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-[14px] font-bold text-red-400 flex items-center gap-1.5">
-              💬 {myTeam?.name} 협동 미션
+            <span className="text-[14px] font-bold text-red-400">
+              {myTeam?.name} 대표 입력 미션
             </span>
             {isSubmitted ? (
-              <span className="text-[13.5px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                🔒 제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
+              <span className="text-[13px] bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
               </span>
             ) : (
-              <span className="text-[13.5px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                진행 중 (조원 중 1명만 작성)
+              <span className="text-[13px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                조 대표 1명 작성
               </span>
             )}
           </div>
-          <h2 className="text-[18px] font-bold text-white leading-snug">
-            {PEOPLE_QUEST_MISSION_TITLE}
-          </h2>
           <p className="text-[14px] text-slate-300 leading-relaxed">
             {PEOPLE_QUEST_MISSION_GUIDE}
           </p>
         </div>
 
-        {/* 이미 제출 완료된 경우 결과 카드 표시 (추가 작성 불가 잠금) */}
+        {/* 이미 제출 완료된 경우 결과 카드 표시 */}
         {isSubmitted ? (
           <div className="bg-[#1A2235] border border-green-500/30 rounded-2xl p-4 space-y-4 shadow-xl text-center">
-            <div className="w-14 h-14 bg-green-500/20 text-green-400 border border-green-500/40 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
-              🎉
-            </div>
             <div>
               <span className="inline-block text-[12.5px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold mb-1">
-                🔒 조별 1회 작성 완료 (추가 작성 마감)
+                조별 제출 완료
               </span>
-              <h3 className="text-[19px] font-bold text-white">우리 조의 추천 제출 완료!</h3>
-              <p className="text-[14px] text-slate-300 mt-1">
-                조원 중 대표 1명이 제출을 완료하여 <strong>우리 조 전원에게 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 부여되었습니다.
-              </p>
+              <h3 className="text-[18px] font-bold text-white">우리 조 추천 제출 완료 (+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)</h3>
             </div>
 
             <div className="bg-black/30 border border-white/5 rounded-xl p-3.5 text-left space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[13.5px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[13px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">
                   {submittedData?.recommendation?.selectedTopic || '추천 스토리'}
                 </span>
-                <span className="text-[13.5px] text-slate-400">
-                  작성자: {submittedData?.submittedBy}
+                <span className="text-[13px] text-slate-400">
+                  작성: {submittedData?.submittedBy}
                 </span>
               </div>
               <p className="text-[17px] font-bold text-white">
-                👑 {submittedData?.recommendation?.recommendedPersonName} 님
+                {submittedData?.recommendation?.recommendedPersonName} 님
               </p>
-              <p className="text-[14px] text-slate-300 bg-white/5 p-2.5 rounded-lg italic">
+              <p className="text-[14px] text-slate-300 bg-white/5 p-2.5 rounded-lg">
                 "{submittedData?.recommendation?.reason}"
               </p>
             </div>
@@ -575,13 +564,13 @@ const PeopleQuestScreen: React.FC = () => {
                 onClick={() => navigate('/leaderboard')}
                 className="flex-1 py-3 bg-amber-500 text-slate-900 font-bold text-[15px] rounded-xl active:scale-98 shadow"
               >
-                🏆 실시간 순위 확인하기
+                조별 순위 보기
               </button>
               <button
                 onClick={() => navigate('/')}
                 className="flex-1 py-3 bg-[#13192A] border border-white/10 text-white font-bold text-[15px] rounded-xl active:scale-98 shadow"
               >
-                대시보드로 돌아가기
+                홈으로 돌아가기
               </button>
             </div>
           </div>
@@ -700,15 +689,12 @@ const PeopleQuestScreen: React.FC = () => {
       {isConfirmModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#13192A] border border-red-500/40 w-full max-w-[390px] rounded-3xl p-5 text-center space-y-4 shadow-2xl">
-            <div className="w-12 h-12 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center text-xl mx-auto">
-              💬
-            </div>
             <div>
               <h3 className="text-[18px] font-bold text-white leading-snug">
-                [{recommendation.recommendedPersonName}] 님을 최종 추천할까요?
+                [{recommendation.recommendedPersonName}] 님을 추천할까요?
               </h3>
               <p className="text-[14px] text-slate-400 mt-1">
-                제출 시 조원 전원에게 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 즉시 부여되며, 실시간 리더보드에 반영됩니다.
+                제출 시 우리 조에 <strong>+{PEOPLE_QUEST_POINTS_PER_MEMBER}pt</strong>가 부여됩니다.
               </p>
             </div>
 
