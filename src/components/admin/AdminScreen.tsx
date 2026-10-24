@@ -17,7 +17,6 @@ import {
   isPqSubmittedForTeam,
   isThemeGardenDoneForTeam,
   getPqForTeam,
-  getWarmupQuizScoreForTeam,
   calculatePhotoVoteCounts,
   getWrapupQuizScoreForTeam,
   createParticipantId,
@@ -1875,7 +1874,6 @@ const AdminScreen: React.FC = () => {
                 📊 실시간 조별 종합 순위표 (조별 미션·투표·퀴즈 통합)
               </span>
               {rankedTeams.map((team, idx) => {
-                const warmupInfo = getWarmupQuizScoreForTeam(team.id, rawParticipantsMap);
                 const isPqDone = isPqSubmittedForTeam(team.id, peopleQuests);
                 const isPhotoDone = isThemeGardenDoneForTeam(team.id, themeGardenPhotos);
                 const votesReceived = photoVoteCounts[team.id] || 0;
@@ -1907,13 +1905,6 @@ const AdminScreen: React.FC = () => {
 
                     {/* 조별 점수 상세 내역 배지 */}
                     <div className="flex flex-wrap gap-1.5 pt-0.5 text-[12px]">
-                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
-                        warmupInfo.solvedCount > 0
-                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                          : 'bg-black/30 text-slate-500 border-white/5'
-                      }`}>
-                        몸풀기퀴즈 +{warmupInfo.points}pt
-                      </span>
                       <span className={`px-2 py-0.5 rounded-md border font-bold ${
                         isPqDone
                           ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
