@@ -456,7 +456,7 @@ const ActivitySection: React.FC<{
                 : 'bg-[#121723] border-white/10 opacity-75'
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between">
               <h3 className="text-[16.5px] font-bold text-white">
                 {isStep3Completed
                   ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
@@ -476,9 +476,6 @@ const ActivitySection: React.FC<{
                   : '퀴즈 풀기 →'}
               </span>
             </div>
-            <p className="text-[13.5px] text-slate-300">
-              연꽃 · 도토리나무 · 무궁화 · 두룹나무 · 잔디깍기로봇 · 감나무 · 복숭아나무 (개당 +50pt)
-            </p>
           </button>
         )}
       </div>

@@ -155,7 +155,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div>
             <span className="text-[12px] text-purple-400 font-bold uppercase tracking-wider block">
-              STEP 4 · 개당 +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt · 최대 +350pt
+              STEP 4 · 개당 +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt
             </span>
             <h3 className="text-[17px] font-bold text-white">
               Q2. 연강원에 있는 것을 모두 선택하세요
@@ -172,11 +172,13 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
         {/* 요약 바 */}
         <div className="bg-[#101626] px-4 py-2.5 border-b border-white/8 flex items-center justify-between text-[13px] flex-shrink-0">
           <span className="text-slate-300">
-            선택: <strong className="text-white">{selectedItems.length} / {YEONKANG_WRAPUP_QUIZ_OPTIONS.length}개</strong>
+            선택한 항목: <strong className="text-white">{selectedItems.length}개</strong>
           </span>
-          <span className="text-amber-400 font-bold">
-            획득 예정 점수: +{earnedPoints}pt
-          </span>
+          {isSubmitted && (
+            <span className="text-amber-400 font-bold">
+              획득 점수: +{earnedPoints}pt
+            </span>
+          )}
         </div>
 
         {!isStep3Completed && (
@@ -193,25 +195,6 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
 
         {/* 본문: 7개 복수선택 옵션 */}
         <div className="p-4 space-y-2.5 flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[13.5px] text-slate-300 font-medium">
-              복수 선택 가능 (선택한 항목당 +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt)
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                if (selectedItems.length === YEONKANG_WRAPUP_QUIZ_OPTIONS.length) {
-                  setSelectedItems([]);
-                } else {
-                  setSelectedItems([...YEONKANG_WRAPUP_QUIZ_OPTIONS]);
-                }
-              }}
-              className="text-[12.5px] text-sky-400 hover:text-sky-300 font-bold"
-            >
-              {selectedItems.length === YEONKANG_WRAPUP_QUIZ_OPTIONS.length ? '전체 해제' : '전체 선택'}
-            </button>
-          </div>
-
           <div className="space-y-2">
             {YEONKANG_WRAPUP_QUIZ_OPTIONS.map((option) => {
               const isChecked = selectedItems.includes(option);
@@ -238,9 +221,6 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
                     </span>
                     <span>{option}</span>
                   </div>
-                  <span className={`text-[13px] font-bold ${isChecked ? 'text-amber-300' : 'text-slate-500'}`}>
-                    +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt
-                  </span>
                 </button>
               );
             })}
@@ -271,8 +251,8 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
             {isSaving
               ? '저장 중...'
               : isSubmitted
-              ? `다시 저장하기 (+${earnedPoints}pt)`
-              : `정답 제출하기 (+${earnedPoints}pt)`}
+              ? '다시 제출하기'
+              : '제출하기'}
           </button>
         </div>
       </div>

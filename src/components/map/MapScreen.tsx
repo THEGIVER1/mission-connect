@@ -1630,7 +1630,7 @@ const MapScreen: React.FC = () => {
             onClick={() => navigate('/')}
             className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-[15px] rounded-xl active:scale-98 transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-1"
           >
-            <span>{IS_PILOT_MODE ? '📸 두산 저수지 사진 올리기' : '🌹 테마가든 사진 올리기'}</span>
+            <span>{IS_PILOT_MODE ? '두산 저수지에서 단체사진 올리기' : '🌹 테마가든 사진 올리기'}</span>
           </button>
         </div>
       </div>
