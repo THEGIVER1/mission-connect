@@ -6,15 +6,21 @@ import {
   DISCOVERY_QUIZZES,
   ACTIVE_VENUE,
   PEOPLE_QUEST_POINTS_PER_MEMBER,
-  EMERGENCY_GPS_BYPASS_CODE,
+  THEME_GARDEN_MISSION,
+  PHOTO_VOTE_POINTS_PER_VOTE,
+  IS_PILOT_MODE,
+  getFinalGatheringInfo,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
   normalizeTeamId,
   isPqSubmittedForTeam,
+  isThemeGardenDoneForTeam,
   getPqForTeam,
+  getWarmupQuizScoreForTeam,
+  calculatePhotoVoteCounts,
+  getWrapupQuizScoreForTeam,
   createParticipantId,
-  sanitizeFirebaseKey,
 } from '../../utils/scoreCalculator';
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
@@ -101,6 +107,8 @@ const AdminScreen: React.FC = () => {
   const [themeGardenPhotos, setThemeGardenPhotos] = useState<Record<string, ThemeGardenPhotoRecord>>({});
   const [photoVotes, setPhotoVotes] = useState<Record<string, any>>({});
   const [wrapupQuizzes, setWrapupQuizzes] = useState<Record<string, any>>({});
+  const [step4ForceOpen, setStep4ForceOpen] = useState<boolean>(false);
+  const [nowMs, setNowMs] = useState<number>(Date.now());
   const [adminZoomPhotoUrl, setAdminZoomPhotoUrl] = useState<string | null>(null);
   const [currentBroadcast, setCurrentBroadcast] = useState<BroadcastNoticeData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -170,6 +178,7 @@ const AdminScreen: React.FC = () => {
     } else {
       setWrapupQuizzes({});
     }
+    setStep4ForceOpen(!!data.step4ForceOpen);
     if (data.broadcastNotice && data.broadcastNotice.active) {
       setCurrentBroadcast(data.broadcastNotice);
     } else {
@@ -220,6 +229,33 @@ const AdminScreen: React.FC = () => {
       unsubscribe();
     };
   }, [fetchData]);
+
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const photoVoteCounts = useMemo(() => {
+    return calculatePhotoVoteCounts(photoVotes);
+  }, [photoVotes]);
+
+  const { formattedTimeLeft: adminTimeLeft, isStep3Completed: isAdminStep3Completed } = useMemo(() => {
+    return getFinalGatheringInfo(nowMs, step4ForceOpen);
+  }, [nowMs, step4ForceOpen]);
+
+  const handleToggleStep4ForceOpen = async () => {
+    const nextVal = !step4ForceOpen;
+    try {
+      await fetch(`${dbUrl}/sessions/trekking2026.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step4ForceOpen: nextVal }),
+      });
+      setStep4ForceOpen(nextVal);
+    } catch (e) {
+      alert('STEP 4 상태 변경 중 오류가 발생했습니다.');
+    }
+  };
 
   // 1. 실시간 랭킹 및 통합 점수 계산 (대시보드·리더보드와 100% 동일한 점수 계산기 연동)
   const { individuals, teams: calculatedTeams } = useMemo(() => {
@@ -840,6 +876,11 @@ const AdminScreen: React.FC = () => {
       });
       setRawParticipantsMap({});
       setPeopleQuests({});
+      setGroundRules({});
+      setThemeGardenPhotos({});
+      setPhotoVotes({});
+      setWrapupQuizzes({});
+      setStep4ForceOpen(false);
       setCurrentBroadcast(null);
       alert('✅ 파일럿 테스트 데이터가 성공적으로 초기화되었습니다.');
     } catch (e) {
@@ -1002,7 +1043,6 @@ const AdminScreen: React.FC = () => {
                       <div key={m.id} className="bg-black/40 border border-white/10 rounded-2xl p-4 text-center space-y-1">
                         <strong className="text-lg font-bold text-white block">{m.name || '미등록'}</strong>
                         <span className="text-xs text-slate-400 block">{m.company}</span>
-                        <span className="text-xs text-amber-400 font-mono font-bold">{m.score ?? 0} pt</span>
                       </div>
                     ))}
                   </div>
@@ -1578,8 +1618,8 @@ const AdminScreen: React.FC = () => {
             activeTab === 'themeGardenGallery' ? 'bg-pink-600 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          <span>🌹</span>
-          <span>테마가든사진</span>
+          <span>{IS_PILOT_MODE ? '📸' : '🌹'}</span>
+          <span>{IS_PILOT_MODE ? '단체사진·투표' : '테마가든·투표'}</span>
         </button>
         <button
           onClick={() => setActiveTab('peopleQuest')}
@@ -1804,43 +1844,118 @@ const AdminScreen: React.FC = () => {
               </button>
             </div>
 
+            {/* STEP 4 투표/퀴즈 즉시 활성화 컨트롤 */}
+            <div className="bg-[#1A2235] border border-purple-500/35 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className="text-[14.5px] font-bold text-purple-300 block">
+                  🗳️ STEP 4 실시간 투표{IS_PILOT_MODE ? ' & Q2 퀴즈' : ''} 오픈 상태
+                </span>
+                <span className="text-[12.5px] text-slate-400">
+                  {isAdminStep3Completed
+                    ? '🟢 현재 오픈됨 (모든 조 투표 가능)'
+                    : `⏳ 14:20 집결 완료 대기 중 (남은 시간: ${adminTimeLeft})`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleStep4ForceOpen}
+                className={`px-3 py-1.5 rounded-xl text-[13px] font-bold border transition-all ${
+                  step4ForceOpen
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-400'
+                }`}
+              >
+                {step4ForceOpen ? '✅ 강제 오픈 중 (클릭 시 14:20 기준 복귀)' : '🔓 지금 즉시 STEP 4 오픈하기'}
+              </button>
+            </div>
+
             {/* 현재 조별 실시간 순위표 */}
             <div className="space-y-2.5">
               <span className="text-[14px] font-bold text-slate-300 block">
-                📊 실시간 조별 종합 순위표
+                📊 실시간 조별 종합 순위표 (조별 미션·투표·퀴즈 통합)
               </span>
-              {rankedTeams.map((team, idx) => (
-                <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-6 h-6 rounded-full font-bold text-[13.5px] flex items-center justify-center ${
-                        idx === 0
-                          ? 'bg-amber-400 text-slate-950 font-black'
-                          : idx === 1
-                          ? 'bg-slate-300 text-slate-950'
-                          : idx === 2
-                          ? 'bg-amber-700 text-white'
-                          : 'bg-white/10 text-slate-300'
-                      }`}>
-                        {idx + 1}
-                      </span>
-                      <strong className="text-[16px] text-white">{team.emoji} {team.name}</strong>
-                      <span className="text-[13.5px] text-slate-400">({team.members.length}명)</span>
-                    </div>
-                    <span className="text-[16px] font-extrabold text-amber-400">
-                      {team.totalScore.toLocaleString()} pt
-                    </span>
-                  </div>
+              {rankedTeams.map((team, idx) => {
+                const warmupInfo = getWarmupQuizScoreForTeam(team.id, rawParticipantsMap);
+                const isPqDone = isPqSubmittedForTeam(team.id, peopleQuests);
+                const isPhotoDone = isThemeGardenDoneForTeam(team.id, themeGardenPhotos);
+                const votesReceived = photoVoteCounts[team.id] || 0;
+                const votePts = votesReceived * PHOTO_VOTE_POINTS_PER_VOTE;
+                const wrapupInfo = getWrapupQuizScoreForTeam(team.id, wrapupQuizzes);
 
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {team.members.map(m => (
-                      <span key={m.id} className="text-[12.5px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
-                        {m.name || '미등록'} ({m.score ?? 0}pt)
+                return (
+                  <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-6 h-6 rounded-full font-bold text-[13.5px] flex items-center justify-center ${
+                          idx === 0
+                            ? 'bg-amber-400 text-slate-950 font-black'
+                            : idx === 1
+                            ? 'bg-slate-300 text-slate-950'
+                            : idx === 2
+                            ? 'bg-amber-700 text-white'
+                            : 'bg-white/10 text-slate-300'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <strong className="text-[16px] text-white">{team.emoji} {team.name}</strong>
+                        <span className="text-[13.5px] text-slate-400">({team.members.length}명)</span>
+                      </div>
+                      <span className="text-[16px] font-extrabold text-amber-400">
+                        {team.totalScore.toLocaleString()} pt
                       </span>
-                    ))}
+                    </div>
+
+                    {/* 조별 점수 상세 내역 배지 */}
+                    <div className="flex flex-wrap gap-1.5 pt-0.5 text-[12px]">
+                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                        warmupInfo.solvedCount > 0
+                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          : 'bg-black/30 text-slate-500 border-white/5'
+                      }`}>
+                        몸풀기퀴즈 +{warmupInfo.points}pt
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                        isPqDone
+                          ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                          : 'bg-black/30 text-slate-500 border-white/5'
+                      }`}>
+                        동료추천 {isPqDone ? `+${PEOPLE_QUEST_POINTS_PER_MEMBER}pt` : '대기'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                        isPhotoDone
+                          ? 'bg-pink-500/15 text-pink-300 border-pink-500/30'
+                          : 'bg-black/30 text-slate-500 border-white/5'
+                      }`}>
+                        단체사진 {isPhotoDone ? `+${THEME_GARDEN_MISSION.pointsPerMember}pt` : '대기'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                        votesReceived > 0
+                          ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                          : 'bg-black/30 text-slate-500 border-white/5'
+                      }`}>
+                        사진득표 {votesReceived}표 (+{votePts}pt)
+                      </span>
+                      {IS_PILOT_MODE && (
+                        <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                          wrapupInfo.completed
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            : 'bg-black/30 text-slate-500 border-white/5'
+                        }`}>
+                          Q2퀴즈 {wrapupInfo.completed ? `+${wrapupInfo.points}pt (${wrapupInfo.selectedItems.length}개)` : '대기'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {team.members.map(m => (
+                        <span key={m.id} className="text-[12.5px] bg-black/40 border border-white/5 px-2 py-0.5 rounded-md text-slate-300">
+                          {m.name || '미등록'}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1854,11 +1969,11 @@ const AdminScreen: React.FC = () => {
                   🤝 6개 조 그라운드룰 & 역할 분담 현황
                 </span>
                 <span className="text-[13.5px] bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full font-bold">
-                  1:30~2:00 오프닝
+                  {IS_PILOT_MODE ? '1:00~1:30 오프닝' : '1:30~2:00 오프닝'}
                 </span>
               </div>
               <p className="text-[14px] text-slate-300 leading-relaxed">
-                출발 전 각 조가 의논하여 확정한 <strong>역할 분담(타임키퍼, 페이스메이커 등)</strong> 및 <strong>30분 개인 힐링 시간 등 그라운드룰 약속</strong> 현황입니다.
+                출발 전 각 조가 의논하여 확정한 <strong>역할 분담(타임키퍼, 페이스메이커 등)</strong> 및 <strong>우리 조만의 그라운드룰 약속</strong> 현황입니다.
               </p>
             </div>
 
@@ -1961,20 +2076,24 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB: 테마가든 단체사진 갤러리 */}
+        {/* TAB: 단체사진 갤러리 및 투표 현황 */}
         {activeTab === 'themeGardenGallery' && (
           <div className="space-y-4">
             <div className="bg-[#1A2235] border border-pink-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
               <div className="flex items-center justify-between">
                 <span className="text-[15px] font-bold text-pink-400 flex items-center gap-1.5">
-                  🌹 테마가든 조별 단체사진 실시간 갤러리
+                  {IS_PILOT_MODE
+                    ? '📸 두산 저수지 조별 단체사진 & 실시간 투표 현황'
+                    : '🌹 테마가든 조별 단체사진 & 실시간 투표 현황'}
                 </span>
                 <span className="text-[13.5px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
-                  2:00~4:30 메인 미션
+                  {THEME_GARDEN_MISSION.timeRange} 메인 미션
                 </span>
               </div>
               <p className="text-[14px] text-slate-300 leading-relaxed">
-                각 조가 테마가든 장미원/호수 수변 스팟에서 촬영하여 업로드한 단체사진입니다. 클릭하여 원본으로 크게 확대할 수 있습니다.
+                {IS_PILOT_MODE
+                  ? '각 조가 두산 저수지 스팟에서 촬영하여 업로드한 단체사진 및 STEP 4 실시간 득표 현황입니다.'
+                  : '각 조가 테마가든 스팟에서 촬영하여 업로드한 단체사진 및 STEP 4 실시간 득표 현황입니다.'}
               </p>
             </div>
 
@@ -1982,6 +2101,12 @@ const AdminScreen: React.FC = () => {
               {WORKSHOP_TEAMS.map(team => {
                 const photo = themeGardenPhotos[team.id];
                 const isUploaded = photo && photo.photoUrl;
+                const votes = photoVoteCounts[team.id] || 0;
+                const myVotedTeams: string[] = Array.isArray(photoVotes[team.id]?.votedTeamIds)
+                  ? photoVotes[team.id].votedTeamIds
+                  : photoVotes[team.id]?.votedTeamId
+                  ? [photoVotes[team.id].votedTeamId]
+                  : [];
 
                 return (
                   <div key={team.id} className="bg-[#182035] border border-white/10 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between">
@@ -1993,13 +2118,20 @@ const AdminScreen: React.FC = () => {
                         </span>
                         <strong className="text-[15px] text-white">{team.name}</strong>
                       </div>
-                      <span className={`text-[12.5px] font-bold px-2 py-0.5 rounded-full border ${
-                        isUploaded
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : 'bg-white/5 text-slate-400 border-white/10'
-                      }`}>
-                        {isUploaded ? '✅ 업로드 완료' : '대기 중'}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {votes > 0 && (
+                          <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                            🗳️ {votes}표 (+{votes * PHOTO_VOTE_POINTS_PER_VOTE}pt)
+                          </span>
+                        )}
+                        <span className={`text-[12.5px] font-bold px-2 py-0.5 rounded-full border ${
+                          isUploaded
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-white/5 text-slate-400 border-white/10'
+                        }`}>
+                          {isUploaded ? '✅ 완료' : '대기 중'}
+                        </span>
+                      </div>
                     </div>
 
                     {isUploaded ? (
@@ -2010,7 +2142,7 @@ const AdminScreen: React.FC = () => {
                         >
                           <img
                             src={photo.photoUrl}
-                            alt={`${team.name} 테마가든 사진`}
+                            alt={`${team.name} 단체사진`}
                             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -2024,8 +2156,8 @@ const AdminScreen: React.FC = () => {
                           <p className="text-[14px] font-bold text-white truncate">
                             "{photo.caption || '우리 조 단체사진'}"
                           </p>
-                          <div className="flex justify-between items-center text-[13px] text-slate-400">
-                            <span>등록자: <strong className="text-slate-200">{photo.uploadedBy}</strong></span>
+                          <div className="flex justify-between items-center text-[12.5px] text-slate-400">
+                            <span>투표 행사: <strong className="text-purple-300">{myVotedTeams.length}/2표</strong></span>
                             <span>{new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </div>
@@ -2036,7 +2168,9 @@ const AdminScreen: React.FC = () => {
                           📷
                         </div>
                         <p className="text-[14px] text-slate-400 font-medium">사진 촬영 및 업로드 대기 중</p>
-                        <p className="text-[12.5px] text-slate-500">테마가든 스팟에서 업로드 시 즉시 반영됩니다.</p>
+                        <p className="text-[12.5px] text-slate-500">
+                          {IS_PILOT_MODE ? '두산 저수지 스팟에서 업로드 시 즉시 반영됩니다.' : '테마가든 스팟에서 업로드 시 즉시 반영됩니다.'}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -2098,13 +2232,19 @@ const AdminScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSendBroadcast({
-                    title: '📸 4:30 세븐일레븐 앞 공터 최종 집결 및 단체사진 안내',
-                    message: '트레킹 종료 후 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터로 최종 집결하여 전체 단체사진 촬영이 진행됩니다. 모든 조원들은 세븐일레븐 앞으로 모여주세요!',
+                    title: IS_PILOT_MODE
+                      ? '📸 14:20 연강원 강의장 최종 집결 안내'
+                      : '📸 14:20 세븐일레븐 앞 공터 최종 집결 안내',
+                    message: IS_PILOT_MODE
+                      ? '트레킹 종료 후 14시 20분까지 연강원 강의장으로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 단체사진 투표 및 Q2 퀴즈가 진행됩니다!'
+                      : '트레킹 종료 후 14시 20분까지 세븐일레븐 앞 공터로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 실시간 단체사진 투표가 진행됩니다!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
-                  <span>📸 <strong>[단체사진]</strong> 4:30 세븐일레븐 공터 최종 집결</span>
+                  <span>
+                    📸 <strong>[최종집결]</strong> 14:20 {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 최종 집결
+                  </span>
                   <span className="text-[12.5px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
@@ -2112,25 +2252,31 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: '⏰ 트레킹 마감 15분 전 안내',
-                    message: '트레킹 미션 종료 15분 전입니다. 4시 30분까지 첫 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
+                    message: IS_PILOT_MODE
+                      ? '트레킹 미션 종료 15분 전입니다. 14시 20분까지 최종 집결지인 연강원 강의장으로 안전하게 복귀해 주시기 바랍니다.'
+                      : '트레킹 미션 종료 15분 전입니다. 14시 20분까지 최종 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
-                  <span>⏰ <strong>[마감 15분 전]</strong> 4:30 복귀지(세븐일레븐 앞 공터) 복귀</span>
+                  <span>
+                    ⏰ <strong>[마감 15분 전]</strong> 14:20 {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 복귀
+                  </span>
                   <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSendBroadcast({
-                    title: '🍽️ 저녁 만찬 및 퀴즈쇼 장소 이동',
-                    message: '낮 트레킹이 종료되었습니다. 만찬 장소로 이동하여 맛있는 저녁 식사와 저녁 퀴즈쇼를 준비해 주세요!',
+                    title: '🗳️ STEP 4 단체사진 투표 오픈 안내',
+                    message: IS_PILOT_MODE
+                      ? 'STEP 4 단체사진 투표(조당 2표)와 Q2 연강원 퀴즈가 오픈되었습니다! 지금 앱에서 참여해 조별 점수를 획득하세요.'
+                      : 'STEP 4 실시간 단체사진 투표(조당 2표)가 오픈되었습니다! 지금 앱에서 최고의 단체사진에 투표해 주세요.',
                     type: 'dinner',
                   })}
                   className="w-full p-3 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
-                  <span>🍽️ <strong>[저녁 만찬]</strong> 만찬 및 퀴즈쇼 장소 이동</span>
+                  <span>🗳️ <strong>[STEP 4 오픈]</strong> 실시간 단체사진 투표 참여 안내</span>
                   <span className="text-[12.5px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
               </div>
@@ -2223,9 +2369,6 @@ const AdminScreen: React.FC = () => {
                           ({p.company || ''} · {p.teamName || p.teamId || ''})
                         </span>
                       </div>
-                      <span className="text-[13.5px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold">
-                        {p.score ?? 0}pt
-                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-[13.5px] text-slate-300 bg-black/30 p-2.5 rounded-xl">
