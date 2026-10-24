@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { WORKSHOP_TEAMS, IS_PILOT_MODE } from '../../config/workshopConfig';
-import { normalizeTeamId } from '../../utils/scoreCalculator';
+import {
+  WORKSHOP_TEAMS,
+  PHOTO_VOTE_POINTS_PER_VOTE,
+  getFinalGatheringInfo,
+} from '../../config/workshopConfig';
+import {
+  normalizeTeamId,
+  getVotedTeamIdsFromVoteRecord,
+  calculatePhotoVoteCounts,
+} from '../../utils/scoreCalculator';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import { ref, onValue, set } from 'firebase/database';
 import { fireConfetti } from '../../lib/confetti';
@@ -23,6 +31,8 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
   const [photosMap, setPhotosMap] = useState<Record<string, any>>({});
   const [votesMap, setVotesMap] = useState<Record<string, any>>({});
+  const [forceOpenStep4, setForceOpenStep4] = useState<boolean>(false);
+  const [nowMs, setNowMs] = useState<number>(Date.now());
   const [isVoting, setIsVoting] = useState<boolean>(false);
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string>('');
@@ -33,6 +43,12 @@ export const PhotoVoteModal: React.FC<Props> = ({
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 2500);
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [isOpen]);
 
   // 실시간 단체사진 및 투표 데이터 동기화 (REST + WebSocket)
   useEffect(() => {
@@ -45,6 +61,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
           const data = await res.json();
           setPhotosMap(data?.themeGardenPhotos || {});
           setVotesMap(data?.photoVotes || {});
+          setForceOpenStep4(!!(data?.step4ForceOpen));
         }
       } catch (e) {
         console.warn('투표 데이터 조회 경고:', e);
@@ -75,40 +92,55 @@ export const PhotoVoteModal: React.FC<Props> = ({
     };
   }, [isOpen, dbUrl]);
 
-  // 우리 조가 투표한 대상 조 ID
-  const myVotedTeamId = useMemo(() => {
-    const myVote = votesMap[normTeamId];
-    return myVote?.votedTeamId ? normalizeTeamId(myVote.votedTeamId) : null;
+  // 우리 조가 투표한 대상 조 ID 목록 (조당 1장씩 최대 2표)
+  const myVotedTeamIds = useMemo(() => {
+    return getVotedTeamIdsFromVoteRecord(votesMap[normTeamId]);
   }, [votesMap, normTeamId]);
 
   // 각 조별 득표 수 집계
   const voteCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    WORKSHOP_TEAMS.forEach(t => { counts[t.id] = 0; });
-    Object.values(votesMap).forEach((v: any) => {
-      if (v && v.votedTeamId) {
-        const target = normalizeTeamId(v.votedTeamId);
-        counts[target] = (counts[target] || 0) + 1;
-      }
-    });
-    return counts;
+    return calculatePhotoVoteCounts(votesMap);
   }, [votesMap]);
+
+  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+    return getFinalGatheringInfo(nowMs, forceOpenStep4);
+  }, [nowMs, forceOpenStep4]);
 
   if (!isOpen) return null;
 
-  const handleVote = async (targetTeamId: string) => {
+  const handleToggleVote = async (targetTeamId: string) => {
+    if (!isStep3Completed) {
+      showToast('STEP 3 최종 집결 시간(14:20) 완료 후 투표가 열립니다.');
+      return;
+    }
+
     const normTarget = normalizeTeamId(targetTeamId);
     const photoRec = photosMap[normTarget];
     if (!photoRec || !photoRec.photoUrl) {
-      showToast('아직 사진이 업로드되지 않은 조입니다.');
+      showToast('아직 사진이 등록되지 않은 조입니다.');
       return;
+    }
+
+    const isAlreadySelected = myVotedTeamIds.includes(normTarget);
+    let nextVotedIds: string[];
+
+    if (isAlreadySelected) {
+      // 선택 해제
+      nextVotedIds = myVotedTeamIds.filter(id => id !== normTarget);
+    } else {
+      if (myVotedTeamIds.length >= 2) {
+        showToast('조당 최대 2표(사진 1장당 1표)까지만 투표할 수 있습니다. 기존 투표를 취소한 뒤 선택해 주세요.');
+        return;
+      }
+      nextVotedIds = [...myVotedTeamIds, normTarget];
     }
 
     setIsVoting(true);
     const payload = {
       voterTeamId: normTeamId,
       voterTeamName: myTeamConfig.name,
-      votedTeamId: normTarget,
+      votedTeamIds: nextVotedIds,
+      votedTeamId: nextVotedIds[0] || null,
       votedBy: participantName || myTeamConfig.name,
       updatedAt: new Date().toISOString(),
     };
@@ -123,9 +155,14 @@ export const PhotoVoteModal: React.FC<Props> = ({
       await set(vRef, payload);
 
       setVotesMap(prev => ({ ...prev, [normTeamId]: payload }));
-      fireConfetti({ count: 50, spread: 70 });
-      const targetTeamName = WORKSHOP_TEAMS.find(t => t.id === normTarget)?.name || normTarget;
-      showToast(`${myTeamConfig.name} 투표 완료: ${targetTeamName} 단체사진!`);
+
+      if (!isAlreadySelected) {
+        fireConfetti({ count: 45, spread: 70 });
+        const targetTeamName = WORKSHOP_TEAMS.find(t => t.id === normTarget)?.name || normTarget;
+        showToast(`${targetTeamName} 단체사진 투표 완료! (+${PHOTO_VOTE_POINTS_PER_VOTE}pt 반영, ${nextVotedIds.length}/2표 사용)`);
+      } else {
+        showToast(`투표 선택 해제 (${nextVotedIds.length}/2표 사용 중)`);
+      }
     } catch (e) {
       console.warn('투표 저장 오류:', e);
       showToast('투표 저장 중 오류가 발생했습니다.');
@@ -135,7 +172,6 @@ export const PhotoVoteModal: React.FC<Props> = ({
   };
 
   const uploadedCount = WORKSHOP_TEAMS.filter(t => !!(photosMap[t.id]?.photoUrl)).length;
-  const totalVotesCast = Object.keys(votesMap).length;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in select-none">
@@ -144,7 +180,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div>
             <span className="text-[12px] text-purple-400 font-bold uppercase tracking-wider block">
-              STEP 4 · 실시간 단체사진 투표
+              STEP 4 · 조당 2표 가능 · 1표당 +{PHOTO_VOTE_POINTS_PER_VOTE}pt
             </span>
             <h3 className="text-[17px] font-bold text-white">
               조별 단체사진 실시간 갤러리 & 투표
@@ -161,14 +197,18 @@ export const PhotoVoteModal: React.FC<Props> = ({
         {/* 요약 바 */}
         <div className="bg-[#101626] px-4 py-2.5 border-b border-white/8 flex items-center justify-between text-[13px] flex-shrink-0">
           <span className="text-slate-300">
-            업로드: <strong className="text-white">{uploadedCount}/6개 조</strong> · 참여 투표: <strong className="text-amber-400">{totalVotesCast}/6개 조</strong>
+            사진 등록: <strong className="text-white">{uploadedCount}/6조</strong> · 1표당 <strong className="text-amber-400">+{PHOTO_VOTE_POINTS_PER_VOTE}pt</strong>
           </span>
           <span className="text-purple-300 font-bold">
-            {myVotedTeamId
-              ? `우리 조 선택: ${WORKSHOP_TEAMS.find(t => t.id === myVotedTeamId)?.name}`
-              : '조 대표 1표 투표'}
+            우리 조 투표: {myVotedTeamIds.length} / 2표
           </span>
         </div>
+
+        {!isStep3Completed && (
+          <div className="mx-4 mt-2.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[13px] font-bold py-2 px-3 rounded-xl text-center">
+            STEP 3 최종 집결 시간(14:20) 완료 시 투표가 활성화됩니다. (남은 시간 {formattedTimeLeft})
+          </div>
+        )}
 
         {toastMsg && (
           <div className="mx-4 mt-2.5 bg-purple-600/30 border border-purple-400/50 text-white text-[13.5px] font-bold py-2 px-3 rounded-xl text-center">
@@ -182,7 +222,8 @@ export const PhotoVoteModal: React.FC<Props> = ({
             const photoRec = photosMap[team.id];
             const hasPhoto = !!(photoRec && photoRec.photoUrl);
             const votes = voteCounts[team.id] || 0;
-            const isVotedByMyTeam = myVotedTeamId === team.id;
+            const bonusScore = votes * PHOTO_VOTE_POINTS_PER_VOTE;
+            const isVotedByMyTeam = myVotedTeamIds.includes(team.id);
 
             return (
               <div
@@ -204,12 +245,12 @@ export const PhotoVoteModal: React.FC<Props> = ({
                       />
                       {team.name}
                     </span>
-                    <span className={`text-[12.5px] font-bold px-2 py-0.5 rounded-full ${
+                    <span className={`text-[12px] font-bold px-2 py-0.5 rounded-full ${
                       votes > 0
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                         : 'bg-white/5 text-slate-400'
                     }`}>
-                      {votes}표
+                      {votes}표 (+{bonusScore}pt)
                     </span>
                   </div>
 
@@ -241,17 +282,25 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
                 <button
                   type="button"
-                  disabled={!hasPhoto || isVoting}
-                  onClick={() => handleVote(team.id)}
-                  className={`w-full py-2 rounded-xl text-[13.5px] font-bold transition-all active:scale-95 ${
-                    isVotedByMyTeam
+                  disabled={!hasPhoto || isVoting || !isStep3Completed}
+                  onClick={() => handleToggleVote(team.id)}
+                  className={`w-full py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95 ${
+                    !isStep3Completed
+                      ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                      : isVotedByMyTeam
                       ? 'bg-purple-600 text-white shadow'
                       : hasPhoto
                       ? 'bg-[#222C44] hover:bg-purple-600/40 text-slate-200 border border-white/10'
                       : 'bg-white/5 text-slate-600 cursor-not-allowed'
                   }`}
                 >
-                  {isVotedByMyTeam ? '✓ 투표 완료' : hasPhoto ? '이 사진에 투표' : '대기 중'}
+                  {!isStep3Completed
+                    ? '14:20 집결 후 오픈'
+                    : isVotedByMyTeam
+                    ? '✓ 투표됨 (탭하여 취소)'
+                    : hasPhoto
+                    ? '이 사진에 투표 (+200pt)'
+                    : '대기 중'}
                 </button>
               </div>
             );

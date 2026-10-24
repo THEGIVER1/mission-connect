@@ -3,6 +3,7 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   THEME_GARDEN_MISSION,
   PRE_REGISTERED_PARTICIPANTS,
+  PHOTO_VOTE_POINTS_PER_VOTE,
 } from '../config/workshopConfig';
 import type { Team } from '../types';
 
@@ -136,18 +137,62 @@ export function getPqForTeam(
 }
 
 /**
+ * STEP 4 단체사진 투표 기록에서 특정 조가 선택한 최대 2개 조 ID 배열을 안전하게 추출
+ * (하위 호환성: votedTeamIds 배열 또는 기존 단일 votedTeamId 모두 지원)
+ */
+export function getVotedTeamIdsFromVoteRecord(voteRec: any): string[] {
+  if (!voteRec || typeof voteRec !== 'object') return [];
+  if (Array.isArray(voteRec.votedTeamIds)) {
+    const unique = Array.from(
+      new Set(
+        voteRec.votedTeamIds
+          .filter(Boolean)
+          .map((id: string) => normalizeTeamId(id))
+      )
+    );
+    return unique.slice(0, 2);
+  }
+  if (voteRec.votedTeamId) {
+    return [normalizeTeamId(voteRec.votedTeamId)];
+  }
+  return [];
+}
+
+/**
+ * 전체 photoVotes 맵에서 각 조별 득표 수 집계
+ */
+export function calculatePhotoVoteCounts(photoVotesData: Record<string, any> = {}): Record<string, number> {
+  const counts: Record<string, number> = {};
+  WORKSHOP_TEAMS.forEach(t => {
+    counts[t.id] = 0;
+  });
+
+  if (!photoVotesData || typeof photoVotesData !== 'object') return counts;
+
+  Object.values(photoVotesData).forEach((voteRec: any) => {
+    const targets = getVotedTeamIdsFromVoteRecord(voteRec);
+    targets.forEach((targetTeamId) => {
+      counts[targetTeamId] = (counts[targetTeamId] || 0) + 1;
+    });
+  });
+
+  return counts;
+}
+
+/**
  * 대시보드, 실시간 순위(리더보드), 관리자 화면 모두에 100% 동일한 점수를 보장하는 통합 계산 엔진
  *
- * [점수 규칙 - 2대 핵심 미션 (스팟 퀴즈 제외)]
- * 1. People Quest: 조별 미션. 조에서 1명 추천 제출 시 해당 조 모든 조원에게 +100pt 부여.
- * 2. 테마가든 미션: 조별 미션. 조별 단체사진 업로드 시 해당 조 모든 조원에게 +100pt 부여.
- * 3. 조별 총점: 해당 조에 소속된 모든 조원의 점수 합산 (수학적 100% 일치 보장).
+ * [조별 점수 규칙]
+ * 1. 최고의 스토리 동료 추천 완료 시: +100pt
+ * 2. 조별 단체사진 업로드 완료 시: +100pt
+ * 3. STEP 4 단체사진 투표 득표 시: 1표당 +200pt (조당 최대 2표 행사 가능)
  */
 export function calculateLeaderboardData(
   participantsData: Record<string, any> = {},
   peopleQuestsData: Record<string, any> = {},
   currentUser?: CurrentUserContext,
-  themeGardenPhotosData: Record<string, any> = {}
+  themeGardenPhotosData: Record<string, any> = {},
+  photoVotesData: Record<string, any> = {}
 ): {
   individuals: IndividualItem[];
   teams: Team[];
@@ -255,13 +300,20 @@ export function calculateLeaderboardData(
       rank: idx + 1,
     }));
 
-  // 5. 6개 조 순위 및 총점 산출 (조별 기준 점수 집계: 미션당 100pt, 최대 200pt)
+  // 5. 6개 조 순위 및 총점 산출 (미션당 100pt + 단체사진 투표 득표당 200pt)
+  const photoVoteCounts = calculatePhotoVoteCounts(photoVotesData);
+
   const teams: Team[] = WORKSHOP_TEAMS.map((teamConfig) => {
     const teamMembers = individuals.filter((ind) => ind.teamId === teamConfig.id);
     const isPqDone = isPqSubmittedForTeam(teamConfig.id, peopleQuestsData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
     const isThemeDone = isThemeGardenDoneForTeam(teamConfig.id, themeGardenPhotosData) || (teamConfig.id === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
 
-    const teamScore = (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) + (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0);
+    const voteCount = photoVoteCounts[teamConfig.id] || 0;
+    const voteBonusPoints = voteCount * PHOTO_VOTE_POINTS_PER_VOTE;
+    const teamScore =
+      (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
+      (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
+      voteBonusPoints;
     const completedCount = (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
 
     return {

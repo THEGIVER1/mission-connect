@@ -269,14 +269,51 @@ export const GROUND_RULE_PRESETS: GroundRulePreset[] = [
 export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [];
 
 // ─────────────────────────────────────────────────────────────────
-// 9. 점수 동적 계산 헬퍼 함수
+// 9. 점수 및 최종 집결 시간 동적 계산 헬퍼 함수
 // ─────────────────────────────────────────────────────────────────
+export const PHOTO_VOTE_POINTS_PER_VOTE = 200; // STEP 4 단체사진 1표당 +200pt (조당 최대 2표)
+
 export function getCourseQuizTotalPoints(_courseKey: CourseKey = 'lake'): number {
   return 0;
 }
 
 export function getCourseTotalMaxPoints(_courseKey: CourseKey = 'lake'): number {
-  return PEOPLE_QUEST_POINTS_PER_MEMBER + THEME_GARDEN_MISSION.pointsPerMember; // 200pt
+  return PEOPLE_QUEST_POINTS_PER_MEMBER + THEME_GARDEN_MISSION.pointsPerMember; // 기본 미션 200pt (+ 투표 득표 시 표당 200pt 추가)
+}
+
+/**
+ * 매일 14:20 (오후 2시 20분) 최종 집결 목표 시각 반환
+ * - 남은 시간 = 당일 14:20까지 남은 밀리초 (14:20 도달 시 0)
+ * - STEP 4 투표 활성화 여부 = 현재 시각이 당일 14:20 이상이거나 운영진 강제 오픈 시 true
+ */
+export function getFinalGatheringInfo(nowMs: number = Date.now(), forceOpenStep4: boolean = false): {
+  targetTimeMs: number;
+  remainingMs: number;
+  formattedTimeLeft: string;
+  isStep3Completed: boolean;
+} {
+  const nowDate = new Date(nowMs);
+  const targetDate = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth(),
+    nowDate.getDate(),
+    14,
+    20,
+    0,
+    0
+  );
+  const targetTimeMs = targetDate.getTime();
+  const remainingMs = Math.max(0, targetTimeMs - nowMs);
+  const h = String(Math.floor(remainingMs / 3600000)).padStart(2, '0');
+  const m = String(Math.floor((remainingMs % 3600000) / 60000)).padStart(2, '0');
+  const s = String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0');
+
+  return {
+    targetTimeMs,
+    remainingMs,
+    formattedTimeLeft: `${h}:${m}:${s}`,
+    isStep3Completed: forceOpenStep4 || remainingMs === 0,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────

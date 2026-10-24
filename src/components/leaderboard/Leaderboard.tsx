@@ -10,6 +10,8 @@ import {
   PEOPLE_QUEST_POINTS_PER_MEMBER,
   THEME_GARDEN_MISSION,
   IS_PILOT_MODE,
+  PHOTO_VOTE_POINTS_PER_VOTE,
+  getFinalGatheringInfo,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
@@ -17,16 +19,16 @@ import {
   isPqSubmittedForTeam,
   isThemeGardenDoneForTeam,
   getPqForTeam,
+  calculatePhotoVoteCounts,
 } from '../../utils/scoreCalculator';
 import type { Team } from '../../types';
 
 type TabKey = 'team' | 'mission';
 
 // ─────────────────────────────────────────────────────────────────
-// 세션 타이머
+// 최종 집결 시간 (매일 14:20 기준) 타이머
 // ─────────────────────────────────────────────────────────────────
 function useSessionTimer() {
-  const session = useAppStore((s) => s.session);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -34,15 +36,9 @@ function useSessionTimer() {
     return () => clearInterval(id);
   }, []);
 
-  if (!session) return { h: '00', m: '00', s: '00', pct: 0, urgent: false };
-
-  const total = session.endsAt.getTime() - session.startedAt.getTime();
-  const left  = Math.max(0, session.endsAt.getTime() - now);
-  const h = String(Math.floor(left / 3600000)).padStart(2, '0');
-  const m = String(Math.floor(((left % 3600000) / 60000))).padStart(2, '0');
-  const s = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');
-  const pct = Math.min(100, Math.max(0, Math.round(((total - left) / total) * 100)));
-  return { h, m, s, pct, urgent: left < 15 * 60 * 1000 };
+  const { remainingMs, formattedTimeLeft } = getFinalGatheringInfo(now);
+  const [h, m, s] = formattedTimeLeft.split(':');
+  return { h, m, s, urgent: remainingMs > 0 && remainingMs < 15 * 60 * 1000, done: remainingMs === 0 };
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -57,7 +53,11 @@ const StatsRow: React.FC<{ teams: Team[] }> = ({ teams }) => {
       {[
         { val: `${teams.length}개 조`, label: '참가 조', color: 'text-amber-400' },
         { val: `${totalCompleted}건`, label: '완료 미션', color: 'text-green-400' },
-        { val: `${timer.h}:${timer.m}:${timer.s}`, label: '남은 시간', color: timer.urgent ? 'text-red-400 animate-pulse' : 'text-sky-400 font-mono' },
+        {
+          val: timer.done ? '집결 완료' : `${timer.h}:${timer.m}:${timer.s}`,
+          label: '14:20 집결까지',
+          color: timer.urgent ? 'text-red-400 animate-pulse' : 'text-sky-400 font-mono',
+        },
       ].map(({ val, label, color }) => (
         <div key={label} className="bg-[#1A2235] border border-white/8 rounded-xl p-2.5 text-center shadow">
           <div className={`font-bebas text-2xl leading-none ${color}`}>{val}</div>
@@ -121,14 +121,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string; photoVotes: Record<st
   const maxScore = useMemo(() => Math.max(...teams.map(t => t.score), 200), [teams]);
 
   const voteCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    Object.values(photoVotes || {}).forEach((v: any) => {
-      if (v && v.votedTeamId) {
-        const target = normalizeTeamId(v.votedTeamId);
-        counts[target] = (counts[target] || 0) + 1;
-      }
-    });
-    return counts;
+    return calculatePhotoVoteCounts(photoVotes);
   }, [photoVotes]);
 
   const prevRanksRef = useRef<Record<string, number>>({});
@@ -212,7 +205,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string; photoVotes: Record<st
                       )}
                       {votes > 0 && (
                         <span className="text-[11.5px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-bold">
-                          사진 {votes}표
+                          사진 {votes}표 (+{votes * PHOTO_VOTE_POINTS_PER_VOTE}pt)
                         </span>
                       )}
                     </div>
@@ -256,14 +249,7 @@ const MissionTab: React.FC<{
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
 
   const voteCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    Object.values(photoVotes || {}).forEach((v: any) => {
-      if (v && v.votedTeamId) {
-        const target = normalizeTeamId(v.votedTeamId);
-        counts[target] = (counts[target] || 0) + 1;
-      }
-    });
-    return counts;
+    return calculatePhotoVoteCounts(photoVotes);
   }, [photoVotes]);
 
   const pqCompletedTeams = useMemo(() => {
@@ -355,7 +341,7 @@ const MissionTab: React.FC<{
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="font-bold text-white">{team.name}</span>
                     <span className="text-[12px] font-bold text-amber-300">
-                      {votes > 0 ? `${votes}표` : isDone ? '완료' : '미등록'}
+                      {votes > 0 ? `${votes}표 (+${votes * PHOTO_VOTE_POINTS_PER_VOTE}pt)` : isDone ? '완료' : '미등록'}
                     </span>
                   </div>
 
@@ -443,12 +429,14 @@ const Leaderboard: React.FC = () => {
         answeredQuizIds,
         isPeopleQuestSubmitted: isMyTeamPqSubmitted,
       },
-      themeGardenPhotosData
+      themeGardenPhotosData,
+      photoVotesData
     );
   }, [
     participantsData,
     peopleQuestsData,
     themeGardenPhotosData,
+    photoVotesData,
     participantName,
     participantCompany,
     myTeamId,

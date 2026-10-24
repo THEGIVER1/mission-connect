@@ -15,6 +15,8 @@ import {
   getCourseTotalMaxPoints,
   MY_INFO_QUESTIONS,
   IS_PILOT_MODE,
+  PHOTO_VOTE_POINTS_PER_VOTE,
+  getFinalGatheringInfo,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
@@ -23,11 +25,12 @@ import {
   isThemeGardenDoneForTeam,
   getPqForTeam,
   createParticipantId,
+  getVotedTeamIdsFromVoteRecord,
 } from '../../utils/scoreCalculator';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
-const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
-  const { myTeam, session, participantName } = useAppStore();
+const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> = ({ onOpenProfile, forceOpenStep4 }) => {
+  const { myTeam, participantName } = useAppStore();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -35,14 +38,9 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const timeLeft = useMemo(() => {
-    if (!session) return '00:00:00';
-    const diff = Math.max(0, session.endsAt.getTime() - now);
-    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-    const m = String(Math.floor(((diff % 3600000) / 60000))).padStart(2, '0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  }, [session, now]);
+  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+    return getFinalGatheringInfo(now, !!forceOpenStep4);
+  }, [now, forceOpenStep4]);
 
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
@@ -109,8 +107,10 @@ const Header: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[12px] text-slate-400">남은 시간</p>
-          <p className="text-[15px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest">{timeLeft}</p>
+          <p className="text-[12px] text-slate-400">최종 집결지까지 남은 시간 (14:20 기준)</p>
+          <p className="text-[15px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest">
+            {isStep3Completed ? '집결 완료 (00:00:00)' : formattedTimeLeft}
+          </p>
         </div>
       </div>
     </header>
@@ -191,7 +191,9 @@ const ActivitySection: React.FC<{
   pqSubmitted: boolean;
   isAllCompleted: boolean;
   uploadedPhotosCount: number;
-  myTeamVoted: boolean;
+  myTeamVotesUsed: number;
+  isStep3Completed: boolean;
+  remainingTimeLeft: string;
   onOpenTutorialModal: () => void;
   onOpenThemeGardenModal: () => void;
   onOpenPhotoVoteModal: () => void;
@@ -203,7 +205,9 @@ const ActivitySection: React.FC<{
   pqSubmitted,
   isAllCompleted,
   uploadedPhotosCount,
-  myTeamVoted,
+  myTeamVotesUsed,
+  isStep3Completed,
+  remainingTimeLeft,
   onOpenTutorialModal,
   onOpenThemeGardenModal,
   onOpenPhotoVoteModal,
@@ -344,24 +348,27 @@ const ActivitySection: React.FC<{
               STEP 3
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE ? '2:20 최종 집결' : '4:30 최종 집결'}
+              14:20 최종 집결
             </span>
           </div>
+          <span className="text-[12.5px] text-emerald-300 font-bold">
+            {isStep3Completed ? '집결 시간 도달' : `남은 시간 ${remainingTimeLeft}`}
+          </span>
         </div>
 
         <div className="bg-[#141C2B] border border-emerald-500/30 rounded-2xl p-3.5">
           <div className="flex items-center justify-between">
             <span className="text-[16px] font-bold text-white">
-              {IS_PILOT_MODE ? '연강원 강의장 집결' : '세븐일레븐 앞 공터 집결'}
+              {IS_PILOT_MODE ? '연강원 강의장 최종 집결' : '세븐일레븐 앞 공터 최종 집결'}
             </span>
             <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold">
-              {IS_PILOT_MODE ? '2:20까지' : '4:30까지'}
+              {isStep3Completed ? '집결 완료' : '14:20까지'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* ─── STEP 4: 실시간 단체사진 투표 & Wrap-up ─── */}
+      {/* ─── STEP 4: 실시간 단체사진 투표 (STEP 3 최종 집결 시간 완료 시 활성화) ─── */}
       <div className="space-y-2 pt-1">
         <div className="flex items-baseline justify-between px-1">
           <div className="flex items-baseline gap-2">
@@ -369,33 +376,51 @@ const ActivitySection: React.FC<{
               STEP 4
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE ? '2:20~2:40 단체사진 투표 & Wrap-up' : '4:30~ 단체사진 실시간 투표'}
+              단체사진 투표 (조당 2표 · 1표당 +{PHOTO_VOTE_POINTS_PER_VOTE}pt)
             </span>
           </div>
           <span className="text-[12.5px] text-purple-300 font-bold">
-            사진 {uploadedPhotosCount}/6조 등록
+            사진 {uploadedPhotosCount}/6조
           </span>
         </div>
 
         <button
           type="button"
-          onClick={onOpenPhotoVoteModal}
-          className="w-full text-left bg-gradient-to-br from-[#1C162E] to-[#141C2B] border border-purple-500/45 hover:border-purple-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
+          onClick={() => {
+            if (!isStep3Completed) {
+              alert(`STEP 4 단체사진 투표는 STEP 3 최종 집결 시간(14:20) 완료 시 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
+              return;
+            }
+            onOpenPhotoVoteModal();
+          }}
+          className={`w-full text-left rounded-2xl p-3.5 shadow-md transition-all border ${
+            isStep3Completed
+              ? 'bg-gradient-to-br from-[#1C162E] to-[#141C2B] border-purple-500/45 hover:border-purple-400 active:scale-98'
+              : 'bg-[#121723] border-white/10 opacity-75'
+          }`}
         >
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-[16.5px] font-bold text-white">
-              실시간 조별 단체사진 보기 & 투표
+              {isStep3Completed ? '실시간 조별 단체사진 보기 & 투표' : '🔒 단체사진 투표 (14:20 집결 완료 시 오픈)'}
             </h3>
             <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
-              myTeamVoted
+              !isStep3Completed
+                ? 'bg-slate-800 text-slate-400 border-white/10'
+                : myTeamVotesUsed >= 2
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
             }`}>
-              {myTeamVoted ? '투표 완료' : '투표하기 →'}
+              {!isStep3Completed
+                ? '14:20 오픈'
+                : myTeamVotesUsed > 0
+                ? `${myTeamVotesUsed}/2표 완료`
+                : '투표하기 →'}
             </span>
           </div>
           <p className="text-[13.5px] text-slate-300">
-            STEP 2에서 업로드된 6개 조 단체사진을 실시간으로 확인하고 베스트 포토에 투표하세요.
+            {isStep3Completed
+              ? '조당 1장씩 총 2표 투표 가능하며, 1표 득표당 +200pt가 조별 점수에 실시간 합산됩니다.'
+              : `STEP 3 최종 집결 시간(14:20) 완료 시 투표가 활성화됩니다. (남은 시간: ${remainingTimeLeft})`}
           </p>
         </button>
       </div>
@@ -688,11 +713,17 @@ const Dashboard: React.FC = () => {
   } = useAppStore();
 
   const [rawSessionData, setRawSessionData] = useState<any>({});
+  const [nowMs, setNowMs] = useState<number>(Date.now());
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isThemeGardenModalOpen, setIsThemeGardenModalOpen] = useState(false);
   const [isPhotoVoteModalOpen, setIsPhotoVoteModalOpen] = useState(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const teamId = normalizeTeamId(myTeam?.id);
   const participantId = participantName
@@ -712,6 +743,9 @@ const Dashboard: React.FC = () => {
     const themePhotos = (rawSessionData?.themeGardenPhotos && typeof rawSessionData.themeGardenPhotos === 'object')
       ? rawSessionData.themeGardenPhotos
       : {};
+    const photoVotes = (rawSessionData?.photoVotes && typeof rawSessionData.photoVotes === 'object')
+      ? rawSessionData.photoVotes
+      : {};
 
     return calculateLeaderboardData(
       participants,
@@ -724,7 +758,8 @@ const Dashboard: React.FC = () => {
         isPeopleQuestSubmitted,
         isThemeGardenSubmitted: isThemeGardenDoneForTeam(teamId, themePhotos),
       },
-      themePhotos
+      themePhotos,
+      photoVotes
     );
   }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 
@@ -763,9 +798,15 @@ const Dashboard: React.FC = () => {
     return WORKSHOP_TEAMS.filter(t => !!(themePhotos[t.id]?.photoUrl)).length;
   }, [rawSessionData]);
 
-  const myTeamVoted = useMemo(() => {
-    return !!(rawSessionData?.photoVotes?.[teamId]?.votedTeamId);
+  const myTeamVotesUsed = useMemo(() => {
+    const myVoteRec = rawSessionData?.photoVotes?.[teamId];
+    return getVotedTeamIdsFromVoteRecord(myVoteRec).length;
   }, [rawSessionData, teamId]);
+
+  const forceOpenStep4 = !!(rawSessionData?.step4ForceOpen);
+  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+    return getFinalGatheringInfo(nowMs, forceOpenStep4);
+  }, [nowMs, forceOpenStep4]);
 
   const maxScore = useMemo(() => {
     return Math.max(...teams.map(r => r.score), getCourseTotalMaxPoints(selectedCourse));
@@ -887,7 +928,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
-      <Header onOpenProfile={() => setIsProfileModalOpen(true)} />
+      <Header onOpenProfile={() => setIsProfileModalOpen(true)} forceOpenStep4={forceOpenStep4} />
       <ScoreCard
         teamScore={teamScore}
         teamRank={teamRank}
@@ -900,7 +941,9 @@ const Dashboard: React.FC = () => {
         pqSubmitted={pqSubmitted}
         isAllCompleted={isAllCompleted}
         uploadedPhotosCount={uploadedPhotosCount}
-        myTeamVoted={myTeamVoted}
+        myTeamVotesUsed={myTeamVotesUsed}
+        isStep3Completed={isStep3Completed}
+        remainingTimeLeft={formattedTimeLeft}
         onOpenTutorialModal={() => setIsTutorialModalOpen(true)}
         onOpenThemeGardenModal={() => setIsThemeGardenModalOpen(true)}
         onOpenPhotoVoteModal={() => setIsPhotoVoteModalOpen(true)}
