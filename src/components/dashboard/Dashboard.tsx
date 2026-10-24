@@ -6,6 +6,7 @@ import { CompletionCertificateModal } from '../common/CompletionCertificateModal
 import { TutorialGroundRulesModal } from '../tutorial/TutorialGroundRulesModal';
 import { ThemeGardenMissionModal } from '../themeGarden/ThemeGardenMissionModal';
 import { PhotoVoteModal } from '../photoVote/PhotoVoteModal';
+import { YeonkangWrapupQuizModal } from '../photoVote/YeonkangWrapupQuizModal';
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
@@ -26,6 +27,7 @@ import {
   getPqForTeam,
   createParticipantId,
   getVotedTeamIdsFromVoteRecord,
+  getWrapupQuizScoreForTeam,
 } from '../../utils/scoreCalculator';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
@@ -192,11 +194,14 @@ const ActivitySection: React.FC<{
   isAllCompleted: boolean;
   uploadedPhotosCount: number;
   myTeamVotesUsed: number;
+  myWrapupQuizPoints: number;
+  myWrapupQuizDone: boolean;
   isStep3Completed: boolean;
   remainingTimeLeft: string;
   onOpenTutorialModal: () => void;
   onOpenThemeGardenModal: () => void;
   onOpenPhotoVoteModal: () => void;
+  onOpenWrapupQuizModal: () => void;
   onOpenCertificate: () => void;
 }> = ({
   hasTutorialDone,
@@ -206,11 +211,14 @@ const ActivitySection: React.FC<{
   isAllCompleted,
   uploadedPhotosCount,
   myTeamVotesUsed,
+  myWrapupQuizPoints,
+  myWrapupQuizDone,
   isStep3Completed,
   remainingTimeLeft,
   onOpenTutorialModal,
   onOpenThemeGardenModal,
   onOpenPhotoVoteModal,
+  onOpenWrapupQuizModal,
   onOpenCertificate,
 }) => {
   const navigate = useNavigate();
@@ -246,7 +254,7 @@ const ActivitySection: React.FC<{
               STEP 1
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE ? '1:00~1:20 카페쿰베오' : '1:30~2:00 빵명장'}
+              {IS_PILOT_MODE ? '1:00~1:30 카페쿰베오' : '1:30~2:00 빵명장'}
             </span>
           </div>
           <span className="text-[12.5px] text-slate-400">조 대표 입력</span>
@@ -285,7 +293,7 @@ const ActivitySection: React.FC<{
               STEP 2
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE ? '1:20~2:20 트레킹 미션' : '2:00~4:30 트레킹 미션'}
+              {IS_PILOT_MODE ? '1:30~2:20 트레킹 미션' : '2:00~4:30 트레킹 미션'}
             </span>
           </div>
           <span className="text-[12.5px] text-slate-400">조별 각 +100pt</span>
@@ -368,7 +376,7 @@ const ActivitySection: React.FC<{
         </div>
       </div>
 
-      {/* ─── STEP 4: 실시간 단체사진 투표 (STEP 3 최종 집결 시간 완료 시 활성화) ─── */}
+      {/* ─── STEP 4: 실시간 단체사진 투표 (및 연강원 Q2 퀴즈) ─── */}
       <div className="space-y-2 pt-1">
         <div className="flex items-baseline justify-between px-1">
           <div className="flex items-baseline gap-2">
@@ -376,7 +384,9 @@ const ActivitySection: React.FC<{
               STEP 4
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              단체사진 투표 (조당 2표 · 1표당 +{PHOTO_VOTE_POINTS_PER_VOTE}pt)
+              {IS_PILOT_MODE
+                ? '단체사진 투표 & Wrap-up Quiz'
+                : `단체사진 투표 (조당 2표 · 1표당 +${PHOTO_VOTE_POINTS_PER_VOTE}pt)`}
             </span>
           </div>
           <span className="text-[12.5px] text-purple-300 font-bold">
@@ -401,7 +411,13 @@ const ActivitySection: React.FC<{
         >
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-[16.5px] font-bold text-white">
-              {isStep3Completed ? '실시간 조별 단체사진 보기 & 투표' : '🔒 단체사진 투표 (14:20 집결 완료 시 오픈)'}
+              {isStep3Completed
+                ? IS_PILOT_MODE
+                  ? 'Q1. 실시간 조별 단체사진 투표'
+                  : '실시간 조별 단체사진 보기 & 투표'
+                : IS_PILOT_MODE
+                ? '🔒 Q1. 단체사진 투표 (14:20 집결 완료 시 오픈)'
+                : '🔒 단체사진 투표 (14:20 집결 완료 시 오픈)'}
             </h3>
             <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
               !isStep3Completed
@@ -423,6 +439,48 @@ const ActivitySection: React.FC<{
               : `STEP 3 최종 집결 시간(14:20) 완료 시 투표가 활성화됩니다. (남은 시간: ${remainingTimeLeft})`}
           </p>
         </button>
+
+        {IS_PILOT_MODE && (
+          <button
+            type="button"
+            onClick={() => {
+              if (!isStep3Completed) {
+                alert(`STEP 4 Q2 퀴즈는 STEP 3 최종 집결 시간(14:20) 완료 시 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
+                return;
+              }
+              onOpenWrapupQuizModal();
+            }}
+            className={`w-full text-left rounded-2xl p-3.5 shadow-md transition-all border ${
+              isStep3Completed
+                ? 'bg-gradient-to-br from-[#1C162E] to-[#141C2B] border-purple-500/45 hover:border-purple-400 active:scale-98'
+                : 'bg-[#121723] border-white/10 opacity-75'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[16.5px] font-bold text-white">
+                {isStep3Completed
+                  ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
+                  : '🔒 Q2. 연강원 퀴즈 (14:20 집결 완료 시 오픈)'}
+              </h3>
+              <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+                !isStep3Completed
+                  ? 'bg-slate-800 text-slate-400 border-white/10'
+                  : myWrapupQuizDone
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+              }`}>
+                {!isStep3Completed
+                  ? '14:20 오픈'
+                  : myWrapupQuizDone
+                  ? `완료 (+${myWrapupQuizPoints}pt)`
+                  : '퀴즈 풀기 →'}
+              </span>
+            </div>
+            <p className="text-[13.5px] text-slate-300">
+              연꽃 · 도토리나무 · 무궁화 · 두룹나무 · 잔디깍기로봇 · 감나무 · 복숭아나무 (개당 +50pt)
+            </p>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -719,6 +777,7 @@ const Dashboard: React.FC = () => {
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isThemeGardenModalOpen, setIsThemeGardenModalOpen] = useState(false);
   const [isPhotoVoteModalOpen, setIsPhotoVoteModalOpen] = useState(false);
+  const [isWrapupQuizModalOpen, setIsWrapupQuizModalOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNowMs(Date.now()), 1000);
@@ -746,6 +805,9 @@ const Dashboard: React.FC = () => {
     const photoVotes = (rawSessionData?.photoVotes && typeof rawSessionData.photoVotes === 'object')
       ? rawSessionData.photoVotes
       : {};
+    const wrapupQuizzes = (rawSessionData?.wrapupQuizzes && typeof rawSessionData.wrapupQuizzes === 'object')
+      ? rawSessionData.wrapupQuizzes
+      : {};
 
     return calculateLeaderboardData(
       participants,
@@ -759,7 +821,8 @@ const Dashboard: React.FC = () => {
         isThemeGardenSubmitted: isThemeGardenDoneForTeam(teamId, themePhotos),
       },
       themePhotos,
-      photoVotes
+      photoVotes,
+      wrapupQuizzes
     );
   }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 
@@ -801,6 +864,10 @@ const Dashboard: React.FC = () => {
   const myTeamVotesUsed = useMemo(() => {
     const myVoteRec = rawSessionData?.photoVotes?.[teamId];
     return getVotedTeamIdsFromVoteRecord(myVoteRec).length;
+  }, [rawSessionData, teamId]);
+
+  const myWrapupQuizInfo = useMemo(() => {
+    return getWrapupQuizScoreForTeam(teamId, rawSessionData?.wrapupQuizzes || {});
   }, [rawSessionData, teamId]);
 
   const forceOpenStep4 = !!(rawSessionData?.step4ForceOpen);
@@ -942,11 +1009,14 @@ const Dashboard: React.FC = () => {
         isAllCompleted={isAllCompleted}
         uploadedPhotosCount={uploadedPhotosCount}
         myTeamVotesUsed={myTeamVotesUsed}
+        myWrapupQuizPoints={myWrapupQuizInfo.points}
+        myWrapupQuizDone={myWrapupQuizInfo.completed}
         isStep3Completed={isStep3Completed}
         remainingTimeLeft={formattedTimeLeft}
         onOpenTutorialModal={() => setIsTutorialModalOpen(true)}
         onOpenThemeGardenModal={() => setIsThemeGardenModalOpen(true)}
         onOpenPhotoVoteModal={() => setIsPhotoVoteModalOpen(true)}
+        onOpenWrapupQuizModal={() => setIsWrapupQuizModalOpen(true)}
         onOpenCertificate={() => setIsCertModalOpen(true)}
       />
       <BottomNav active="/" />
@@ -982,6 +1052,16 @@ const Dashboard: React.FC = () => {
         teamId={teamId}
         participantName={participantName}
       />
+
+      {/* STEP 4: 연강원 전용 Q2 퀴즈 모달 */}
+      {IS_PILOT_MODE && (
+        <YeonkangWrapupQuizModal
+          isOpen={isWrapupQuizModalOpen}
+          onClose={() => setIsWrapupQuizModalOpen(false)}
+          teamId={teamId}
+          participantName={participantName}
+        />
+      )}
 
       {/* 내 프로필 및 4문항 답변 실시간 수정 모달 */}
       <MyProfileModal

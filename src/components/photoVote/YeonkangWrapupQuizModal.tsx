@@ -1,0 +1,281 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  WORKSHOP_TEAMS,
+  YEONKANG_WRAPUP_QUIZ_OPTIONS,
+  YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
+  getFinalGatheringInfo,
+} from '../../config/workshopConfig';
+import { normalizeTeamId } from '../../utils/scoreCalculator';
+import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
+import { ref, onValue, set } from 'firebase/database';
+import { fireConfetti } from '../../lib/confetti';
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  teamId: string;
+  participantName?: string | null;
+}
+
+export const YeonkangWrapupQuizModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  teamId,
+  participantName,
+}) => {
+  const normTeamId = normalizeTeamId(teamId);
+  const myTeamConfig = WORKSHOP_TEAMS.find(t => t.id === normTeamId) || WORKSHOP_TEAMS[0];
+
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [submittedBy, setSubmittedBy] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [forceOpenStep4, setForceOpenStep4] = useState<boolean>(false);
+  const [nowMs, setNowMs] = useState<number>(Date.now());
+  const [toastMsg, setToastMsg] = useState<string>('');
+
+  const dbUrl = FIREBASE_DB_URL;
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 2500);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchQuizState = async () => {
+      try {
+        const res = await fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setForceOpenStep4(!!(data?.step4ForceOpen));
+          const teamQuiz = data?.wrapupQuizzes?.[normTeamId];
+          if (teamQuiz && typeof teamQuiz === 'object') {
+            if (Array.isArray(teamQuiz.selectedItems)) {
+              setSelectedItems(teamQuiz.selectedItems);
+            }
+            setIsSubmitted(!!teamQuiz.completed);
+            setSubmittedBy(teamQuiz.submittedBy || '');
+          }
+        }
+      } catch (e) {
+        console.warn('Wrap-up 퀴즈 조회 경고:', e);
+      }
+    };
+
+    fetchQuizState();
+
+    let unsub = () => {};
+    try {
+      const qRef = ref(rtdb, `sessions/trekking2026/wrapupQuizzes/${normTeamId}`);
+      unsub = onValue(qRef, snap => {
+        if (snap.exists()) {
+          const val = snap.val();
+          if (Array.isArray(val.selectedItems)) {
+            setSelectedItems(val.selectedItems);
+          }
+          setIsSubmitted(!!val.completed);
+          setSubmittedBy(val.submittedBy || '');
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      unsub();
+    };
+  }, [isOpen, normTeamId, dbUrl]);
+
+  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+    return getFinalGatheringInfo(nowMs, forceOpenStep4);
+  }, [nowMs, forceOpenStep4]);
+
+  if (!isOpen) return null;
+
+  const toggleItem = (item: string) => {
+    setSelectedItems(prev =>
+      prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]
+    );
+  };
+
+  const earnedPoints = selectedItems.length * YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM;
+
+  const handleSubmit = async () => {
+    if (!isStep3Completed) {
+      showToast('STEP 3 최종 집결 시간(14:20) 완료 후 제출할 수 있습니다.');
+      return;
+    }
+    if (selectedItems.length === 0) {
+      showToast('최소 1개 이상 선택해 주세요.');
+      return;
+    }
+
+    setIsSaving(true);
+    const payload = {
+      teamId: normTeamId,
+      teamName: myTeamConfig.name,
+      selectedItems,
+      pointsEarned: earnedPoints,
+      completed: true,
+      submittedBy: participantName || myTeamConfig.name,
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await fetch(`${dbUrl}/sessions/trekking2026/wrapupQuizzes/${normTeamId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const qRef = ref(rtdb, `sessions/trekking2026/wrapupQuizzes/${normTeamId}`);
+      await set(qRef, payload);
+
+      setIsSubmitted(true);
+      setSubmittedBy(payload.submittedBy);
+      fireConfetti({ count: 70, spread: 80 });
+      showToast(`${myTeamConfig.name} Q2 제출 완료! (+${earnedPoints}pt 반영)`);
+    } catch (e) {
+      console.warn('Q2 퀴즈 저장 오류:', e);
+      showToast('저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in select-none">
+      <div className="bg-[#13192A] border border-white/15 w-full max-w-[430px] max-h-[92vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+        {/* 상단 헤더 */}
+        <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
+          <div>
+            <span className="text-[12px] text-purple-400 font-bold uppercase tracking-wider block">
+              STEP 4 · 개당 +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt · 최대 +350pt
+            </span>
+            <h3 className="text-[17px] font-bold text-white">
+              Q2. 연강원에 있는 것을 모두 선택하세요
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center hover:bg-white/20 active:scale-95 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 요약 바 */}
+        <div className="bg-[#101626] px-4 py-2.5 border-b border-white/8 flex items-center justify-between text-[13px] flex-shrink-0">
+          <span className="text-slate-300">
+            선택: <strong className="text-white">{selectedItems.length} / {YEONKANG_WRAPUP_QUIZ_OPTIONS.length}개</strong>
+          </span>
+          <span className="text-amber-400 font-bold">
+            획득 예정 점수: +{earnedPoints}pt
+          </span>
+        </div>
+
+        {!isStep3Completed && (
+          <div className="mx-4 mt-2.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[13px] font-bold py-2 px-3 rounded-xl text-center">
+            STEP 3 최종 집결 시간(14:20) 완료 시 활성화됩니다. (남은 시간 {formattedTimeLeft})
+          </div>
+        )}
+
+        {toastMsg && (
+          <div className="mx-4 mt-2.5 bg-purple-600/30 border border-purple-400/50 text-white text-[13.5px] font-bold py-2 px-3 rounded-xl text-center">
+            {toastMsg}
+          </div>
+        )}
+
+        {/* 본문: 7개 복수선택 옵션 */}
+        <div className="p-4 space-y-2.5 flex-1 overflow-y-auto">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[13.5px] text-slate-300 font-medium">
+              복수 선택 가능 (선택한 항목당 +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt)
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedItems.length === YEONKANG_WRAPUP_QUIZ_OPTIONS.length) {
+                  setSelectedItems([]);
+                } else {
+                  setSelectedItems([...YEONKANG_WRAPUP_QUIZ_OPTIONS]);
+                }
+              }}
+              className="text-[12.5px] text-sky-400 hover:text-sky-300 font-bold"
+            >
+              {selectedItems.length === YEONKANG_WRAPUP_QUIZ_OPTIONS.length ? '전체 해제' : '전체 선택'}
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {YEONKANG_WRAPUP_QUIZ_OPTIONS.map((option) => {
+              const isChecked = selectedItems.includes(option);
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => toggleItem(option)}
+                  className={`w-full text-left p-3.5 rounded-2xl border text-[15.5px] flex items-center justify-between transition-all active:scale-98 ${
+                    isChecked
+                      ? 'bg-purple-600/20 border-purple-400 text-white font-bold shadow-md'
+                      : 'bg-[#182035] border-white/10 text-slate-300 hover:border-white/25'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`w-5 h-5 rounded-md flex items-center justify-center text-[13px] font-bold ${
+                        isChecked
+                          ? 'bg-purple-500 text-white'
+                          : 'border border-slate-500 bg-black/20'
+                      }`}
+                    >
+                      {isChecked ? '✓' : ''}
+                    </span>
+                    <span>{option}</span>
+                  </div>
+                  <span className={`text-[13px] font-bold ${isChecked ? 'text-amber-300' : 'text-slate-500'}`}>
+                    +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {isSubmitted && (
+            <div className="bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 p-3 rounded-xl text-[13.5px] text-center">
+              <strong>정답입니다!</strong> 연강원에는 7가지가 모두 있습니다. ({myTeamConfig.name} +{earnedPoints}pt 반영됨 · 작성: {submittedBy})
+            </div>
+          )}
+        </div>
+
+        {/* 하단 제출 버튼 */}
+        <div className="bg-[#182035] border-t border-white/10 p-3 flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-1/3 py-3 bg-[#1A2235] hover:bg-[#222C44] text-slate-300 font-bold text-[15px] rounded-xl border border-white/10 active:scale-95 transition-all"
+          >
+            닫기
+          </button>
+          <button
+            type="button"
+            disabled={isSaving || !isStep3Completed}
+            onClick={handleSubmit}
+            className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all"
+          >
+            {isSaving
+              ? '저장 중...'
+              : isSubmitted
+              ? `다시 저장하기 (+${earnedPoints}pt)`
+              : `정답 제출하기 (+${earnedPoints}pt)`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

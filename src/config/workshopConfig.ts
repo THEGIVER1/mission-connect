@@ -150,7 +150,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = IS_PILOT_MODE
   ? {
       id: 'theme_garden_photo',
       title: '두산 저수지 조별 단체사진',
-      timeRange: '1:20 ~ 2:20',
+      timeRange: '1:30 ~ 2:20',
       locationName: '두산 저수지',
       coords: { lat: 37.541920, lng: 127.151580 },
       hintTitle: '단체사진 촬영 안내',
@@ -272,6 +272,19 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [];
 // 9. 점수 및 최종 집결 시간 동적 계산 헬퍼 함수
 // ─────────────────────────────────────────────────────────────────
 export const PHOTO_VOTE_POINTS_PER_VOTE = 200; // STEP 4 단체사진 1표당 +200pt (조당 최대 2표)
+
+// 연강원 파일럿 전용 STEP 4 Q2 퀴즈 (개당 50점, 모두 정답, 총 7개 = 최대 350pt)
+export const YEONKANG_WRAPUP_QUIZ_OPTIONS = [
+  '연꽃',
+  '도토리나무',
+  '무궁화',
+  '두룹나무',
+  '잔디깍기로봇',
+  '감나무',
+  '복숭아나무',
+] as const;
+
+export const YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM = 50; // 개당 50pt (7개 모두 선택 시 +350pt)
 
 export function getCourseQuizTotalPoints(_courseKey: CourseKey = 'lake'): number {
   return 0;

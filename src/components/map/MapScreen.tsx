@@ -922,8 +922,8 @@ const MapScreen: React.FC = () => {
         {
           id: 'start' as const,
           title: '카페쿰베오',
-          badge: '🚩 1:00~1:20 첫 집결지 / 출발',
-          subtitle: '카페쿰베오(파란색 표시 건물)에서 20분간 조별 그라운드룰 및 베오라떼 몸풀기 Quiz 진행 후 출발',
+          badge: '🚩 1:00~1:30 첫 집결지 / 출발',
+          subtitle: '카페쿰베오에서 조별 그라운드룰 및 베오라떼 연습 Quiz 진행 후 출발',
           coords: ACTIVE_VENUE.departurePoint.coords,
           emoji: '☕',
           color: '#3B82F6',
@@ -931,8 +931,8 @@ const MapScreen: React.FC = () => {
         {
           id: 'themeGarden' as const,
           title: '두산 저수지',
-          badge: '📸 1:20~2:20 조별 단체사진 미션 (+100pt)',
-          subtitle: '지도상 노란색 동그라미 영역(두산 저수지)에서 조원 전원이 보이도록 단체사진 촬영 및 업로드',
+          badge: '📸 1:30~2:20 조별 단체사진 미션 (+100pt)',
+          subtitle: '두산 저수지에서 조원 전원이 보이도록 단체사진 촬영 및 업로드',
           coords: ACTIVE_VENUE.themeGardenSpot.coords,
           emoji: '📸',
           color: '#FACC15',
@@ -941,7 +941,7 @@ const MapScreen: React.FC = () => {
           id: 'finishPhoto' as const,
           title: '연강원 강의장',
           badge: '🏫 2:20 최종 집결 / 2:20~2:40 Wrap-up Quiz',
-          subtitle: '2:20까지 연강원 강의장(초록색 표시 건물)으로 최종 집결 후 2:20~2:40 Wrap-up Quiz 진행',
+          subtitle: '2:20까지 연강원 강의장으로 최종 집결 후 2:20~2:40 단체사진 투표 및 Wrap-up Quiz 진행',
           coords: ACTIVE_VENUE.photoSpot.coords,
           emoji: '🏫',
           color: '#22C55E',
@@ -1477,41 +1477,9 @@ const MapScreen: React.FC = () => {
         </div>
       </header>
 
-      {/* 코스 색상 범례 바 */}
-      <div className="bg-[#101626] border-b border-white/8 px-3 py-2 flex flex-col gap-1.5 z-10">
-        {IS_PILOT_MODE ? (
-          <div className="flex items-center gap-1.5 w-full">
-            <button
-              onClick={() => {
-                if (mapRef.current) {
-                  const bounds = L.polyline([
-                    ...YEONKANG_OUTER_TRACK,
-                    [ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng],
-                  ]).getBounds();
-                  mapRef.current.fitBounds(bounds, { padding: [28, 28], animate: true });
-                }
-              }}
-              className="flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15"
-            >
-              <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
-              <span>연강원 트레킹 코스 (1~6조)</span>
-            </button>
-            <button
-              onClick={() => {
-                setSelectedSpotId('themeGarden');
-                mapRef.current?.flyTo(
-                  [ACTIVE_VENUE.themeGardenSpot.coords.lat, ACTIVE_VENUE.themeGardenSpot.coords.lng],
-                  17,
-                  { duration: 0.9 }
-                );
-              }}
-              className="flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border bg-amber-500/15 text-amber-200 border-amber-400/50"
-            >
-              <span className="w-3 h-3 rounded-full bg-[#FACC15] inline-block shadow-sm shadow-amber-400" />
-              <span>두산 저수지 (사진미션)</span>
-            </button>
-          </div>
-        ) : (
+      {/* 코스 색상 범례 바 (본행사 전용, 연강원 파일럿에서는 삭제) */}
+      {!IS_PILOT_MODE && (
+        <div className="bg-[#101626] border-b border-white/8 px-3 py-2 flex flex-col gap-1.5 z-10">
           <div className="flex items-center gap-1.5 w-full">
             <button
               onClick={() => {
@@ -1546,8 +1514,8 @@ const MapScreen: React.FC = () => {
               <span>미술관 코스 (4~6조)</span>
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* 거점 스팟 퀵 선택 바 */}
       <div className="bg-[#0E1422] border-b border-white/5 px-3 py-1.5 flex gap-1.5 overflow-x-auto z-10">
@@ -1568,7 +1536,7 @@ const MapScreen: React.FC = () => {
             <span>
               {spot.id === 'themeGarden'
                 ? IS_PILOT_MODE
-                  ? '두산 저수지 (노란영역)'
+                  ? '두산 저수지'
                   : '테마가든 (노란영역)'
                 : spot.title}
             </span>

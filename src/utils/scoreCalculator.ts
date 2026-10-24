@@ -4,6 +4,8 @@ import {
   THEME_GARDEN_MISSION,
   PRE_REGISTERED_PARTICIPANTS,
   PHOTO_VOTE_POINTS_PER_VOTE,
+  IS_PILOT_MODE,
+  YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
 } from '../config/workshopConfig';
 import type { Team } from '../types';
 
@@ -180,19 +182,47 @@ export function calculatePhotoVoteCounts(photoVotesData: Record<string, any> = {
 }
 
 /**
+ * 연강원 파일럿 STEP 4 Q2 퀴즈 점수 계산 (개당 50pt, 모두 정답, 최대 7개 = 350pt)
+ */
+export function getWrapupQuizScoreForTeam(
+  teamId: string | undefined | null,
+  wrapupQuizData: Record<string, any> = {}
+): { selectedCount: number; points: number; completed: boolean; selectedItems: string[] } {
+  if (!teamId || !wrapupQuizData || typeof wrapupQuizData !== 'object') {
+    return { selectedCount: 0, points: 0, completed: false, selectedItems: [] };
+  }
+  const targetNorm = normalizeTeamId(teamId);
+  const rec = wrapupQuizData[targetNorm] || wrapupQuizData[teamId];
+  if (!rec || typeof rec !== 'object') {
+    return { selectedCount: 0, points: 0, completed: false, selectedItems: [] };
+  }
+  const items = Array.isArray(rec.selectedItems) ? rec.selectedItems : [];
+  const uniqueItems = Array.from(new Set(items.filter(Boolean))) as string[];
+  const count = Math.min(7, uniqueItems.length);
+  return {
+    selectedCount: count,
+    points: count * YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
+    completed: !!rec.completed || count > 0,
+    selectedItems: uniqueItems,
+  };
+}
+
+/**
  * 대시보드, 실시간 순위(리더보드), 관리자 화면 모두에 100% 동일한 점수를 보장하는 통합 계산 엔진
  *
  * [조별 점수 규칙]
  * 1. 최고의 스토리 동료 추천 완료 시: +100pt
  * 2. 조별 단체사진 업로드 완료 시: +100pt
  * 3. STEP 4 단체사진 투표 득표 시: 1표당 +200pt (조당 최대 2표 행사 가능)
+ * 4. (연강원 파일럿 전용) STEP 4 Q2 퀴즈: 선택 개당 +50pt (7개 모두 정답, 최대 +350pt)
  */
 export function calculateLeaderboardData(
   participantsData: Record<string, any> = {},
   peopleQuestsData: Record<string, any> = {},
   currentUser?: CurrentUserContext,
   themeGardenPhotosData: Record<string, any> = {},
-  photoVotesData: Record<string, any> = {}
+  photoVotesData: Record<string, any> = {},
+  wrapupQuizData: Record<string, any> = {}
 ): {
   individuals: IndividualItem[];
   teams: Team[];
@@ -310,10 +340,15 @@ export function calculateLeaderboardData(
 
     const voteCount = photoVoteCounts[teamConfig.id] || 0;
     const voteBonusPoints = voteCount * PHOTO_VOTE_POINTS_PER_VOTE;
+    const wrapupQuizInfo = IS_PILOT_MODE
+      ? getWrapupQuizScoreForTeam(teamConfig.id, wrapupQuizData)
+      : { points: 0, completed: false, selectedCount: 0, selectedItems: [] };
+
     const teamScore =
       (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
       (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
-      voteBonusPoints;
+      voteBonusPoints +
+      wrapupQuizInfo.points;
     const completedCount = (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
 
     return {

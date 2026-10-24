@@ -156,7 +156,7 @@ export const ThemeGardenMissionModal: React.FC<Props> = ({
         <div className="bg-[#182035] border-b border-white/10 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div>
             <span className="text-[12px] text-pink-400 font-bold uppercase tracking-wider block">
-              {IS_PILOT_MODE ? 'STEP 2 · 1:20~2:20' : 'STEP 2 · 2:00~4:30'}
+              {IS_PILOT_MODE ? 'STEP 2 · 1:30~2:20' : 'STEP 2 · 2:00~4:30'}
             </span>
             <h3 className="text-[16.5px] font-bold text-white">
               {IS_PILOT_MODE ? '두산 저수지 조별 단체사진' : '테마가든 조별 단체사진'}

@@ -412,6 +412,7 @@ const Leaderboard: React.FC = () => {
   const [peopleQuestsData, setPeopleQuestsData] = useState<Record<string, any>>({});
   const [themeGardenPhotosData, setThemeGardenPhotosData] = useState<Record<string, any>>({});
   const [photoVotesData, setPhotoVotesData] = useState<Record<string, any>>({});
+  const [wrapupQuizzesData, setWrapupQuizzesData] = useState<Record<string, any>>({});
   const dbUrl = FIREBASE_DB_URL;
 
   const isMyTeamPqSubmitted = useMemo(() => {
@@ -430,13 +431,15 @@ const Leaderboard: React.FC = () => {
         isPeopleQuestSubmitted: isMyTeamPqSubmitted,
       },
       themeGardenPhotosData,
-      photoVotesData
+      photoVotesData,
+      wrapupQuizzesData
     );
   }, [
     participantsData,
     peopleQuestsData,
     themeGardenPhotosData,
     photoVotesData,
+    wrapupQuizzesData,
     participantName,
     participantCompany,
     myTeamId,
@@ -462,6 +465,7 @@ const Leaderboard: React.FC = () => {
             setPeopleQuestsData(data.peopleQuest || {});
             setThemeGardenPhotosData(data.themeGardenPhotos || {});
             setPhotoVotesData(data.photoVotes || {});
+            setWrapupQuizzesData(data.wrapupQuizzes || {});
           }
         }
       } catch (err) {
@@ -488,6 +492,7 @@ const Leaderboard: React.FC = () => {
             setPeopleQuestsData(data.peopleQuest || {});
             setThemeGardenPhotosData(data.themeGardenPhotos || {});
             setPhotoVotesData(data.photoVotes || {});
+            setWrapupQuizzesData(data.wrapupQuizzes || {});
           }
         }
       );
