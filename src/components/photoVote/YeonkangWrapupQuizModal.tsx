@@ -15,6 +15,7 @@ interface Props {
   onClose: () => void;
   teamId: string;
   participantName?: string | null;
+  onQuizSubmitted?: () => void;
 }
 
 export const YeonkangWrapupQuizModal: React.FC<Props> = ({
@@ -22,6 +23,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
   onClose,
   teamId,
   participantName,
+  onQuizSubmitted,
 }) => {
   const normTeamId = normalizeTeamId(teamId);
   const myTeamConfig = WORKSHOP_TEAMS.find(t => t.id === normTeamId) || WORKSHOP_TEAMS[0];
@@ -138,6 +140,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
 
       setIsSubmitted(true);
       setSubmittedBy(payload.submittedBy);
+      if (onQuizSubmitted) onQuizSubmitted();
       fireConfetti({ count: 70, spread: 80 });
       showToast(`${myTeamConfig.name} Q2 제출 완료! (+${earnedPoints}pt 반영)`);
     } catch (e) {

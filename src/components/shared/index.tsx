@@ -96,13 +96,18 @@ export const AnimatedScoreCounter: React.FC<{
     const endValue = value;
     const diff = endValue - startValue;
 
+    let burstTimer: ReturnType<typeof setTimeout> | null = null;
     if (diff > 0 && showGainBurst) {
       setGainAmount(diff);
-      const timer = setTimeout(() => setGainAmount(null), 2400);
-      return () => clearTimeout(timer);
+      burstTimer = setTimeout(() => setGainAmount(null), 2400);
     }
 
-    if (startValue === endValue) return;
+    if (startValue === endValue) {
+      setDisplayValue(endValue);
+      return () => {
+        if (burstTimer) clearTimeout(burstTimer);
+      };
+    }
 
     let startTime: number | null = null;
     let animationFrameId: number;
@@ -127,6 +132,8 @@ export const AnimatedScoreCounter: React.FC<{
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      if (burstTimer) clearTimeout(burstTimer);
+      prevValueRef.current = endValue;
     };
   }, [value, duration, showGainBurst]);
 
@@ -141,4 +148,3 @@ export const AnimatedScoreCounter: React.FC<{
     </div>
   );
 };
-

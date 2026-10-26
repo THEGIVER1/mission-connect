@@ -758,7 +758,6 @@ const Dashboard: React.FC = () => {
     participantName,
     participantCompany,
     selectedCourse,
-    updateTeamScore,
     isPeopleQuestSubmitted,
     answeredQuizIds,
     syncSessionData,
@@ -898,7 +897,6 @@ const Dashboard: React.FC = () => {
   // 4. 스토어 동기화
   useEffect(() => {
     if (myRankObj) {
-      updateTeamScore(teamId, teamScore);
       syncSessionData({
         teams,
         myTeamScore: teamScore,
@@ -907,7 +905,7 @@ const Dashboard: React.FC = () => {
         isPeopleQuestSubmitted: pqSubmitted,
       });
     }
-  }, [teams, teamScore, teamRank, myRankObj, pqSubmitted, teamId, updateTeamScore, syncSessionData]);
+  }, [teams, teamScore, teamRank, myRankObj, pqSubmitted, teamId, syncSessionData]);
 
   // 5. Dual-Channel 실시간 데이터 로드
   useEffect(() => {
@@ -1048,6 +1046,12 @@ const Dashboard: React.FC = () => {
         onClose={() => setIsPhotoVoteModalOpen(false)}
         teamId={teamId}
         participantName={participantName}
+        onVoteSubmitted={() => {
+          fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' })
+            .then(res => res.json())
+            .then(processSessionData)
+            .catch(() => {});
+        }}
       />
 
       {/* STEP 4: 연강원 전용 Q2 퀴즈 모달 */}
@@ -1057,6 +1061,12 @@ const Dashboard: React.FC = () => {
           onClose={() => setIsWrapupQuizModalOpen(false)}
           teamId={teamId}
           participantName={participantName}
+          onQuizSubmitted={() => {
+            fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' })
+              .then(res => res.json())
+              .then(processSessionData)
+              .catch(() => {});
+          }}
         />
       )}
 

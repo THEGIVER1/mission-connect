@@ -18,6 +18,7 @@ interface Props {
   onClose: () => void;
   teamId: string;
   participantName?: string | null;
+  onVoteSubmitted?: () => void;
 }
 
 export const PhotoVoteModal: React.FC<Props> = ({
@@ -25,6 +26,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
   onClose,
   teamId,
   participantName,
+  onVoteSubmitted,
 }) => {
   const normTeamId = normalizeTeamId(teamId);
   const myTeamConfig = WORKSHOP_TEAMS.find(t => t.id === normTeamId) || WORKSHOP_TEAMS[0];
@@ -155,6 +157,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
       await set(vRef, payload);
 
       setVotesMap(prev => ({ ...prev, [normTeamId]: payload }));
+      if (onVoteSubmitted) onVoteSubmitted();
 
       if (!isAlreadySelected) {
         fireConfetti({ count: 45, spread: 70 });

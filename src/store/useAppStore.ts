@@ -103,9 +103,16 @@ export const useAppStore = create<AppStore>()(
           const updatedTeams = data.teams ?? s.teams ?? MOCK_TEAMS;
           let updatedMyTeam = s.myTeam;
           if (updatedMyTeam) {
-            const foundTeam = updatedTeams.find((t) => t.id === updatedMyTeam?.id);
+            const normMyId = updatedMyTeam.id?.trim().toLowerCase();
+            const foundTeam = updatedTeams.find(
+              (t) =>
+                t.id === updatedMyTeam?.id ||
+                t.id?.trim().toLowerCase() === normMyId ||
+                t.name === updatedMyTeam?.name
+            );
             updatedMyTeam = {
               ...updatedMyTeam,
+              id: foundTeam?.id ?? updatedMyTeam.id,
               score: data.myTeamScore !== undefined ? data.myTeamScore : (foundTeam?.score ?? updatedMyTeam.score),
               rank: data.myTeamRank !== undefined ? data.myTeamRank : (foundTeam?.rank ?? updatedMyTeam.rank),
               missionsCompleted: data.myTeamMissionsCompleted !== undefined ? data.myTeamMissionsCompleted : (foundTeam?.missionsCompleted ?? updatedMyTeam.missionsCompleted),
