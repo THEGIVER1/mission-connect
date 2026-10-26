@@ -112,7 +112,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
   const handleToggleVote = async (targetTeamId: string) => {
     if (!isStep3Completed) {
-      showToast('STEP 3 최종 집결 시간(14:20) 완료 후 투표가 열립니다.');
+      showToast('STEP 3 최종 집결 시간(2:20) 완료 후 투표가 열립니다.');
       return;
     }
 
@@ -209,7 +209,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
         {!isStep3Completed && (
           <div className="mx-4 mt-2.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[13px] font-bold py-2 px-3 rounded-xl text-center">
-            STEP 3 최종 집결 시간(14:20) 완료 시 투표가 활성화됩니다. (남은 시간 {formattedTimeLeft})
+            STEP 3 최종 집결 시간(2:20) 완료 시 투표가 활성화됩니다. (남은 시간 {formattedTimeLeft})
           </div>
         )}
 
@@ -298,7 +298,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
                   }`}
                 >
                   {!isStep3Completed
-                    ? '14:20 집결 후 오픈'
+                    ? '2:20 집결 후 오픈'
                     : isVotedByMyTeam
                     ? '✓ 투표됨 (탭하여 취소)'
                     : hasPhoto

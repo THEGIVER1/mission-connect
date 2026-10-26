@@ -19,7 +19,7 @@ import {
 import type { Team } from '../../types';
 
 // ─────────────────────────────────────────────────────────────────
-// 최종 집결 시간 (매일 14:20 기준) 타이머
+// 최종 집결 시간 (매일 2:20 기준) 타이머
 // ─────────────────────────────────────────────────────────────────
 function useSessionTimer() {
   const [now, setNow] = useState(Date.now());
@@ -48,7 +48,7 @@ const StatsRow: React.FC<{ teams: Team[] }> = ({ teams }) => {
         { val: `${totalCompleted}건`, label: '완료 미션', color: 'text-green-400' },
         {
           val: timer.done ? '집결 완료' : `${timer.h}:${timer.m}:${timer.s}`,
-          label: '14:20 집결까지',
+          label: '2:20 집결까지',
           color: timer.urgent ? 'text-red-400 animate-pulse' : 'text-sky-400 font-mono',
         },
       ].map(({ val, label, color }) => (

@@ -101,6 +101,10 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   const toggleItem = (item: string) => {
+    if (isSubmitted) {
+      showToast('이미 제출되어 수정할 수 없습니다.');
+      return;
+    }
     setSelectedItems(prev =>
       prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]
     );
@@ -109,8 +113,12 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
   const earnedPoints = selectedItems.length * YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM;
 
   const handleSubmit = async () => {
+    if (isSubmitted) {
+      showToast('이미 제출되어 수정할 수 없습니다.');
+      return;
+    }
     if (!isStep3Completed) {
-      showToast('STEP 3 최종 집결 시간(14:20) 완료 후 제출할 수 있습니다.');
+      showToast('STEP 3 최종 집결 시간(2:20) 완료 후 제출할 수 있습니다.');
       return;
     }
     if (selectedItems.length === 0) {
@@ -186,7 +194,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
 
         {!isStep3Completed && (
           <div className="mx-4 mt-2.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[13px] font-bold py-2 px-3 rounded-xl text-center">
-            STEP 3 최종 집결 시간(14:20) 완료 시 활성화됩니다. (남은 시간 {formattedTimeLeft})
+            STEP 3 최종 집결 시간(2:20) 완료 시 활성화됩니다. (남은 시간 {formattedTimeLeft})
           </div>
         )}
 
@@ -206,7 +214,8 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
                   key={option}
                   type="button"
                   onClick={() => toggleItem(option)}
-                  className={`w-full text-left p-3.5 rounded-2xl border text-[15.5px] flex items-center justify-between transition-all active:scale-98 ${
+                  disabled={isSubmitted}
+                  className={`${isSubmitted ? 'cursor-not-allowed opacity-80 ' : ''}w-full text-left p-3.5 rounded-2xl border text-[15.5px] flex items-center justify-between transition-all active:scale-98 ${
                     isChecked
                       ? 'bg-purple-600/20 border-purple-400 text-white font-bold shadow-md'
                       : 'bg-[#182035] border-white/10 text-slate-300 hover:border-white/25'
@@ -247,15 +256,15 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
           </button>
           <button
             type="button"
-            disabled={isSaving || !isStep3Completed}
+            disabled={isSaving || !isStep3Completed || isSubmitted}
             onClick={handleSubmit}
             className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-extrabold text-[15px] rounded-xl shadow-lg active:scale-95 transition-all"
           >
             {isSaving
               ? '저장 중...'
               : isSubmitted
-              ? '다시 제출하기'
-              : '제출하기'}
+              ? '제출 완료 (수정 불가)'
+              : '제출하기 (제출 후 수정 불가)'}
           </button>
         </div>
       </div>
