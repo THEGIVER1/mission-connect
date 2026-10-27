@@ -442,44 +442,52 @@ const ActivitySection: React.FC<{
           </p>
         </button>
 
-        {IS_PILOT_MODE && (
+        {IS_PILOT_MODE && (() => {
+          const isQ1Done = myTeamVotesUsed >= 2;
+          const isQ2Open = isStep3Completed && isQ1Done;
+          return (
           <button
             type="button"
             onClick={() => {
               if (!isStep3Completed) {
-                alert(`STEP 4 Q2 퀴즈는 STEP 3 최종 집결 시간(2:20) 완료 시 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
+                alert(`STEP 4 Q2 퀴즈는 STEP 3 최종 집결 시간(2:20) 완료 후 Q1 사진 투표를 마치면 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
+                return;
+              }
+              if (!isQ1Done) {
+                alert(`Q2 퀴즈는 Q1 사진 투표(2표)를 모두 완료해야 열립니다.\n(현재 ${myTeamVotesUsed}/2표 사용)`);
                 return;
               }
               onOpenWrapupQuizModal();
             }}
             className={`w-full text-left rounded-2xl p-3.5 shadow-md transition-all border ${
-              isStep3Completed
+              isQ2Open
                 ? 'bg-gradient-to-br from-[#1C162E] to-[#141C2B] border-purple-500/45 hover:border-purple-400 active:scale-98'
                 : 'bg-[#121723] border-white/10 opacity-75'
             }`}
           >
             <div className="flex items-center justify-between">
               <h3 className="text-[16.5px] font-bold text-white">
-                {isStep3Completed
+                {isQ2Open
                   ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
-                  : '🔒 Q2. 연강원 퀴즈 (2:20 집결 완료 시 오픈)'}
+                  : '🔒 Q2. 연강원 퀴즈 (Q1 완료 시 오픈)'}
               </h3>
               <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
-                !isStep3Completed
+                !isQ2Open
                   ? 'bg-slate-800 text-slate-400 border-white/10'
                   : myWrapupQuizDone
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                   : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
               }`}>
-                {!isStep3Completed
-                  ? '2:20 오픈'
+                {!isQ2Open
+                  ? 'Q1 완료 후 오픈'
                   : myWrapupQuizDone
                   ? `완료 (+${myWrapupQuizPoints}pt)`
                   : '퀴즈 풀기 →'}
               </span>
             </div>
           </button>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
