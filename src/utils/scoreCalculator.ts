@@ -9,6 +9,9 @@ import {
 } from '../config/workshopConfig';
 import type { Team } from '../types';
 
+/** (연강원) STEP 1 연습 Quiz 정답 시 조별 점수 */
+export const PRACTICE_QUIZ_POINTS = 50;
+
 export interface IndividualItem {
   id: string;
   name: string;
@@ -222,7 +225,8 @@ export function calculateLeaderboardData(
   currentUser?: CurrentUserContext,
   themeGardenPhotosData: Record<string, any> = {},
   photoVotesData: Record<string, any> = {},
-  wrapupQuizData: Record<string, any> = {}
+  wrapupQuizData: Record<string, any> = {},
+  tutorialsData: Record<string, any> = {}
 ): {
   individuals: IndividualItem[];
   teams: Team[];
@@ -344,11 +348,18 @@ export function calculateLeaderboardData(
       ? getWrapupQuizScoreForTeam(teamConfig.id, wrapupQuizData)
       : { points: 0, completed: false, selectedCount: 0, selectedItems: [] };
 
+    const tutorialRec = tutorialsData?.[teamConfig.id];
+    const practiceQuizPoints =
+      IS_PILOT_MODE && tutorialRec?.completed && tutorialRec?.isCorrect !== false
+        ? PRACTICE_QUIZ_POINTS
+        : 0;
+
     const teamScore =
       (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
       (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
       voteBonusPoints +
-      wrapupQuizInfo.points;
+      wrapupQuizInfo.points +
+      practiceQuizPoints;
     const completedCount = (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
 
     return {

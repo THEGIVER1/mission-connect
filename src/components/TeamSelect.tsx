@@ -331,7 +331,7 @@ const TeamSelect: React.FC = () => {
             {IS_PILOT_MODE ? (
               <div>
                 <p className="text-[13.5px] font-bold text-red-400 mb-1.5">
-                  연강원 트레킹 코스 (1~6조)
+                  연강원 트레킹 코스 (1~5조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {TEAMS.map(renderTeamCard)}
@@ -436,7 +436,9 @@ const TeamSelect: React.FC = () => {
 
           {/* 개인정보 유의 안내 문구 */}
           <div className="bg-[#121826] border border-white/5 rounded-xl p-2.5 text-[13.5px] text-slate-400">
-            🔒 입력하신 내용은 <strong>2026 CHRO Trekking</strong> 팀빌딩 활동 및 저녁 퀴즈 대항전 운영을 위해서만 안전하게 활용됩니다.
+            🔒 {IS_PILOT_MODE
+              ? '입력하신 내용은 팀빌딩 행사 활동 운영을 위해서만 안전하게 활용됩니다.'
+              : <>입력하신 내용은 <strong>2026 CHRO Trekking</strong> 팀빌딩 활동 및 저녁 퀴즈 대항전 운영을 위해서만 안전하게 활용됩니다.</>}
           </div>
 
           {error && (

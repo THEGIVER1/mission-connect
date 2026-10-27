@@ -76,7 +76,6 @@ export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = IS_PILOT_MODE
       { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
       { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
       { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
-      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
     ]
   : [
       { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },

@@ -106,6 +106,7 @@ const AdminScreen: React.FC = () => {
   const [themeGardenPhotos, setThemeGardenPhotos] = useState<Record<string, ThemeGardenPhotoRecord>>({});
   const [photoVotes, setPhotoVotes] = useState<Record<string, any>>({});
   const [wrapupQuizzes, setWrapupQuizzes] = useState<Record<string, any>>({});
+  const [adminTutorials, setAdminTutorials] = useState<Record<string, any>>({});
   const [step4ForceOpen, setStep4ForceOpen] = useState<boolean>(false);
   const [nowMs, setNowMs] = useState<number>(Date.now());
   const [adminZoomPhotoUrl, setAdminZoomPhotoUrl] = useState<string | null>(null);
@@ -177,6 +178,7 @@ const AdminScreen: React.FC = () => {
     } else {
       setWrapupQuizzes({});
     }
+    setAdminTutorials(data.tutorials && typeof data.tutorials === 'object' ? data.tutorials : {});
     setStep4ForceOpen(!!data.step4ForceOpen);
     if (data.broadcastNotice && data.broadcastNotice.active) {
       setCurrentBroadcast(data.broadcastNotice);
@@ -258,8 +260,8 @@ const AdminScreen: React.FC = () => {
 
   // 1. 실시간 랭킹 및 통합 점수 계산 (대시보드·리더보드와 100% 동일한 점수 계산기 연동)
   const { individuals, teams: calculatedTeams } = useMemo(() => {
-    return calculateLeaderboardData(rawParticipantsMap, peopleQuests, undefined, themeGardenPhotos, photoVotes, wrapupQuizzes);
-  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos, photoVotes, wrapupQuizzes]);
+    return calculateLeaderboardData(rawParticipantsMap, peopleQuests, undefined, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials);
+  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials]);
 
   // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
   const participants: ParticipantRecord[] = useMemo(() => {

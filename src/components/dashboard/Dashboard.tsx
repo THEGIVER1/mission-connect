@@ -54,7 +54,7 @@ const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> 
         <div>
           <h1 className="font-['Bebas_Neue'] text-2xl tracking-widest text-white leading-none">
             {IS_PILOT_MODE ? (
-              <>연강원 <span className="text-red-500">TEAM ACTIVITY</span></>
+              <>연강원<br /><span className="text-red-500">TEAM ACTIVITY</span></>
             ) : (
               <>2026 CHRO <span className="text-red-500">TREKKING</span></>
             )}
@@ -175,9 +175,11 @@ const ScoreCard: React.FC<{
           <AnimatedScoreCounter value={teamScore} className="text-white" />
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
-        <span className="text-[12.5px] text-slate-400">
-          조 대표 입력 · 최대 {maxScore}pt
-        </span>
+        {!IS_PILOT_MODE && (
+          <span className="text-[12.5px] text-slate-400">
+            조 대표 입력 · 최대 {maxScore}pt
+          </span>
+        )}
       </div>
 
       <ScoreBar value={teamScore} max={maxScore} color={teamConfig?.color || '#E31837'} />
@@ -279,7 +281,7 @@ const ActivitySection: React.FC<{
           </div>
           <p className="text-[13.5px] text-slate-400">
             {IS_PILOT_MODE
-              ? '조별 역할·그라운드룰 설정 및 베오라떼 가격 맞히기'
+              ? '조별 역할·그라운드룰 설정 및 연습 Quiz 풀기 (+50pt)'
               : '조별 역할·그라운드룰 설정 및 소보루 빵 가격 맞히기'}
           </p>
         </button>
@@ -390,7 +392,7 @@ const ActivitySection: React.FC<{
             </span>
           </div>
           <span className="text-[12.5px] text-purple-300 font-bold">
-            사진 {uploadedPhotosCount}/6조
+            사진 {uploadedPhotosCount}/{WORKSHOP_TEAMS.length}조
           </span>
         </div>
 
@@ -818,7 +820,8 @@ const Dashboard: React.FC = () => {
       },
       themePhotos,
       photoVotes,
-      wrapupQuizzes
+      wrapupQuizzes,
+      rawSessionData?.tutorials || {}
     );
   }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 

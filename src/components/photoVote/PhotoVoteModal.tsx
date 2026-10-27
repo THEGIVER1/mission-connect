@@ -124,6 +124,10 @@ export const PhotoVoteModal: React.FC<Props> = ({
     }
 
     const isAlreadySelected = myVotedTeamIds.includes(normTarget);
+    if (isAlreadySelected) {
+      showToast('이미 투표한 사진입니다. 투표는 수정할 수 없습니다.');
+      return;
+    }
     let nextVotedIds: string[];
 
     if (isAlreadySelected) {
@@ -200,7 +204,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
         {/* 요약 바 */}
         <div className="bg-[#101626] px-4 py-2.5 border-b border-white/8 flex items-center justify-between text-[13px] flex-shrink-0">
           <span className="text-slate-300">
-            사진 등록: <strong className="text-white">{uploadedCount}/6조</strong> · 1표당 <strong className="text-amber-400">+{PHOTO_VOTE_POINTS_PER_VOTE}pt</strong>
+            사진 등록: <strong className="text-white">{uploadedCount}/{WORKSHOP_TEAMS.length}조</strong> · 1표당 <strong className="text-amber-400">+{PHOTO_VOTE_POINTS_PER_VOTE}pt</strong>
           </span>
           <span className="text-purple-300 font-bold">
             우리 조 투표: {myVotedTeamIds.length} / 2표
@@ -300,7 +304,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
                   {!isStep3Completed
                     ? '2:20 집결 후 오픈'
                     : isVotedByMyTeam
-                    ? '✓ 투표됨 (탭하여 취소)'
+                    ? '✓ 투표 완료 (수정 불가)'
                     : hasPhoto
                     ? '이 사진에 투표 (+200pt)'
                     : '대기 중'}
