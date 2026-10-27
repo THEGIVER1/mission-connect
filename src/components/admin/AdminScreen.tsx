@@ -881,6 +881,7 @@ const AdminScreen: React.FC = () => {
       setThemeGardenPhotos({});
       setPhotoVotes({});
       setWrapupQuizzes({});
+      setAdminTutorials({});
       setStep4ForceOpen(false);
       setCurrentBroadcast(null);
       alert('✅ 파일럿 테스트 데이터가 성공적으로 초기화되었습니다.');

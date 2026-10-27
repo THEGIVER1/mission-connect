@@ -84,15 +84,19 @@ export const useAppStore = create<AppStore>()(
       setAnsweredQuizIds: (ids) => set({ answeredQuizIds: ids }),
 
       resetLocalProgress: (resetTimestamp) => {
+        // 관리자 데이터 리셋 감지 시: 진행상황 + 참가자 신원/답변까지 모두 삭제 (재입장 필요)
         set((s) => ({
           answeredQuizIds: [],
           isPeopleQuestSubmitted: false,
           peopleQuestDraft: {},
           lastResetAt: resetTimestamp ?? Date.now(),
-          myTeam: s.myTeam ? { ...s.myTeam, score: 0, missionsCompleted: 0 } : null,
+          myTeam: null,
+          participantName: null,
+          participantCompany: null,
           teams: (s.teams || MOCK_TEAMS).map(t => ({ ...t, score: 0, missionsCompleted: 0 })),
         }));
         try {
+          localStorage.removeItem('my_info_answers_draft');
           sessionStorage.removeItem('discovery_unlocked_quizzes');
           sessionStorage.removeItem('discovery_gps_bypassed');
         } catch (e) {}
@@ -156,6 +160,8 @@ export const useAppStore = create<AppStore>()(
             selectedCourse: activeCourse,
             participantName: name ?? s.participantName,
             participantCompany: company ?? s.participantCompany,
+            // 입장 시각 기록: 이후 관리자 리셋이 발생하면 이 값보다 커져서 재입장 유도
+            lastResetAt: name ? Date.now() : s.lastResetAt,
             myLocation: null,
             missions: [],
             coreValues: (MOCK_CORE_VALUES || []).map((cv) => ({ ...cv, found: false })),

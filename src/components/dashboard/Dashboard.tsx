@@ -984,11 +984,21 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date().toISOString(),
     };
 
-    fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(err => console.warn('Dashboard 자동 프로필 동기화 경고:', err));
+    // 관리자 리셋 이후 남아있던 기기가 예전 데이터를 다시 써넣지 않도록, 서버 리셋 시각을 먼저 확인
+    fetch(`${dbUrl}/sessions/trekking2026/lastResetAt.json?t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => (res.ok ? res.json() : null))
+      .then((serverResetAt) => {
+        if (serverResetAt && (!lastResetAt || serverResetAt > lastResetAt)) {
+          resetLocalProgress(serverResetAt);
+          return;
+        }
+        return fetch(`${dbUrl}/sessions/trekking2026/participants/${encodeURIComponent(pId)}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      })
+      .catch(err => console.warn('Dashboard 자동 프로필 동기화 경고:', err));
   }, [participantName, participantCompany, myTeam?.id, dbUrl]);
 
   return (
