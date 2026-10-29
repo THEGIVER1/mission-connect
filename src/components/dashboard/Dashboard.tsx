@@ -151,10 +151,14 @@ const ScoreCard: React.FC<{
 
   return (
     <Card className="mx-4 mt-3 p-3.5 shadow-xl">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[13.5px] text-slate-300 font-bold">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="text-[13.5px] text-slate-300 font-bold whitespace-nowrap">
           {myTeam?.name ?? '우리 조'} 점수
         </span>
+        <div className="font-['Bebas_Neue'] text-4xl text-white leading-none flex items-baseline flex-1 justify-center">
+          <AnimatedScoreCounter value={teamScore} className="text-white" />
+          <span className="text-red-500 text-2xl ml-1">pt</span>
+        </div>
         <div className="flex items-center gap-1.5">
           {rankChangeText && (
             <span className={`text-[12px] font-extrabold px-2 py-0.5 rounded-full ${
@@ -170,13 +174,6 @@ const ScoreCard: React.FC<{
           }`}>
             {teamRank === 1 ? '현재 1위' : `현재 ${teamRank}위`}
           </span>
-        </div>
-      </div>
-
-      <div className="flex items-end justify-between mb-2">
-        <div className="font-['Bebas_Neue'] text-4xl text-white leading-none flex items-baseline">
-          <AnimatedScoreCounter value={teamScore} className="text-white" />
-          <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
       </div>
 
@@ -226,10 +223,10 @@ const ActivitySection: React.FC<{
   const navigate = useNavigate();
 
   return (
-    <div className="mx-4 mt-4 space-y-4">
+    <div className="mx-4 mt-3 space-y-3">
       {/* 전 코스 완주 배너 */}
       {isAllCompleted && (
-        <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/15 border border-amber-400/60 rounded-2xl p-3.5 flex items-center justify-between shadow-lg">
+        <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/15 border border-amber-400/60 rounded-2xl px-3.5 py-2.5 flex items-center justify-between shadow-lg">
           <div>
             <h3 className="text-[16px] font-extrabold text-white">
               우리 조 모든 미션 완료!
@@ -249,7 +246,7 @@ const ActivitySection: React.FC<{
       )}
 
       {/* ─── STEP 1 ─── */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex items-baseline justify-between px-1">
           <div className="flex items-baseline gap-2">
             <span className="text-[22px] font-black text-amber-400 tracking-tight leading-none">
@@ -265,9 +262,9 @@ const ActivitySection: React.FC<{
         <button
           type="button"
           onClick={onOpenTutorialModal}
-          className="w-full text-left bg-[#171F32] border border-amber-500/40 hover:border-amber-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
+          className="w-full text-left bg-[#171F32] border border-amber-500/40 hover:border-amber-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
         >
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between gap-2">
             <h3 className="text-[16.5px] font-bold text-white">
               조별 그라운드룰 & 연습 Quiz
             </h3>
@@ -279,16 +276,11 @@ const ActivitySection: React.FC<{
               {hasGroundRulesDone && hasTutorialDone ? '완료' : '입력하기 →'}
             </span>
           </div>
-          <p className="text-[13.5px] text-slate-400">
-            {IS_PILOT_MODE
-              ? '조별 역할·그라운드룰 설정 및 연습 Quiz 풀기 (+50pt)'
-              : '조별 역할·그라운드룰 설정 및 연습 Quiz 풀기 (+50pt)'}
-          </p>
         </button>
       </div>
 
       {/* ─── STEP 2 ─── */}
-      <div className="space-y-2 pt-1">
+      <div className="space-y-1.5">
         <div className="flex items-baseline justify-between px-1">
           <div className="flex items-baseline gap-2">
             <span className="text-[22px] font-black text-sky-400 tracking-tight leading-none">
@@ -305,13 +297,13 @@ const ActivitySection: React.FC<{
         <button
           type="button"
           onClick={() => navigate('/people-quest')}
-          className="w-full text-left bg-[#171F32] border border-red-500/35 hover:border-red-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
+          className="w-full text-left bg-[#171F32] border border-red-500/35 hover:border-red-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
         >
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-[16.5px] font-bold text-white">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-[14px] font-bold text-white whitespace-nowrap truncate">
               1. 최고의 스토리 동료 추천
             </h3>
-            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
               pqSubmitted
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-red-500/20 text-red-300 border-red-500/40'
@@ -319,22 +311,19 @@ const ActivitySection: React.FC<{
               {pqSubmitted ? '완료 (+100pt)' : '작성하기 →'}
             </span>
           </div>
-          <p className="text-[13.5px] text-slate-400">
-            조원들과 대화 후 가장 인상 깊은 동료 1명 추천 (조 대표 1명 작성)
-          </p>
         </button>
 
         {/* 미션 2: 조별 단체사진 업로드 */}
         <button
           type="button"
           onClick={onOpenThemeGardenModal}
-          className="w-full text-left bg-[#171F32] border border-pink-500/35 hover:border-pink-400 rounded-2xl p-3.5 shadow-md active:scale-98 transition-all"
+          className="w-full text-left bg-[#171F32] border border-pink-500/35 hover:border-pink-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
         >
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-[16.5px] font-bold text-white">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-[14px] font-bold text-white whitespace-nowrap truncate">
               {IS_PILOT_MODE ? '2. 두산 저수지 단체사진 업로드' : '2. 테마가든 단체사진 업로드'}
             </h3>
-            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
               themeGardenDone
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-pink-500/20 text-pink-300 border-pink-500/40'
@@ -342,16 +331,11 @@ const ActivitySection: React.FC<{
               {themeGardenDone ? '완료 (+100pt)' : '사진 등록 →'}
             </span>
           </div>
-          <p className="text-[13.5px] text-slate-400">
-            {IS_PILOT_MODE
-              ? '두산 저수지에서 조원 전원 단체사진 촬영 및 업로드'
-              : '테마가든 포토 스팟에서 조원 전원 단체사진 촬영 및 업로드'}
-          </p>
         </button>
       </div>
 
       {/* ─── STEP 3 ─── */}
-      <div className="space-y-2 pt-1">
+      <div className="space-y-1.5">
         <div className="flex items-baseline justify-between px-1">
           <div className="flex items-baseline gap-2">
             <span className="text-[22px] font-black text-emerald-400 tracking-tight leading-none">
@@ -366,7 +350,7 @@ const ActivitySection: React.FC<{
           </span>
         </div>
 
-        <div className="bg-[#141C2B] border border-emerald-500/30 rounded-2xl p-3.5">
+        <div className="bg-[#141C2B] border border-emerald-500/30 rounded-2xl px-3.5 py-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[16px] font-bold text-white">
               {IS_PILOT_MODE ? '연강원 강의장 최종 집결' : '세븐일레븐 앞 공터 최종 집결'}
@@ -379,14 +363,14 @@ const ActivitySection: React.FC<{
       </div>
 
       {/* ─── STEP 4: 실시간 단체사진 투표 (및 연강원 Q2 퀴즈) ─── */}
-      <div className="space-y-2 pt-1">
+      <div className="space-y-1.5">
         <div className="flex items-baseline justify-between px-1">
           <div className="flex items-baseline gap-2">
             <span className="text-[22px] font-black text-purple-400 tracking-tight leading-none">
               STEP 4
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              단체사진 투표 & Wrap-up Quiz
+              사진투표 & Quiz
             </span>
           </div>
           <span className="text-[12.5px] text-purple-300 font-bold">
@@ -403,19 +387,19 @@ const ActivitySection: React.FC<{
             }
             onOpenPhotoVoteModal();
           }}
-          className={`w-full text-left rounded-2xl p-3.5 shadow-md transition-all border ${
+          className={`w-full text-left rounded-2xl px-3.5 py-2.5 shadow-md transition-all border ${
             isStep4Open
               ? 'bg-gradient-to-br from-[#1C162E] to-[#141C2B] border-purple-500/45 hover:border-purple-400 active:scale-98'
               : 'bg-[#121723] border-white/10 opacity-75'
           }`}
         >
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-[16.5px] font-bold text-white">
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <h3 className="text-[15px] font-bold text-white whitespace-nowrap truncate">
               {isStep4Open
-                ? 'Q1. 실시간 조별 단체사진 투표'
-                : `🔒 Q1. 단체사진 투표 (${STEP4_OPEN_LABEL} 오픈)`}
+                ? 'Q1. 단체사진 투표'
+                : '🔒 Q1. 단체사진 투표'}
             </h3>
-            <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+            <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
               !isStep4Open
                 ? 'bg-slate-800 text-slate-400 border-white/10'
                 : myTeamVotesUsed >= 2
@@ -429,10 +413,8 @@ const ActivitySection: React.FC<{
                 : '투표하기 →'}
             </span>
           </div>
-          <p className="text-[13.5px] text-slate-300">
-            {isStep4Open
-              ? '조당 1장씩 총 2표 투표 가능하며, 1표 득표당 +200pt가 조별 점수에 실시간 합산됩니다.'
-              : `${STEP4_OPEN_LABEL}에 투표가 활성화됩니다.`}
+          <p className="text-[13px] text-slate-300 whitespace-nowrap truncate">
+            조당 2표 · 득표당 +200pt
           </p>
         </button>
 
@@ -453,19 +435,17 @@ const ActivitySection: React.FC<{
               }
               onOpenWrapupQuizModal();
             }}
-            className={`w-full text-left rounded-2xl p-3.5 shadow-md transition-all border ${
+            className={`w-full text-left rounded-2xl px-3.5 py-2.5 shadow-md transition-all border ${
               isQ2Open
                 ? 'bg-gradient-to-br from-[#1C162E] to-[#141C2B] border-purple-500/45 hover:border-purple-400 active:scale-98'
                 : 'bg-[#121723] border-white/10 opacity-75'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-[16.5px] font-bold text-white">
-                {isQ2Open
-                  ? WRAPUP_QUIZ_TITLE
-                  : '🔒 Q2. 퀴즈 (Q1 완료 시 오픈)'}
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-[15px] font-bold text-white whitespace-nowrap truncate">
+                {isQ2Open ? 'Q2. 모두 맞추기 퀴즈' : '🔒 Q2. 모두 맞추기 퀴즈'}
               </h3>
-              <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
+              <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
                 !isQ2Open
                   ? 'bg-slate-800 text-slate-400 border-white/10'
                   : myWrapupQuizDone
@@ -473,7 +453,7 @@ const ActivitySection: React.FC<{
                   : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
               }`}>
                 {!isQ2Open
-                  ? 'Q1 완료 후 오픈'
+                  ? 'Q1 완료 후'
                   : myWrapupQuizDone
                   ? `완료 (+${myWrapupQuizPoints}pt)`
                   : '퀴즈 풀기 →'}
@@ -959,7 +939,7 @@ const Dashboard: React.FC = () => {
   }, [teamId, participantId, dbUrl, lastResetAt]);
 
   const totalMissions = (pqSubmitted ? 1 : 0) + (themeGardenDone ? 1 : 0);
-  const isAllCompleted = pqSubmitted && themeGardenDone;
+  const isAllCompleted = pqSubmitted && themeGardenDone && myWrapupQuizInfo.completed;
 
   // 6. 참가자 프로필 자동 동기화
   useEffect(() => {
