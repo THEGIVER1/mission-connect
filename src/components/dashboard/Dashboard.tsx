@@ -19,6 +19,8 @@ import {
   WRAPUP_QUIZ_TITLE,
   PHOTO_VOTE_POINTS_PER_VOTE,
   getFinalGatheringInfo,
+  FINAL_GATHERING_LABEL,
+  STEP4_OPEN_LABEL,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
@@ -110,8 +112,8 @@ const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> 
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[12px] text-slate-400">최종 집결지까지 남은 시간 (2:20 기준)</p>
-          <p className="text-[15px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest">
+          <p className="text-[12px] text-slate-400">최종 집결지까지 남은 시간 ({FINAL_GATHERING_LABEL} 기준)</p>
+          <p className="text-[28px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest leading-none mt-0.5">
             {isStep3Completed ? '집결 완료 (00:00:00)' : formattedTimeLeft}
           </p>
         </div>
@@ -195,6 +197,7 @@ const ActivitySection: React.FC<{
   myWrapupQuizPoints: number;
   myWrapupQuizDone: boolean;
   isStep3Completed: boolean;
+  isStep4Open: boolean;
   remainingTimeLeft: string;
   onOpenTutorialModal: () => void;
   onOpenThemeGardenModal: () => void;
@@ -212,6 +215,7 @@ const ActivitySection: React.FC<{
   myWrapupQuizPoints,
   myWrapupQuizDone,
   isStep3Completed,
+  isStep4Open,
   remainingTimeLeft,
   onOpenTutorialModal,
   onOpenThemeGardenModal,
@@ -354,7 +358,7 @@ const ActivitySection: React.FC<{
               STEP 3
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              2:20 최종 집결
+              {FINAL_GATHERING_LABEL} 최종 집결
             </span>
           </div>
           <span className="text-[12.5px] text-emerald-300 font-bold">
@@ -368,7 +372,7 @@ const ActivitySection: React.FC<{
               {IS_PILOT_MODE ? '연강원 강의장 최종 집결' : '세븐일레븐 앞 공터 최종 집결'}
             </span>
             <span className="text-[12.5px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold">
-              {isStep3Completed ? '집결 완료' : '2:20까지'}
+              {isStep3Completed ? '집결 완료' : `${FINAL_GATHERING_LABEL}까지`}
             </span>
           </div>
         </div>
@@ -393,54 +397,54 @@ const ActivitySection: React.FC<{
         <button
           type="button"
           onClick={() => {
-            if (!isStep3Completed) {
-              alert(`STEP 4 단체사진 투표는 STEP 3 최종 집결 시간(2:20) 완료 시 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
+            if (!isStep4Open) {
+              alert(`STEP 4 단체사진 투표는 ${STEP4_OPEN_LABEL}에 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
               return;
             }
             onOpenPhotoVoteModal();
           }}
           className={`w-full text-left rounded-2xl p-3.5 shadow-md transition-all border ${
-            isStep3Completed
+            isStep4Open
               ? 'bg-gradient-to-br from-[#1C162E] to-[#141C2B] border-purple-500/45 hover:border-purple-400 active:scale-98'
               : 'bg-[#121723] border-white/10 opacity-75'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-[16.5px] font-bold text-white">
-              {isStep3Completed
+              {isStep4Open
                 ? 'Q1. 실시간 조별 단체사진 투표'
-                : '🔒 Q1. 단체사진 투표 (2:20 집결 완료 시 오픈)'}
+                : `🔒 Q1. 단체사진 투표 (${STEP4_OPEN_LABEL} 오픈)`}
             </h3>
             <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
-              !isStep3Completed
+              !isStep4Open
                 ? 'bg-slate-800 text-slate-400 border-white/10'
                 : myTeamVotesUsed >= 2
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
             }`}>
-              {!isStep3Completed
-                ? '2:20 오픈'
+              {!isStep4Open
+                ? `${STEP4_OPEN_LABEL} 오픈`
                 : myTeamVotesUsed > 0
                 ? `${myTeamVotesUsed}/2표 완료`
                 : '투표하기 →'}
             </span>
           </div>
           <p className="text-[13.5px] text-slate-300">
-            {isStep3Completed
+            {isStep4Open
               ? '조당 1장씩 총 2표 투표 가능하며, 1표 득표당 +200pt가 조별 점수에 실시간 합산됩니다.'
-              : `STEP 3 최종 집결 시간(2:20) 완료 시 투표가 활성화됩니다. (남은 시간: ${remainingTimeLeft})`}
+              : `${STEP4_OPEN_LABEL}에 투표가 활성화됩니다.`}
           </p>
         </button>
 
         {(() => {
           const isQ1Done = myTeamVotesUsed >= 2;
-          const isQ2Open = isStep3Completed && isQ1Done;
+          const isQ2Open = isStep4Open && isQ1Done;
           return (
           <button
             type="button"
             onClick={() => {
-              if (!isStep3Completed) {
-                alert(`STEP 4 Q2 퀴즈는 STEP 3 최종 집결 시간(2:20) 완료 후 Q1 사진 투표를 마치면 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
+              if (!isStep4Open) {
+                alert(`STEP 4 Q2 퀴즈는 ${STEP4_OPEN_LABEL} 오픈 후 Q1 사진 투표를 마치면 열립니다.\n(현재 남은 시간: ${remainingTimeLeft})`);
                 return;
               }
               if (!isQ1Done) {
@@ -868,7 +872,7 @@ const Dashboard: React.FC = () => {
   }, [rawSessionData, teamId]);
 
   const forceOpenStep4 = !!(rawSessionData?.step4ForceOpen);
-  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+  const { formattedTimeLeft, isStep3Completed, isStep4Open } = useMemo(() => {
     return getFinalGatheringInfo(nowMs, forceOpenStep4);
   }, [nowMs, forceOpenStep4]);
 
@@ -1018,6 +1022,7 @@ const Dashboard: React.FC = () => {
         myWrapupQuizPoints={myWrapupQuizInfo.points}
         myWrapupQuizDone={myWrapupQuizInfo.completed}
         isStep3Completed={isStep3Completed}
+        isStep4Open={isStep4Open}
         remainingTimeLeft={formattedTimeLeft}
         onOpenTutorialModal={() => setIsTutorialModalOpen(true)}
         onOpenThemeGardenModal={() => setIsThemeGardenModalOpen(true)}

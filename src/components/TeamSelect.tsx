@@ -205,7 +205,9 @@ const TeamSelect: React.FC = () => {
           </div>
           <div className="flex-1">
             <span className="text-[17px] font-bold text-white">{team.name}</span>
-            {team.courseDistance && <span className="text-[12.5px] ml-2 text-slate-400">({team.courseDistance})</span>}
+            {IS_PILOT_MODE
+              ? (team.courseDistance && <span className="text-[12.5px] ml-2 text-slate-400">({team.courseDistance})</span>)
+              : <span className="block text-[13px] text-slate-300 leading-tight mt-0.5">({team.assignedCourse === 'lake' ? '현대미술관' : '동물원 둘레길'})</span>}
           </div>
           <div className="w-5 h-5 rounded-full border flex items-center justify-center"
                style={{

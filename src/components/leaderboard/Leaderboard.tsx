@@ -9,6 +9,7 @@ import {
   WORKSHOP_TEAMS,
   PHOTO_VOTE_POINTS_PER_VOTE,
   getFinalGatheringInfo,
+  FINAL_GATHERING_LABEL,
 } from '../../config/workshopConfig';
 import {
   calculateLeaderboardData,
@@ -48,7 +49,7 @@ const StatsRow: React.FC<{ teams: Team[] }> = ({ teams }) => {
         { val: `${totalCompleted}건`, label: '완료 미션', color: 'text-green-400' },
         {
           val: timer.done ? '집결 완료' : `${timer.h}:${timer.m}:${timer.s}`,
-          label: '2:20 집결까지',
+          label: `${FINAL_GATHERING_LABEL} 집결까지`,
           color: timer.urgent ? 'text-red-400 animate-pulse' : 'text-sky-400 font-mono',
         },
       ].map(({ val, label, color }) => (

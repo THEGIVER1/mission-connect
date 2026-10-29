@@ -298,24 +298,41 @@ export function getCourseTotalMaxPoints(_courseKey: CourseKey = 'lake'): number 
   return PEOPLE_QUEST_POINTS_PER_MEMBER + THEME_GARDEN_MISSION.pointsPerMember; // 기본 미션 200pt (+ 투표 득표 시 표당 200pt 추가)
 }
 
+/** 최종 집결 시각 (연강원 14:20 / 대공원 16:30) 및 STEP 4 오픈 시각 (연강원 14:20 / 대공원 17:00) */
+export const FINAL_GATHERING_HM: [number, number] = IS_PILOT_MODE ? [14, 20] : [16, 30];
+export const STEP4_OPEN_HM: [number, number] = IS_PILOT_MODE ? [14, 20] : [17, 0];
+export const FINAL_GATHERING_LABEL = IS_PILOT_MODE ? '2:20' : '4:30';
+export const STEP4_OPEN_LABEL = IS_PILOT_MODE ? '2:20' : '5:00';
+
 /**
- * 매일 14:20 (오후 2시 20분) 최종 집결 목표 시각 반환
- * - 남은 시간 = 당일 14:20까지 남은 밀리초 (14:20 도달 시 0)
- * - STEP 4 투표 활성화 여부 = 현재 시각이 당일 14:20 이상이거나 운영진 강제 오픈 시 true
+ * 최종 집결 목표 시각 반환
+ * - 남은 시간 = 당일 최종 집결 시각까지 남은 밀리초
+ * - isStep3Completed = 집결 시각 도달 또는 운영진 강제 오픈
+ * - isStep4Open = STEP 4 오픈 시각 도달 또는 운영진 강제 오픈
  */
 export function getFinalGatheringInfo(nowMs: number = Date.now(), forceOpenStep4: boolean = false): {
   targetTimeMs: number;
   remainingMs: number;
   formattedTimeLeft: string;
   isStep3Completed: boolean;
+  isStep4Open: boolean;
 } {
   const nowDate = new Date(nowMs);
   const targetDate = new Date(
     nowDate.getFullYear(),
     nowDate.getMonth(),
     nowDate.getDate(),
-    14,
-    20,
+    FINAL_GATHERING_HM[0],
+    FINAL_GATHERING_HM[1],
+    0,
+    0
+  );
+  const step4Date = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth(),
+    nowDate.getDate(),
+    STEP4_OPEN_HM[0],
+    STEP4_OPEN_HM[1],
     0,
     0
   );
@@ -330,6 +347,7 @@ export function getFinalGatheringInfo(nowMs: number = Date.now(), forceOpenStep4
     remainingMs,
     formattedTimeLeft: `${h}:${m}:${s}`,
     isStep3Completed: forceOpenStep4 || remainingMs === 0,
+    isStep4Open: forceOpenStep4 || nowMs >= step4Date.getTime(),
   };
 }
 

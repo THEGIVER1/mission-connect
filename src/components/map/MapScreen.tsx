@@ -1480,23 +1480,7 @@ const MapScreen: React.FC = () => {
       {/* 코스 색상 범례 바 (본행사 전용, 연강원 파일럿에서는 삭제) */}
       {!IS_PILOT_MODE && (
         <div className="bg-[#101626] border-b border-white/8 px-3 py-2 flex flex-col gap-1.5 z-10">
-          <div className="flex items-center gap-1.5 w-full">
-            <button
-              onClick={() => {
-                setFocusedCourse('forest');
-                if (mapRef.current) {
-                  mapRef.current.fitBounds(L.polyline(ZOO_TRACK).getBounds(), { padding: [28, 28], animate: true });
-                }
-              }}
-              className={`flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
-                focusedCourse === 'forest'
-                  ? 'bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15'
-                  : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-red-400/50'
-              }`}
-            >
-              <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
-              <span>동물원 둘레길 7km (3~8조)</span>
-            </button>
+          <div className="flex items-stretch gap-1.5 w-full">
             <button
               onClick={() => {
                 setFocusedCourse('lake');
@@ -1504,14 +1488,30 @@ const MapScreen: React.FC = () => {
                   mapRef.current.fitBounds(L.polyline(LAKE_TRACK).getBounds(), { padding: [32, 32], animate: true });
                 }
               }}
-              className={`flex-1 py-2 px-2 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
+              className={`flex-1 py-2 px-2 rounded-xl text-[15px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
                 focusedCourse === 'lake'
                   ? 'bg-sky-500/20 text-white border-sky-400 shadow-md shadow-sky-500/15'
                   : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-sky-400/50'
               }`}
             >
               <span className="w-3.5 h-1.5 rounded-full bg-[#38BDF8] inline-block shadow-sm shadow-sky-400" />
-              <span>현대미술관 3km (1~2조)</span>
+              <span className="leading-tight text-center">현대미술관 1~2조<br /><span className="text-[13.5px] text-slate-300">(3km)</span></span>
+            </button>
+            <button
+              onClick={() => {
+                setFocusedCourse('forest');
+                if (mapRef.current) {
+                  mapRef.current.fitBounds(L.polyline(ZOO_TRACK).getBounds(), { padding: [28, 28], animate: true });
+                }
+              }}
+              className={`flex-1 py-2 px-2 rounded-xl text-[15px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                focusedCourse === 'forest'
+                  ? 'bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15'
+                  : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-red-400/50'
+              }`}
+            >
+              <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
+              <span className="leading-tight text-center">동물원 둘레길 3~8조<br /><span className="text-[13.5px] text-slate-300">(7km)</span></span>
             </button>
           </div>
         </div>

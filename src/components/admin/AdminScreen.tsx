@@ -240,7 +240,7 @@ const AdminScreen: React.FC = () => {
     return calculatePhotoVoteCounts(photoVotes);
   }, [photoVotes]);
 
-  const { formattedTimeLeft: adminTimeLeft, isStep3Completed: isAdminStep3Completed } = useMemo(() => {
+  const { formattedTimeLeft: adminTimeLeft, isStep4Open: isAdminStep3Completed } = useMemo(() => {
     return getFinalGatheringInfo(nowMs, step4ForceOpen);
   }, [nowMs, step4ForceOpen]);
 
@@ -1855,7 +1855,7 @@ const AdminScreen: React.FC = () => {
                 <span className="text-[12.5px] text-slate-400">
                   {isAdminStep3Completed
                     ? '🟢 현재 오픈됨 (모든 조 투표 가능)'
-                    : `⏳ 14:20 집결 완료 대기 중 (남은 시간: ${adminTimeLeft})`}
+                    : `⏳ ${IS_PILOT_MODE ? '14:20' : '17:00'} 오픈 대기 중 (남은 시간: ${adminTimeLeft})`}
                 </span>
               </div>
               <button
@@ -1867,7 +1867,7 @@ const AdminScreen: React.FC = () => {
                     : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-400'
                 }`}
               >
-                {step4ForceOpen ? '✅ 강제 오픈 중 (클릭 시 14:20 기준 복귀)' : '🔓 지금 즉시 STEP 4 오픈하기'}
+                {step4ForceOpen ? '✅ 강제 오픈 중 (클릭 시 자동 오픈 시간 기준 복귀)' : '🔓 지금 즉시 STEP 4 오픈하기'}
               </button>
             </div>
 
@@ -2228,16 +2228,16 @@ const AdminScreen: React.FC = () => {
                   onClick={() => handleSendBroadcast({
                     title: IS_PILOT_MODE
                       ? '📸 14:20 연강원 강의장 최종 집결 안내'
-                      : '📸 14:20 세븐일레븐 앞 공터 최종 집결 안내',
+                      : '📸 16:30 세븐일레븐 앞 공터 최종 집결 안내',
                     message: IS_PILOT_MODE
                       ? '트레킹 종료 후 14시 20분까지 연강원 강의장으로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 단체사진 투표 및 Q2 퀴즈가 진행됩니다!'
-                      : '트레킹 종료 후 14시 20분까지 세븐일레븐 앞 공터로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 실시간 단체사진 투표가 진행됩니다!',
+                      : '트레킹 종료 후 16시 30분까지 세븐일레븐 앞 공터로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 실시간 단체사진 투표가 진행됩니다!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>
-                    📸 <strong>[최종집결]</strong> 14:20 {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 최종 집결
+                    📸 <strong>[최종집결]</strong> {IS_PILOT_MODE ? '14:20' : '16:30'} {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 최종 집결
                   </span>
                   <span className="text-[12.5px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
@@ -2248,13 +2248,13 @@ const AdminScreen: React.FC = () => {
                     title: '⏰ 트레킹 마감 15분 전 안내',
                     message: IS_PILOT_MODE
                       ? '트레킹 미션 종료 15분 전입니다. 14시 20분까지 최종 집결지인 연강원 강의장으로 안전하게 복귀해 주시기 바랍니다.'
-                      : '트레킹 미션 종료 15분 전입니다. 14시 20분까지 최종 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
+                      : '트레킹 미션 종료 15분 전입니다. 16시 30분까지 최종 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>
-                    ⏰ <strong>[마감 15분 전]</strong> 14:20 {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 복귀
+                    ⏰ <strong>[마감 15분 전]</strong> {IS_PILOT_MODE ? '14:20' : '16:30'} {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 복귀
                   </span>
                   <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>

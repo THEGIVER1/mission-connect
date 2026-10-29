@@ -6,6 +6,7 @@ import {
   WRAPUP_QUIZ_TITLE,
   WRAPUP_QUIZ_ANSWER_TEXT,
   getFinalGatheringInfo,
+  STEP4_OPEN_LABEL,
 } from '../../config/workshopConfig';
 import { normalizeTeamId } from '../../utils/scoreCalculator';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
@@ -96,7 +97,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
     };
   }, [isOpen, normTeamId, dbUrl]);
 
-  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+  const { formattedTimeLeft, isStep4Open: isStep3Completed } = useMemo(() => {
     return getFinalGatheringInfo(nowMs, forceOpenStep4);
   }, [nowMs, forceOpenStep4]);
 
@@ -120,7 +121,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
       return;
     }
     if (!isStep3Completed) {
-      showToast('STEP 3 최종 집결 시간(2:20) 완료 후 제출할 수 있습니다.');
+      showToast(`STEP 4 오픈 시간(${STEP4_OPEN_LABEL}) 이후 제출할 수 있습니다.`);
       return;
     }
     if (selectedItems.length === 0) {
@@ -196,7 +197,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
 
         {!isStep3Completed && (
           <div className="mx-4 mt-2.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[13px] font-bold py-2 px-3 rounded-xl text-center">
-            STEP 3 최종 집결 시간(2:20) 완료 시 활성화됩니다. (남은 시간 {formattedTimeLeft})
+            STEP 4 오픈 시간({STEP4_OPEN_LABEL})에 활성화됩니다. 
           </div>
         )}
 

@@ -3,6 +3,7 @@ import {
   WORKSHOP_TEAMS,
   PHOTO_VOTE_POINTS_PER_VOTE,
   getFinalGatheringInfo,
+  STEP4_OPEN_LABEL,
 } from '../../config/workshopConfig';
 import {
   normalizeTeamId,
@@ -104,7 +105,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
     return calculatePhotoVoteCounts(votesMap);
   }, [votesMap]);
 
-  const { formattedTimeLeft, isStep3Completed } = useMemo(() => {
+  const { formattedTimeLeft, isStep4Open: isStep3Completed } = useMemo(() => {
     return getFinalGatheringInfo(nowMs, forceOpenStep4);
   }, [nowMs, forceOpenStep4]);
 
@@ -112,7 +113,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
   const handleToggleVote = async (targetTeamId: string) => {
     if (!isStep3Completed) {
-      showToast('STEP 3 최종 집결 시간(2:20) 완료 후 투표가 열립니다.');
+      showToast(`STEP 4 오픈 시간(${STEP4_OPEN_LABEL}) 이후 투표가 열립니다.`);
       return;
     }
 
@@ -213,7 +214,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
         {!isStep3Completed && (
           <div className="mx-4 mt-2.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[13px] font-bold py-2 px-3 rounded-xl text-center">
-            STEP 3 최종 집결 시간(2:20) 완료 시 투표가 활성화됩니다. (남은 시간 {formattedTimeLeft})
+            STEP 4 오픈 시간({STEP4_OPEN_LABEL})에 투표가 활성화됩니다. 
           </div>
         )}
 
@@ -302,7 +303,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
                   }`}
                 >
                   {!isStep3Completed
-                    ? '2:20 집결 후 오픈'
+                    ? `${STEP4_OPEN_LABEL} 오픈`
                     : isVotedByMyTeam
                     ? '✓ 투표 완료 (수정 불가)'
                     : hasPhoto
