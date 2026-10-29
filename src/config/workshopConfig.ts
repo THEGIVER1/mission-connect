@@ -78,12 +78,14 @@ export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = IS_PILOT_MODE
       { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
     ]
   : [
-      { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
-      { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
-      { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '', assignedCourse: 'forest', courseName: '동물원둘레길 코스', courseDistance: '4.5km' },
-      { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
-      { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
-      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '', assignedCourse: 'lake', courseName: '미술관 코스', courseDistance: '2.8km' },
+      { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '', assignedCourse: 'lake', courseName: '현대미술관 코스', courseDistance: '3km' },
+      { id: 'team2', name: '2조', shortCode: '2', color: '#E67E22', emoji: '', assignedCourse: 'lake', courseName: '현대미술관 코스', courseDistance: '3km' },
+      { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '', assignedCourse: 'forest', courseName: '동물원 둘레길 코스', courseDistance: '7km' },
+      { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '', assignedCourse: 'forest', courseName: '동물원 둘레길 코스', courseDistance: '7km' },
+      { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '', assignedCourse: 'forest', courseName: '동물원 둘레길 코스', courseDistance: '7km' },
+      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '', assignedCourse: 'forest', courseName: '동물원 둘레길 코스', courseDistance: '7km' },
+      { id: 'team7', name: '7조', shortCode: '7', color: '#16A085', emoji: '', assignedCourse: 'forest', courseName: '동물원 둘레길 코스', courseDistance: '7km' },
+      { id: 'team8', name: '8조', shortCode: '8', color: '#D35400', emoji: '', assignedCourse: 'forest', courseName: '동물원 둘레길 코스', courseDistance: '7km' },
     ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -272,18 +274,21 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [];
 // ─────────────────────────────────────────────────────────────────
 export const PHOTO_VOTE_POINTS_PER_VOTE = 200; // STEP 4 단체사진 1표당 +200pt (조당 최대 2표)
 
-// 연강원 파일럿 전용 STEP 4 Q2 퀴즈 (개당 50점, 모두 정답, 총 7개 = 최대 350pt)
-export const YEONKANG_WRAPUP_QUIZ_OPTIONS = [
-  '연꽃',
-  '도토리나무',
-  '무궁화',
-  '두룹나무',
-  '잔디깍기로봇',
-  '감나무',
-  '복숭아나무',
-] as const;
+// STEP 4 Q2 퀴즈 (모두 맞추기 · 개당 50점)
+// - 연강원: 확정 문항 7개 / 대공원: 임시 문항 (추후 실제 내용으로 교체 예정)
+export const YEONKANG_WRAPUP_QUIZ_OPTIONS: readonly string[] = IS_PILOT_MODE
+  ? ['연꽃', '도토리나무', '무궁화', '두룹나무', '잔디깍기로봇', '감나무', '복숭아나무']
+  : ['항목 1', '항목 2', '항목 3', '항목 4', '항목 5', '항목 6', '항목 7'];
 
-export const YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM = 50; // 개당 50pt (7개 모두 선택 시 +350pt)
+export const WRAPUP_QUIZ_TITLE = IS_PILOT_MODE
+  ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
+  : 'Q2. (퀴즈 문항 준비 중) 해당하는 것을 모두 선택하세요';
+
+export const WRAPUP_QUIZ_ANSWER_TEXT = IS_PILOT_MODE
+  ? '연강원에는 7가지가 모두 있습니다.'
+  : `${7}가지 모두 정답입니다.`;
+
+export const YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM = 50; // 개당 50pt
 
 export function getCourseQuizTotalPoints(_courseKey: CourseKey = 'lake'): number {
   return 0;
@@ -368,7 +373,7 @@ export const ACTIVE_VENUE = IS_PILOT_MODE
         name: '테마가든 [🌹 포토 스팟 / 단체사진 미션]',
         coords: { lat: 37.430800, lng: 127.015500 },
       },
-      mapLabel: '서울대공원 (동물원둘레길 코스 / 미술관 코스)',
+      mapLabel: '서울대공원 (현대미술관 코스 / 동물원 둘레길 코스)',
     };
 
 export const DEFAULT_COURSE: CourseKey = IS_PILOT_MODE ? 'forest' : 'lake';

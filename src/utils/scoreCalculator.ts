@@ -5,6 +5,7 @@ import {
   PRE_REGISTERED_PARTICIPANTS,
   PHOTO_VOTE_POINTS_PER_VOTE,
   IS_PILOT_MODE,
+  YEONKANG_WRAPUP_QUIZ_OPTIONS,
   YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
 } from '../config/workshopConfig';
 import type { Team } from '../types';
@@ -48,6 +49,8 @@ export function normalizeTeamId(raw: string | undefined | null): string {
   if (str === 'team4' || str === '4조' || str === '4' || str === 'team_4') return 'team4';
   if (str === 'team5' || str === '5조' || str === '5' || str === 'team_5') return 'team5';
   if (str === 'team6' || str === '6조' || str === '6' || str === 'team_6') return 'team6';
+  if (str === 'team7' || str === '7조' || str === '7' || str === 'team_7') return 'team7';
+  if (str === 'team8' || str === '8조' || str === '8' || str === 'team_8') return 'team8';
   const found = WORKSHOP_TEAMS.find(t => t.id === str || t.name === str || t.shortCode === str);
   return found ? found.id : 'team1';
 }
@@ -201,7 +204,7 @@ export function getWrapupQuizScoreForTeam(
   }
   const items = Array.isArray(rec.selectedItems) ? rec.selectedItems : [];
   const uniqueItems = Array.from(new Set(items.filter(Boolean))) as string[];
-  const count = Math.min(7, uniqueItems.length);
+  const count = Math.min(YEONKANG_WRAPUP_QUIZ_OPTIONS.length, uniqueItems.length);
   return {
     selectedCount: count,
     points: count * YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
@@ -344,13 +347,11 @@ export function calculateLeaderboardData(
 
     const voteCount = photoVoteCounts[teamConfig.id] || 0;
     const voteBonusPoints = voteCount * PHOTO_VOTE_POINTS_PER_VOTE;
-    const wrapupQuizInfo = IS_PILOT_MODE
-      ? getWrapupQuizScoreForTeam(teamConfig.id, wrapupQuizData)
-      : { points: 0, completed: false, selectedCount: 0, selectedItems: [] };
+    const wrapupQuizInfo = getWrapupQuizScoreForTeam(teamConfig.id, wrapupQuizData);
 
     const tutorialRec = tutorialsData?.[teamConfig.id];
     const practiceQuizPoints =
-      IS_PILOT_MODE && tutorialRec?.completed && tutorialRec?.isCorrect !== false
+      tutorialRec?.completed && tutorialRec?.isCorrect !== false
         ? PRACTICE_QUIZ_POINTS
         : 0;
 

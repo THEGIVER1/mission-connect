@@ -899,7 +899,7 @@ const AdminScreen: React.FC = () => {
   // VIEW 1: 빔프로젝터 최종 시상식 모드 (16:9 와이드 풀스크린)
   // ─────────────────────────────────────────────────────────────────
   if (isAwardMode) {
-    const currentAwardTeam = revealedAwardRank >= 1 && revealedAwardRank <= 6
+    const currentAwardTeam = revealedAwardRank >= 1 && revealedAwardRank <= WORKSHOP_TEAMS.length
       ? rankedTeams[revealedAwardRank - 1]
       : null;
 
@@ -974,7 +974,7 @@ const AdminScreen: React.FC = () => {
           )}
 
           {/* STEP 6 ~ 1: 개별 순위 발표 카드 */}
-          {revealedAwardRank >= 1 && revealedAwardRank <= 6 && currentAwardTeam && (
+          {revealedAwardRank >= 1 && revealedAwardRank <= WORKSHOP_TEAMS.length && currentAwardTeam && (
             <div className="my-auto space-y-6">
               <div
                 className={`border-2 rounded-3xl p-8 md:p-12 shadow-2xl transition-all relative overflow-hidden ${

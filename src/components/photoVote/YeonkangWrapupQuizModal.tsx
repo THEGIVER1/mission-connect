@@ -3,6 +3,8 @@ import {
   WORKSHOP_TEAMS,
   YEONKANG_WRAPUP_QUIZ_OPTIONS,
   YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
+  WRAPUP_QUIZ_TITLE,
+  WRAPUP_QUIZ_ANSWER_TEXT,
   getFinalGatheringInfo,
 } from '../../config/workshopConfig';
 import { normalizeTeamId } from '../../utils/scoreCalculator';
@@ -169,7 +171,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
               STEP 4 · 개당 +{YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM}pt
             </span>
             <h3 className="text-[17px] font-bold text-white">
-              Q2. 연강원에 있는 것을 모두 선택하세요
+              {WRAPUP_QUIZ_TITLE}
             </h3>
           </div>
           <button
@@ -240,7 +242,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
 
           {isSubmitted && (
             <div className="bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 p-3 rounded-xl text-[13.5px] text-center">
-              <strong>정답입니다!</strong> 연강원에는 7가지가 모두 있습니다. ({myTeamConfig.name} +{earnedPoints}pt 반영됨 · 작성: {submittedBy})
+              <strong>정답입니다!</strong> {WRAPUP_QUIZ_ANSWER_TEXT} ({myTeamConfig.name} +{earnedPoints}pt 반영됨 · 작성: {submittedBy})
             </div>
           )}
         </div>

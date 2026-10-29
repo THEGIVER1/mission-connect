@@ -339,23 +339,23 @@ const TeamSelect: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* 동물원둘레길 코스 조 */}
-                <div>
-                  <p className="text-[13.5px] font-bold text-red-400 mb-1.5">
-                    동물원둘레길 코스 (1~3조)
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {forestTeams.map(renderTeamCard)}
-                  </div>
-                </div>
-
-                {/* 미술관 코스 조 */}
+                {/* 현대미술관 코스 조 */}
                 <div>
                   <p className="text-[13.5px] font-bold text-sky-400 mb-1.5">
-                    미술관 코스 (4~6조)
+                    현대미술관 코스 · 도보 3km (1~2조)
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {lakeTeams.map(renderTeamCard)}
+                  </div>
+                </div>
+
+                {/* 동물원 둘레길 코스 조 */}
+                <div>
+                  <p className="text-[13.5px] font-bold text-red-400 mb-1.5">
+                    동물원 둘레길 코스 · 도보 7km (3~8조)
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {forestTeams.map(renderTeamCard)}
                   </div>
                 </div>
               </div>
@@ -436,9 +436,7 @@ const TeamSelect: React.FC = () => {
 
           {/* 개인정보 유의 안내 문구 */}
           <div className="bg-[#121826] border border-white/5 rounded-xl p-2.5 text-[13.5px] text-slate-400">
-            🔒 {IS_PILOT_MODE
-              ? '입력하신 내용은 팀빌딩 행사 활동 운영을 위해서만 안전하게 활용됩니다.'
-              : <>입력하신 내용은 <strong>2026 CHRO Trekking</strong> 팀빌딩 활동 및 저녁 퀴즈 대항전 운영을 위해서만 안전하게 활용됩니다.</>}
+            🔒 입력하신 내용은 팀빌딩 행사 활동 운영을 위해서만 안전하게 활용됩니다.
           </div>
 
           {error && (

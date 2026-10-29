@@ -16,6 +16,7 @@ import {
   getCourseTotalMaxPoints,
   MY_INFO_QUESTIONS,
   IS_PILOT_MODE,
+  WRAPUP_QUIZ_TITLE,
   PHOTO_VOTE_POINTS_PER_VOTE,
   getFinalGatheringInfo,
 } from '../../config/workshopConfig';
@@ -175,11 +176,6 @@ const ScoreCard: React.FC<{
           <AnimatedScoreCounter value={teamScore} className="text-white" />
           <span className="text-red-500 text-2xl ml-1">pt</span>
         </div>
-        {!IS_PILOT_MODE && (
-          <span className="text-[12.5px] text-slate-400">
-            조 대표 입력 · 최대 {maxScore}pt
-          </span>
-        )}
       </div>
 
       <ScoreBar value={teamScore} max={maxScore} color={teamConfig?.color || '#E31837'} />
@@ -282,7 +278,7 @@ const ActivitySection: React.FC<{
           <p className="text-[13.5px] text-slate-400">
             {IS_PILOT_MODE
               ? '조별 역할·그라운드룰 설정 및 연습 Quiz 풀기 (+50pt)'
-              : '조별 역할·그라운드룰 설정 및 소보루 빵 가격 맞히기'}
+              : '조별 역할·그라운드룰 설정 및 연습 Quiz 풀기 (+50pt)'}
           </p>
         </button>
       </div>
@@ -386,9 +382,7 @@ const ActivitySection: React.FC<{
               STEP 4
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE
-                ? '단체사진 투표 & Wrap-up Quiz'
-                : `단체사진 투표 (조당 2표 · 1표당 +${PHOTO_VOTE_POINTS_PER_VOTE}pt)`}
+              단체사진 투표 & Wrap-up Quiz
             </span>
           </div>
           <span className="text-[12.5px] text-purple-300 font-bold">
@@ -414,12 +408,8 @@ const ActivitySection: React.FC<{
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-[16.5px] font-bold text-white">
               {isStep3Completed
-                ? IS_PILOT_MODE
-                  ? 'Q1. 실시간 조별 단체사진 투표'
-                  : '실시간 조별 단체사진 보기 & 투표'
-                : IS_PILOT_MODE
-                ? '🔒 Q1. 단체사진 투표 (2:20 집결 완료 시 오픈)'
-                : '🔒 단체사진 투표 (2:20 집결 완료 시 오픈)'}
+                ? 'Q1. 실시간 조별 단체사진 투표'
+                : '🔒 Q1. 단체사진 투표 (2:20 집결 완료 시 오픈)'}
             </h3>
             <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
               !isStep3Completed
@@ -442,7 +432,7 @@ const ActivitySection: React.FC<{
           </p>
         </button>
 
-        {IS_PILOT_MODE && (() => {
+        {(() => {
           const isQ1Done = myTeamVotesUsed >= 2;
           const isQ2Open = isStep3Completed && isQ1Done;
           return (
@@ -468,8 +458,8 @@ const ActivitySection: React.FC<{
             <div className="flex items-center justify-between">
               <h3 className="text-[16.5px] font-bold text-white">
                 {isQ2Open
-                  ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
-                  : '🔒 Q2. 연강원 퀴즈 (Q1 완료 시 오픈)'}
+                  ? WRAPUP_QUIZ_TITLE
+                  : '🔒 Q2. 퀴즈 (Q1 완료 시 오픈)'}
               </h3>
               <span className={`text-[12.5px] font-bold px-2.5 py-0.5 rounded-full border ${
                 !isQ2Open
@@ -1075,8 +1065,8 @@ const Dashboard: React.FC = () => {
         }}
       />
 
-      {/* STEP 4: 연강원 전용 Q2 퀴즈 모달 */}
-      {IS_PILOT_MODE && (
+      {/* STEP 4: Q2 퀴즈 모달 (연강원·대공원 공통) */}
+      {true && (
         <YeonkangWrapupQuizModal
           isOpen={isWrapupQuizModalOpen}
           onClose={() => setIsWrapupQuizModalOpen(false)}

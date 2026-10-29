@@ -1468,7 +1468,7 @@ const MapScreen: React.FC = () => {
             <p className="text-[12.5px] text-slate-400">
               {IS_PILOT_MODE
                 ? '두산연강원 트레킹 코스 · 두산 저수지 지도'
-                : '동물원둘레길 코스 · 미술관 코스 통합 지도'}
+                : '동물원 둘레길 코스 · 현대미술관 코스 통합 지도'}
             </p>
           </div>
           <span className="text-[13.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
@@ -1495,7 +1495,7 @@ const MapScreen: React.FC = () => {
               }`}
             >
               <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
-              <span>동물원둘레길 코스 (1~3조)</span>
+              <span>동물원 둘레길 7km (3~8조)</span>
             </button>
             <button
               onClick={() => {
@@ -1511,7 +1511,7 @@ const MapScreen: React.FC = () => {
               }`}
             >
               <span className="w-3.5 h-1.5 rounded-full bg-[#38BDF8] inline-block shadow-sm shadow-sky-400" />
-              <span>미술관 코스 (4~6조)</span>
+              <span>현대미술관 3km (1~2조)</span>
             </button>
           </div>
         </div>
