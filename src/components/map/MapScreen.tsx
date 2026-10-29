@@ -1462,14 +1462,16 @@ const MapScreen: React.FC = () => {
             ←
           </button>
           <div className="text-center">
-            <span className="font-bebas text-xl tracking-widest text-white">
-              SATELLITE <span className="text-sky-400">TREKKING MAP</span>
-            </span>
-            <p className="text-[12.5px] text-slate-400">
-              {IS_PILOT_MODE
-                ? '두산연강원 트레킹 코스 · 두산 저수지 지도'
-                : '동물원 둘레길 코스 · 현대미술관 코스 통합 지도'}
-            </p>
+            {IS_PILOT_MODE ? (
+              <>
+                <span className="font-bebas text-xl tracking-widest text-white">
+                  SATELLITE <span className="text-sky-400">TREKKING MAP</span>
+                </span>
+                <p className="text-[12.5px] text-slate-400">두산연강원 트레킹 코스 · 두산 저수지 지도</p>
+              </>
+            ) : (
+              <span className="text-[22px] font-extrabold tracking-wide text-white">코스지도</span>
+            )}
           </div>
           <span className="text-[13.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             {gpsAccuracy !== null ? `±${Math.round(gpsAccuracy)}m` : '🛰️ 위성지도'}
@@ -1488,14 +1490,15 @@ const MapScreen: React.FC = () => {
                   mapRef.current.fitBounds(L.polyline(LAKE_TRACK).getBounds(), { padding: [32, 32], animate: true });
                 }
               }}
-              className={`flex-1 py-2 px-2 rounded-xl text-[15px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
+              className={`flex-1 py-2 px-2 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 border whitespace-nowrap ${
                 focusedCourse === 'lake'
                   ? 'bg-sky-500/20 text-white border-sky-400 shadow-md shadow-sky-500/15'
                   : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-sky-400/50'
               }`}
+              style={{ fontSize: 14 }}
             >
               <span className="w-3.5 h-1.5 rounded-full bg-[#38BDF8] inline-block shadow-sm shadow-sky-400" />
-              <span className="leading-tight text-center">현대미술관 1~2조<br /><span className="text-[13.5px] text-slate-300">(3km)</span></span>
+              <span className="leading-tight text-center">현대미술관 1~2조<br /><span className="text-slate-300" style={{ fontSize: 12.5 }}>(3km)</span></span>
             </button>
             <button
               onClick={() => {
@@ -1504,14 +1507,15 @@ const MapScreen: React.FC = () => {
                   mapRef.current.fitBounds(L.polyline(ZOO_TRACK).getBounds(), { padding: [28, 28], animate: true });
                 }
               }}
-              className={`flex-1 py-2 px-2 rounded-xl text-[15px] font-bold transition-all flex items-center justify-center gap-1.5 border ${
+              className={`flex-1 py-2 px-2 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 border whitespace-nowrap ${
                 focusedCourse === 'forest'
                   ? 'bg-red-500/20 text-white border-red-500 shadow-md shadow-red-500/15'
                   : 'bg-[#1A2235] text-slate-200 border-white/10 hover:border-red-400/50'
               }`}
+              style={{ fontSize: 14 }}
             >
               <span className="w-3.5 h-1.5 rounded-full bg-[#EF4444] inline-block shadow-sm shadow-red-500" />
-              <span className="leading-tight text-center">동물원 둘레길 3~8조<br /><span className="text-[13.5px] text-slate-300">(7km)</span></span>
+              <span className="leading-tight text-center">동물원 둘레길 3~8조<br /><span className="text-slate-300" style={{ fontSize: 12.5 }}>(7km)</span></span>
             </button>
           </div>
         </div>
