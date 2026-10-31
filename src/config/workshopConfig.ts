@@ -280,12 +280,12 @@ export interface WrapupQuizItem { text: string; correct: boolean; }
 export const WRAPUP_QUIZ_ITEMS: WrapupQuizItem[] = IS_PILOT_MODE
   ? ['연꽃', '도토리나무', '무궁화', '두룹나무', '잔디깍기로봇', '감나무', '복숭아나무'].map(text => ({ text, correct: true }))
   : [
-      // ⚠️ correct 값은 운영진 정답표 확인 후 확정 필요
+      // 운영진 확정: 5개 모두 정답
       { text: '오늘 전체 참석자 수(운영진 포함): 54명', correct: true },
       { text: '대공원 리프트 운영 시작연도: 1991년', correct: true },
       { text: "테마가든에서 촬영한 드라마: '키스 먼저 할까요'", correct: true },
       { text: "대공원에서 촬영한 '미술관 옆 동물원' 개봉연도: 1998년", correct: true },
-      { text: '현재 과천 현대미술관에 모네의 작품이 전시되어 있다', correct: false },
+      { text: '현재 과천 현대미술관에 모네의 작품이 전시되어 있다', correct: true },
     ];
 
 export const YEONKANG_WRAPUP_QUIZ_OPTIONS: readonly string[] = WRAPUP_QUIZ_ITEMS.map(i => i.text);
