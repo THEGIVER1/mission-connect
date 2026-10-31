@@ -340,9 +340,11 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                 <h4 className="text-[16px] font-bold text-white leading-snug">
                   {TUTORIAL_QUIZ.questionText}
                 </h4>
-                <p className="text-[13.5px] text-amber-300/90">
-                  {TUTORIAL_QUIZ.hintText}
-                </p>
+                {TUTORIAL_QUIZ.hintText && (
+                  <p className="text-[13.5px] text-amber-300/90">
+                    {TUTORIAL_QUIZ.hintText}
+                  </p>
+                )}
               </div>
 
               {/* 보기 4지선다 */}

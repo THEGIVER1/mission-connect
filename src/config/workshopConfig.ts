@@ -210,7 +210,7 @@ export const TUTORIAL_QUIZ: TutorialQuizConfig = IS_PILOT_MODE
       options: ['3,200원', '3,800원', '4,300원', '4,800원'],
       correctIndex: 1, // 3,800원
       explanation: '정답입니다! 소보루 빵 가격은 3,800원입니다.',
-      hintText: '매장 진열대 가격표를 확인해 보세요.',
+      hintText: '',
     };
 
 // ─────────────────────────────────────────────────────────────────
