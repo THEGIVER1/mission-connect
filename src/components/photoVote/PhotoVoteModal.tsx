@@ -38,6 +38,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
   const [nowMs, setNowMs] = useState<number>(Date.now());
   const [isVoting, setIsVoting] = useState<boolean>(false);
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
+  const [zoomCaption, setZoomCaption] = useState<string>('');
   const [toastMsg, setToastMsg] = useState<string>('');
 
   const dbUrl = FIREBASE_DB_URL;
@@ -264,7 +265,7 @@ export const PhotoVoteModal: React.FC<Props> = ({
 
                   {hasPhoto ? (
                     <div
-                      onClick={() => setZoomPhotoUrl(photoRec.photoUrl)}
+                      onClick={() => { setZoomPhotoUrl(photoRec.photoUrl); setZoomCaption(photoRec.caption || `${team.name} 단체사진`); }}
                       className="relative rounded-xl overflow-hidden border border-white/10 cursor-pointer group h-28 bg-black/50 mb-2"
                     >
                       <img
@@ -337,8 +338,13 @@ export const PhotoVoteModal: React.FC<Props> = ({
             <img
               src={zoomPhotoUrl}
               alt="확대 단체사진"
-              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/20"
+              className="max-w-full max-h-[70vh] object-contain rounded-2xl shadow-2xl border border-white/20"
             />
+            {zoomCaption && (
+              <div className="mt-3 w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-[16px] leading-relaxed text-center break-keep">
+                {zoomCaption}
+              </div>
+            )}
             <button
               onClick={() => setZoomPhotoUrl(null)}
               className="mt-3 px-5 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-xs font-bold"
