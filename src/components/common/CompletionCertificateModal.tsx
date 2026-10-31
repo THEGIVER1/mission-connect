@@ -19,11 +19,9 @@ export const CompletionCertificateModal: React.FC<CompletionCertificateModalProp
   const { myTeam } = useAppStore();
   const teamConfig = WORKSHOP_TEAMS.find(t => t.id === myTeam?.id);
 
-  const issueDate = new Date().toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const issueDate = IS_PILOT_MODE
+    ? new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '2026년 11월 3일';
 
   useEffect(() => {
     if (isOpen) {
@@ -72,7 +70,7 @@ export const CompletionCertificateModal: React.FC<CompletionCertificateModalProp
             </div>
 
             {!IS_PILOT_MODE && (
-              <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-3 py-3 text-[14px] text-slate-100 leading-relaxed">
+              <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-3 py-3 text-[15px] text-slate-100 leading-relaxed">
                 보이지 않는 곳에서도 묵묵히 소임을 다하며 조직을 더 따뜻하게 만들어 온{' '}
                 <strong className="text-amber-300">우리 모두에게 뜨거운 박수를 보냅니다.</strong>
                 <span className="block mt-1.5 text-slate-300">
