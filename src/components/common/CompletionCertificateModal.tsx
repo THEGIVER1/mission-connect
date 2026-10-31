@@ -41,7 +41,7 @@ export const CompletionCertificateModal: React.FC<CompletionCertificateModalProp
             OFFICIAL CERTIFICATE
           </span>
           <h2 className="text-[20px] font-extrabold text-white mt-1">
-            {IS_PILOT_MODE ? '연강원 Team Activity 완주 증서' : '2026 CHRO 트레킹 완주 증서'}
+            {IS_PILOT_MODE ? '연강원 Team Activity 완주 증서' : '2026 CHRO 트래킹 완주 증서'}
           </h2>
         </div>
 
@@ -73,12 +73,10 @@ export const CompletionCertificateModal: React.FC<CompletionCertificateModalProp
 
             {!IS_PILOT_MODE && (
               <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-3 py-3 text-[14px] text-slate-100 leading-relaxed">
-                보이지 않는 곳에서도 묵묵히 소임을 다하며<br />
-                조직을 더 따뜻하고 강하게 만들어 온<br />
+                보이지 않는 곳에서도 묵묵히 소임을 다하며 조직을 더 따뜻하게 만들어 온{' '}
                 <strong className="text-amber-300">우리 모두에게 뜨거운 박수를 보냅니다.</strong>
                 <span className="block mt-1.5 text-slate-300">
-                  올 한 해 정말 수고 많으셨습니다.<br />
-                  내년에도 건강하고 행복하게, 함께 성장해요.
+                  올 한 해 정말 수고 많으셨습니다.
                 </span>
               </div>
             )}
