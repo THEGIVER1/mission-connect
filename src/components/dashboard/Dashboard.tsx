@@ -443,7 +443,7 @@ const ActivitySection: React.FC<{
           >
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-[15px] font-bold text-white whitespace-nowrap truncate">
-                {isQ2Open ? 'Q2. 모두 맞추기 퀴즈' : '🔒 Q2. 모두 맞추기 퀴즈'}
+                {isQ2Open ? 'Q2. 트래킹 Wrap-up 퀴즈' : '🔒 Q2. 트래킹 Wrap-up 퀴즈'}
               </h3>
               <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
                 !isQ2Open
@@ -453,7 +453,7 @@ const ActivitySection: React.FC<{
                   : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
               }`}>
                 {!isQ2Open
-                  ? 'Q1 완료 후'
+                  ? 'Q1 완료 시 오픈'
                   : myWrapupQuizDone
                   ? `완료 (+${myWrapupQuizPoints}pt)`
                   : '퀴즈 풀기 →'}
