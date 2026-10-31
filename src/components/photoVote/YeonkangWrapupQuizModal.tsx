@@ -6,9 +6,10 @@ import {
   WRAPUP_QUIZ_TITLE,
   WRAPUP_QUIZ_ANSWER_TEXT,
   getFinalGatheringInfo,
+  IS_PILOT_MODE,
   STEP4_OPEN_LABEL,
 } from '../../config/workshopConfig';
-import { normalizeTeamId } from '../../utils/scoreCalculator';
+import { normalizeTeamId, calcWrapupQuizPoints } from '../../utils/scoreCalculator';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import { ref, onValue, set } from 'firebase/database';
 import { fireConfetti } from '../../lib/confetti';
@@ -113,7 +114,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
     );
   };
 
-  const earnedPoints = selectedItems.length * YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM;
+  const earnedPoints = calcWrapupQuizPoints(selectedItems);
 
   const handleSubmit = async () => {
     if (isSubmitted) {
@@ -153,7 +154,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
       setSubmittedBy(payload.submittedBy);
       if (onQuizSubmitted) onQuizSubmitted();
       fireConfetti({ count: 70, spread: 80 });
-      showToast(`${myTeamConfig.name} Q2 제출 완료! (+${earnedPoints}pt 반영)`);
+      showToast(IS_PILOT_MODE ? `${myTeamConfig.name} Q2 제출 완료! (+${earnedPoints}pt 반영)` : `${myTeamConfig.name} Q2 제출 완료! (점수는 시상식에서 공개)`);
     } catch (e) {
       console.warn('Q2 퀴즈 저장 오류:', e);
       showToast('저장 중 오류가 발생했습니다.');
@@ -190,7 +191,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
           </span>
           {isSubmitted && (
             <span className="text-amber-400 font-bold">
-              획득 점수: +{earnedPoints}pt
+              획득 점수: {IS_PILOT_MODE ? `+${earnedPoints}pt` : '시상식 공개'}
             </span>
           )}
         </div>
@@ -243,7 +244,7 @@ export const YeonkangWrapupQuizModal: React.FC<Props> = ({
 
           {isSubmitted && (
             <div className="bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 p-3 rounded-xl text-[13.5px] text-center">
-              <strong>정답입니다!</strong> {WRAPUP_QUIZ_ANSWER_TEXT} ({myTeamConfig.name} +{earnedPoints}pt 반영됨 · 작성: {submittedBy})
+              {IS_PILOT_MODE ? (<><strong>정답입니다!</strong> {WRAPUP_QUIZ_ANSWER_TEXT} ({myTeamConfig.name} +{earnedPoints}pt 반영됨 · 작성: {submittedBy})</>) : (<>{WRAPUP_QUIZ_ANSWER_TEXT} (작성: {submittedBy})</>)}
             </div>
           )}
         </div>

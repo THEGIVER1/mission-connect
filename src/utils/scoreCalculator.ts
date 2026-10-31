@@ -6,6 +6,8 @@ import {
   PHOTO_VOTE_POINTS_PER_VOTE,
   IS_PILOT_MODE,
   YEONKANG_WRAPUP_QUIZ_OPTIONS,
+  WRAPUP_QUIZ_ITEMS,
+  WRAPUP_QUIZ_WRONG_PENALTY,
   YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
 } from '../config/workshopConfig';
 import type { Team } from '../types';
@@ -203,14 +205,26 @@ export function getWrapupQuizScoreForTeam(
     return { selectedCount: 0, points: 0, completed: false, selectedItems: [] };
   }
   const items = Array.isArray(rec.selectedItems) ? rec.selectedItems : [];
-  const uniqueItems = Array.from(new Set(items.filter(Boolean))) as string[];
-  const count = Math.min(YEONKANG_WRAPUP_QUIZ_OPTIONS.length, uniqueItems.length);
+  const uniqueItems = (Array.from(new Set(items.filter(Boolean))) as string[])
+    .filter(t => YEONKANG_WRAPUP_QUIZ_OPTIONS.includes(t));
+  const count = uniqueItems.length;
   return {
     selectedCount: count,
-    points: count * YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
+    points: calcWrapupQuizPoints(uniqueItems),
     completed: !!rec.completed || count > 0,
     selectedItems: uniqueItems,
   };
+}
+
+/** Q2 점수: 정답 선택 +50pt, 오답 선택 -감점 (최소 0점) */
+export function calcWrapupQuizPoints(selected: string[]): number {
+  let pts = 0;
+  for (const t of selected) {
+    const item = WRAPUP_QUIZ_ITEMS.find(i => i.text === t);
+    if (!item) continue;
+    pts += item.correct ? YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM : -WRAPUP_QUIZ_WRONG_PENALTY;
+  }
+  return Math.max(0, pts);
 }
 
 /**

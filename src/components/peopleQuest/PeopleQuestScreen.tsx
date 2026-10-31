@@ -648,12 +648,12 @@ const PeopleQuestScreen: React.FC = () => {
                   </span>
                   나눈 이야기 & 추천 사유 *
                 </label>
-                <span className={`text-[13.5px] ${recommendation.reason.length > 130 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
-                  {recommendation.reason.length}/150자
+                <span className={`text-[13.5px] ${recommendation.reason.length > 270 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                  {recommendation.reason.length}/300자
                 </span>
               </div>
               <textarea
-                maxLength={150}
+                maxLength={300}
                 rows={4}
                 value={recommendation.reason}
                 onChange={e => setRecommendation(prev => ({ ...prev, reason: e.target.value }))}

@@ -71,6 +71,18 @@ export const CompletionCertificateModal: React.FC<CompletionCertificateModalProp
               </div>
             </div>
 
+            {!IS_PILOT_MODE && (
+              <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-3 py-3 text-[14px] text-slate-100 leading-relaxed">
+                보이지 않는 곳에서도 묵묵히 소임을 다하며<br />
+                조직을 더 따뜻하고 강하게 만들어 온<br />
+                <strong className="text-amber-300">우리 모두에게 뜨거운 박수를 보냅니다.</strong>
+                <span className="block mt-1.5 text-slate-300">
+                  올 한 해 정말 수고 많으셨습니다.<br />
+                  내년에도 건강하고 행복하게, 함께 성장해요.
+                </span>
+              </div>
+            )}
+
             <p className="text-[12px] text-slate-400 pt-1">발급 일자: {issueDate}</p>
           </div>
         </div>

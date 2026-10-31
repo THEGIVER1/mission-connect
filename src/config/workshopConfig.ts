@@ -274,19 +274,31 @@ export const DISCOVERY_QUIZZES: DiscoveryQuizItem[] = [];
 // ─────────────────────────────────────────────────────────────────
 export const PHOTO_VOTE_POINTS_PER_VOTE = 200; // STEP 4 단체사진 1표당 +200pt (조당 최대 2표)
 
-// STEP 4 Q2 퀴즈 (모두 맞추기 · 개당 50점)
-// - 연강원: 확정 문항 7개 / 대공원: 임시 문항 (추후 실제 내용으로 교체 예정)
-export const YEONKANG_WRAPUP_QUIZ_OPTIONS: readonly string[] = IS_PILOT_MODE
-  ? ['연꽃', '도토리나무', '무궁화', '두룹나무', '잔디깍기로봇', '감나무', '복숭아나무']
-  : ['항목 1', '항목 2', '항목 3', '항목 4', '항목 5', '항목 6', '항목 7'];
+// STEP 4 Q2 퀴즈 (모두 고르기 · 정답 선택 +50pt / 대공원은 오답 선택 시 -50pt 감점)
+export interface WrapupQuizItem { text: string; correct: boolean; }
+
+export const WRAPUP_QUIZ_ITEMS: WrapupQuizItem[] = IS_PILOT_MODE
+  ? ['연꽃', '도토리나무', '무궁화', '두룹나무', '잔디깍기로봇', '감나무', '복숭아나무'].map(text => ({ text, correct: true }))
+  : [
+      // ⚠️ correct 값은 운영진 정답표 확인 후 확정 필요
+      { text: '오늘 전체 참석자 수(운영진 포함): 54명', correct: true },
+      { text: '대공원 리프트 운영 시작연도: 1991년', correct: true },
+      { text: "테마가든에서 촬영한 드라마: '키스 먼저 할까요'", correct: true },
+      { text: "대공원에서 촬영한 '미술관 옆 동물원' 개봉연도: 1998년", correct: true },
+      { text: '현재 과천 현대미술관에 모네의 작품이 전시되어 있다', correct: false },
+    ];
+
+export const YEONKANG_WRAPUP_QUIZ_OPTIONS: readonly string[] = WRAPUP_QUIZ_ITEMS.map(i => i.text);
+
+export const WRAPUP_QUIZ_WRONG_PENALTY = IS_PILOT_MODE ? 0 : 50;
 
 export const WRAPUP_QUIZ_TITLE = IS_PILOT_MODE
   ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
-  : 'Q2. (퀴즈 문항 준비 중) 해당하는 것을 모두 선택하세요';
+  : 'Q2. 다음 중 맞는 것을 모두 골라주세요 (오답 시 감점)';
 
 export const WRAPUP_QUIZ_ANSWER_TEXT = IS_PILOT_MODE
   ? '연강원에는 7가지가 모두 있습니다.'
-  : `${7}가지 모두 정답입니다.`;
+  : '제출이 완료되었습니다. 정답은 시상식에서 공개됩니다.';
 
 export const YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM = 50; // 개당 50pt
 
