@@ -358,7 +358,8 @@ export function getFinalGatheringInfo(nowMs: number = Date.now(), forceOpenStep4
     targetTimeMs,
     remainingMs,
     formattedTimeLeft: `${h}:${m}:${s}`,
-    isStep3Completed: forceOpenStep4 || remainingMs === 0,
+    // 타이머/집결 표시는 실제 시각 기준 (운영진 STEP 4 강제 오픈과 무관)
+    isStep3Completed: remainingMs === 0,
     isStep4Open: forceOpenStep4 || nowMs >= step4Date.getTime(),
   };
 }
