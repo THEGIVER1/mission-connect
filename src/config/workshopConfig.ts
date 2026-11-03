@@ -237,9 +237,9 @@ export const GROUND_RULE_ROLE_OPTIONS: RoleOption[] = [
   { id: 'pacemaker', title: '페이스메이커', icon: '', description: '편안한 걸음 속도 유지' },
   {
     id: 'photographer',
-    title: '포토그래퍼',
+    title: IS_PILOT_MODE ? '포토그래퍼' : '스트레칭 코치',
     icon: '',
-    description: '조별 미션 단체사진 촬영',
+    description: IS_PILOT_MODE ? '조별 미션 단체사진 촬영' : '트레킹 전 간단한 스트레칭 진행',
   },
   { id: 'vitamin', title: '리액션 캡틴', icon: '', description: '긍정 에너지와 분위기 메이커' },
 ];
@@ -280,8 +280,8 @@ export interface WrapupQuizItem { text: string; correct: boolean; }
 export const WRAPUP_QUIZ_ITEMS: WrapupQuizItem[] = IS_PILOT_MODE
   ? ['연꽃', '도토리나무', '무궁화', '두룹나무', '잔디깍기로봇', '감나무', '복숭아나무'].map(text => ({ text, correct: true }))
   : [
-      // 운영진 확정: 5개 모두 정답
-      { text: '오늘 전체 참석자 수(운영진 포함): 54명', correct: true },
+      // 운영진 확정: 참석자 수는 실제 51명이므로 '54명' 보기는 오답(선택 시 -50pt), 나머지 4개 정답
+      { text: '오늘 전체 참석자 수(운영진 포함): 54명', correct: false },
       { text: '대공원 리프트 운영 시작연도: 1991년', correct: true },
       { text: "테마가든에서 촬영한 드라마: '키스 먼저 할까요'", correct: true },
       { text: "대공원에서 촬영한 '미술관 옆 동물원' 개봉연도: 1998년", correct: true },
