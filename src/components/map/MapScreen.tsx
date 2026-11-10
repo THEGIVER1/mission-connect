@@ -848,58 +848,30 @@ const YEONKANG_RESERVOIR_POLYGON: [number, number][] = [
 ];
 
 const YEONKANG_OUTER_TRACK: [number, number][] = [
-  [37.542700, 127.149420], // 연강원 강의장(초록색 건물) 우측 산책로 출발
-  [37.542880, 127.149390], // 서북측 커브 진입
-  [37.543080, 127.149480],
-  [37.543220, 127.149680], // 서북측 둥근 능선길
-  [37.543240, 127.149920],
-  [37.543180, 127.150180], // 북서측 오목 구간 (기도원 남측)
-  [37.543240, 127.150380],
-  [37.543420, 127.150480], // 북측 밭(과수원) 좌측 길 따라 북상
-  [37.543650, 127.150580],
-  [37.543780, 127.150680], // 최북단 피크 코너
-  [37.543750, 127.150850],
-  [37.543600, 127.151020], // 북측 밭 우측 길 따라 남하
-  [37.543380, 127.151150],
-  [37.543160, 127.151230], // 북동측 3거리 갈림길 (중앙선 분기점)
-  [37.543140, 127.151480], // 동북측 숲길로 진행
-  [37.543060, 127.151750],
-  [37.542920, 127.152050],
-  [37.542760, 127.152350],
-  [37.542640, 127.152460], // 동측 끝단 뾰족 코너 (회차 지점)
-  [37.542550, 127.152320],
-  [37.542480, 127.152080], // 동측에서 서쪽으로 살짝 들어오는 굴곡
-  [37.542520, 127.151820], // 두산저수지 북동측 위쪽 코너
-  [37.542380, 127.151820],
-  [37.542320, 127.151980], // 두산저수지 동측 외곽 산책로 진입
-  [37.542100, 127.151960], // 저수지 동측 호안길 남하
-  [37.541820, 127.151860],
-  [37.541550, 127.151720], // 저수지 남동측 코너
-  [37.541480, 127.151550], // 저수지 남단 둑길 통과
-  [37.541560, 127.151320],
-  [37.541660, 127.151050], // 남측 중앙 갈림길 합류점
-  [37.541480, 127.150980], // 남측 하단 뾰족 코너로 내려감
-  [37.541320, 127.150900], // 최남단 코너 (신명중학교 동측 끝단)
-  [37.541420, 127.150720], // 신명중학교 뒤편 담장길 따라 서진
-  [37.541540, 127.150480],
-  [37.541560, 127.150220],
-  [37.541600, 127.149980], // 남서측 코너 (신명중학교 농구장 우측)
-  [37.541880, 127.149860], // 서측 잔디광장 외곽길 따라 북상
-  [37.542180, 127.149740],
-  [37.542450, 127.149560],
-  [37.542700, 127.149420], // 연강원 강의장 우측 산책로 원점 복귀
+  [37.542650, 127.152432], // 북동측 출발 (숲길 상단)
+  [37.542548, 127.152195],
+  [37.542497, 127.152175],
+  [37.542394, 127.152291], // 동측 숲길 남하
+  [37.542267, 127.152291],
+  [37.542063, 127.152227],
+  [37.541910, 127.152130],
+  [37.541859, 127.152002], // 저수지 남동측
+  [37.541833, 127.151873],
+  [37.541833, 127.151712],
+  [37.541884, 127.151648], // 두산 저수지 중앙 통과
+  [37.542012, 127.151635],
+  [37.542073, 127.151571],
+  [37.542088, 127.151391], // 저수지 북측 서진
+  [37.542104, 127.151166],
+  [37.542063, 127.151005], // 서측 커브
+  [37.541961, 127.151037],
+  [37.541884, 127.151198],
+  [37.541833, 127.151230],
+  [37.541757, 127.151166],
+  [37.541696, 127.151056], // 남서측 도착
 ];
 
-const YEONKANG_INNER_BRANCH: [number, number][] = [
-  [37.543160, 127.151230], // 북동측 3거리 갈림길 분기
-  [37.543000, 127.151050], // 잔디광장 동측 / 저수지 서측 숲길 진입
-  [37.542760, 127.150900],
-  [37.542480, 127.150800], // 중앙 잔디광장 동측 경계 산책로
-  [37.542180, 127.150750],
-  [37.541920, 127.150820], // 두산저수지 서측 외곽 커브
-  [37.541750, 127.150950],
-  [37.541660, 127.151050], // 남측 산책로 합류점
-];
+const YEONKANG_INNER_BRANCH: [number, number][] = [];
 
 const MapScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -919,15 +891,6 @@ const MapScreen: React.FC = () => {
   const venueSpots = useMemo(() => {
     if (IS_PILOT_MODE) {
       return [
-        {
-          id: 'start' as const,
-          title: '카페쿰베오',
-          badge: '🚩 1:00~1:30 첫 집결지 / 출발',
-          subtitle: '조별 그라운드룰 및 연습 Quiz 진행 후 출발',
-          coords: ACTIVE_VENUE.departurePoint.coords,
-          emoji: '☕',
-          color: '#3B82F6',
-        },
         {
           id: 'themeGarden' as const,
           title: '두산 저수지',
@@ -1055,7 +1018,7 @@ const MapScreen: React.FC = () => {
     const allBounds = IS_PILOT_MODE
       ? L.polyline([
           ...YEONKANG_OUTER_TRACK,
-          [ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng],
+          ...YEONKANG_RESERVOIR_POLYGON,
         ]).getBounds()
       : L.polyline([...ZOO_TRACK, ...LAKE_TRACK]).getBounds();
     map.fitBounds(allBounds, { padding: [28, 28] });
@@ -1090,15 +1053,7 @@ const MapScreen: React.FC = () => {
         setSelectedSpotId('themeGarden');
       });
 
-      // 2) 카페쿰베오(파란색 동그라미 건물) 및 연강원 강의장(초록색 동그라미 건물) 강조 표시
-      L.circle([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
-        radius: 18,
-        color: '#3B82F6',
-        fillColor: '#3B82F6',
-        fillOpacity: 0.35,
-        weight: 4,
-      }).addTo(layer);
-
+      // 2) 연강원 강의장(초록색 동그라미 건물) 강조 표시
       L.circle([ACTIVE_VENUE.photoSpot.coords.lat, ACTIVE_VENUE.photoSpot.coords.lng], {
         radius: 22,
         color: '#22C55E',
@@ -1108,7 +1063,7 @@ const MapScreen: React.FC = () => {
       }).addTo(layer);
 
       // 3) 연강원 트레킹 1개 코스 (빨간색 외곽 순환선 + 중앙 연결선)
-      [YEONKANG_OUTER_TRACK, YEONKANG_INNER_BRANCH].forEach(track => {
+      [YEONKANG_OUTER_TRACK, YEONKANG_INNER_BRANCH].filter(t => t.length > 1).forEach(track => {
         L.polyline(track, {
           color: '#000000',
           weight: 9,
@@ -1124,45 +1079,6 @@ const MapScreen: React.FC = () => {
           lineCap: 'round',
           lineJoin: 'round',
         }).addTo(layer);
-      });
-
-      // 4) 카페쿰베오 [1:00 첫 집결지/출발] 마커 (파란색 건물 위쪽 배치)
-      const startIcon = L.divIcon({
-        className: 'custom-start-pin',
-        html: `
-          <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-            <div style="
-              background: rgba(30, 58, 138, 0.96);
-              color: #FFFFFF;
-              border: 2px solid #60A5FA;
-              padding: 4px 10px;
-              border-radius: 16px;
-              font-size: 12.5px;
-              font-weight: 800;
-              white-space: nowrap;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.85);
-              display: flex;
-              align-items: center;
-              gap: 4px;
-              cursor: pointer;
-            ">
-              <span>☕</span>
-              <span>카페쿰베오 [1:00 출발]</span>
-            </div>
-            <div style="width: 10px; height: 10px; border-radius: 50%; background: #3B82F6; border: 2px solid #FFFFFF; margin-top: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>
-          </div>
-        `,
-        iconSize: [165, 42],
-        iconAnchor: [82, 38],
-      });
-
-      const startMarker = L.marker([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], {
-        icon: startIcon,
-      }).addTo(layer);
-
-      startMarker.on('click', () => {
-        setSelectedSpotId('start');
-        mapRef.current?.panTo([ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng], { animate: true });
       });
 
       // 5) 연강원 강의장 [2:20 최종 집결 / Wrap-up Quiz] 마커 (초록색 건물 아래쪽 배치)
@@ -1569,7 +1485,7 @@ const MapScreen: React.FC = () => {
                 const allBounds = IS_PILOT_MODE
                   ? L.polyline([
                       ...YEONKANG_OUTER_TRACK,
-                      [ACTIVE_VENUE.departurePoint.coords.lat, ACTIVE_VENUE.departurePoint.coords.lng],
+                      ...YEONKANG_RESERVOIR_POLYGON,
                     ]).getBounds()
                   : L.polyline([...ZOO_TRACK, ...LAKE_TRACK]).getBounds();
                 mapRef.current.fitBounds(allBounds, { padding: [28, 28], animate: true, duration: 1 });
