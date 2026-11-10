@@ -179,7 +179,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = IS_PILOT_MODE
     };
 
 // ─────────────────────────────────────────────────────────────────
-// 6. 몸풀기 Quiz (본행사: 빵명장 소보루 빵 3800원 / 파일럿: 카페쿰베오 베오라떼 6500원)
+// 6. 연습 Quiz (본행사: 빵명장 소보루 빵 3800원 / 연강원: 우리 그룹 창립연도 1896년)
 // ─────────────────────────────────────────────────────────────────
 export interface TutorialQuizConfig {
   id: string;

@@ -395,9 +395,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
                   <p className="font-bold">
                     {isQuizCorrect
                       ? TUTORIAL_QUIZ.explanation
-                      : IS_PILOT_MODE
-                      ? '오답입니다. 정답은 6,500원입니다.'
-                      : '오답입니다. 정답은 3,800원입니다.'}
+                      : `오답입니다. 정답은 ${TUTORIAL_QUIZ.options[TUTORIAL_QUIZ.correctIndex]}입니다.`}
                   </p>
                 </div>
               )}

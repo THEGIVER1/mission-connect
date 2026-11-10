@@ -81,7 +81,7 @@ const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> 
       {/* 이벤트 & 팀/코스 칩 */}
       <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
         <span className="text-[13px] text-slate-300 bg-[#1A2235] border border-white/8 rounded-full px-2.5 py-0.5 font-medium">
-          {IS_PILOT_MODE ? '카페쿰베오 집결 13시' : '빵명장 집결'}
+          {IS_PILOT_MODE ? '13시 집결' : '빵명장 집결'}
         </span>
         {teamConfig && (
           <span
@@ -253,7 +253,7 @@ const ActivitySection: React.FC<{
               STEP 1
             </span>
             <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE ? '1:00~1:30 카페쿰베오' : '1:30~2:00 빵명장'}
+              {IS_PILOT_MODE ? '1:00~1:30 연습 Quiz' : '1:30~2:00 빵명장'}
             </span>
           </div>
           <span className="text-[12.5px] text-slate-400">조 대표 입력</span>

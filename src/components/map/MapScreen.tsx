@@ -923,7 +923,7 @@ const MapScreen: React.FC = () => {
           id: 'start' as const,
           title: '카페쿰베오',
           badge: '🚩 1:00~1:30 첫 집결지 / 출발',
-          subtitle: '카페쿰베오에서 조별 그라운드룰 및 베오라떼 연습 Quiz 진행 후 출발',
+          subtitle: '조별 그라운드룰 및 연습 Quiz 진행 후 출발',
           coords: ACTIVE_VENUE.departurePoint.coords,
           emoji: '☕',
           color: '#3B82F6',
