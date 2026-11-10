@@ -329,7 +329,7 @@ export const TutorialGroundRulesModal: React.FC<Props> = ({
             <div className="bg-[#182035] border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <span className="text-[13px] bg-red-500/20 text-red-300 border border-red-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                  {IS_PILOT_MODE ? '카페쿰베오' : '빵명장'}
+                  {IS_PILOT_MODE ? '연습 Quiz' : '빵명장'}
                 </span>
                 <span className="text-[13px] text-slate-400">
                   {isQuizSubmitted ? `${teamConfig.name} 완료 (${quizSubmittedBy})` : '조 대표 1명 제출'}

@@ -331,7 +331,7 @@ const TeamSelect: React.FC = () => {
             {IS_PILOT_MODE ? (
               <div>
                 <p className="text-[13.5px] font-bold text-red-400 mb-1.5">
-                  연강원 트레킹 코스 (1~5조)
+                  연강원 트레킹 코스 (1~6조)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {TEAMS.map(renderTeamCard)}

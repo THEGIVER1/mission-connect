@@ -76,6 +76,7 @@ export const WORKSHOP_TEAMS: WorkshopTeamConfig[] = IS_PILOT_MODE
       { id: 'team3', name: '3조', shortCode: '3', color: '#F39C12', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
       { id: 'team4', name: '4조', shortCode: '4', color: '#27AE60', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
       { id: 'team5', name: '5조', shortCode: '5', color: '#2980B9', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
+      { id: 'team6', name: '6조', shortCode: '6', color: '#8E44AD', emoji: '', assignedCourse: 'forest', courseName: '연강원 트레킹 코스', courseDistance: '' },
     ]
   : [
       { id: 'team1', name: '1조', shortCode: '1', color: '#E31837', emoji: '', assignedCourse: 'lake', courseName: '현대미술관 코스', courseDistance: '3km' },
@@ -194,13 +195,13 @@ export interface TutorialQuizConfig {
 export const TUTORIAL_QUIZ: TutorialQuizConfig = IS_PILOT_MODE
   ? {
       id: 'tutorial_bbang_price',
-      title: '몸풀기 Quiz: 베오라떼 가격 맞히기',
-      itemTitle: '카페쿰베오 베오라떼',
-      questionText: '카페쿰베오 시그니처 메뉴 "베오라떼"의 가격은?',
-      options: ['5,500원', '6,000원', '6,500원', '7,000원'],
-      correctIndex: 2, // 6,500원
-      explanation: '정답입니다! 베오라떼 가격은 6,500원입니다.',
-      hintText: '카페쿰베오 메뉴판을 확인해 보세요.',
+      title: '연습 Quiz: 우리 그룹 창립연도',
+      itemTitle: '우리 그룹 창립연도',
+      questionText: '우리 그룹의 창립연도는?',
+      options: ['1986년', '1968년', '1895년', '1896년'],
+      correctIndex: 3, // 1896년
+      explanation: '정답입니다! 우리 그룹의 창립연도는 1896년입니다.',
+      hintText: '',
     }
   : {
       id: 'tutorial_bbang_price',
