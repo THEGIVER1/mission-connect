@@ -154,7 +154,7 @@ export const THEME_GARDEN_MISSION: ThemeGardenMissionConfig = IS_PILOT_MODE
       title: '두산 저수지 조별 단체사진',
       timeRange: '1:30 ~ 2:20',
       locationName: '두산 저수지',
-      coords: { lat: 37.541920, lng: 127.151580 },
+      coords: { lat: 37.542100, lng: 127.151690 },
       hintTitle: '단체사진 촬영 안내',
       hintDescription: '두산 저수지에서 조원 전원이 나오도록 촬영 후 업로드해 주세요.',
       guideLines: [
@@ -385,7 +385,7 @@ export const ACTIVE_VENUE = IS_PILOT_MODE
       },
       themeGardenSpot: {
         name: '두산 저수지 [📸 조별 단체사진 미션]',
-        coords: { lat: 37.541920, lng: 127.151580 },
+        coords: { lat: 37.542100, lng: 127.151690 },
       },
       mapLabel: '두산연강원 트레킹 코스',
     }
