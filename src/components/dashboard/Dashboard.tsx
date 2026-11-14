@@ -294,103 +294,120 @@ const ActivitySection: React.FC<{
       </div>
 
       {/* ─── STEP 2 ─── */}
-      <div className="space-y-1.5">
-        <div className="flex items-baseline justify-between px-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-[22px] font-black text-sky-400 tracking-tight leading-none">
-              STEP 2
-            </span>
-            <span className="text-[14px] font-bold text-slate-200">
-              {IS_PILOT_MODE ? '1:30~2:20 트레킹 미션' : '2:00~4:30 트레킹 미션'}
-            </span>
-          </div>
-          <span className="text-[12.5px] text-slate-400">조별 각 +100pt</span>
-        </div>
+      {(() => {
+        const isIndoorOnly = eventConfig.step2Mode === 'indoor';
+        const showOutdoorMissions = !isIndoorOnly;
+        const showStepBlock = isIndoorOnly || eventConfig.enableStepMission;
+        const showArBlock = isIndoorOnly || eventConfig.enableArMission;
 
-        {/* 미션 1: 최고의 스토리 동료 추천 */}
-        <button
-          type="button"
-          onClick={() => navigate('/people-quest')}
-          className="w-full text-left bg-[#171F32] border border-red-500/35 hover:border-red-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[14px] font-bold text-white whitespace-nowrap truncate">
-              1. 최고의 스토리 동료 추천
-            </h3>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
-              pqSubmitted
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-red-500/20 text-red-300 border-red-500/40'
-            }`}>
-              {pqSubmitted ? '완료 (+100pt)' : '작성하기 →'}
-            </span>
-          </div>
-        </button>
-
-        {/* 미션 2: 조별 단체사진 업로드 */}
-        <button
-          type="button"
-          onClick={onOpenThemeGardenModal}
-          className="w-full text-left bg-[#171F32] border border-pink-500/35 hover:border-pink-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[14px] font-bold text-white whitespace-nowrap truncate">
-              {IS_PILOT_MODE ? '2. 두산 저수지 단체사진 업로드' : '2. 테마가든 단체사진 업로드'}
-            </h3>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
-              themeGardenDone
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-pink-500/20 text-pink-300 border-pink-500/40'
-            }`}>
-              {themeGardenDone ? '완료 (+100pt)' : '사진 등록 →'}
-            </span>
-          </div>
-        </button>
-
-        {/* 모듈형 미션 블록 1: 실내 만보기 에너지 게이지 (ON일 때만 표시) */}
-        {eventConfig.enableStepMission && (
-          <button
-            type="button"
-            onClick={onOpenStepMissionModal}
-            className="w-full text-left bg-[#132235] border border-cyan-500/45 hover:border-cyan-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[14px] font-bold text-cyan-200 whitespace-nowrap truncate">
-                👟 {eventConfig.stepMissionTitle || '실내 만보기 에너지 게이지'}
-              </h3>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
-                stepMissionDone
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                  : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-              }`}>
-                {stepMissionDone ? `완료 (+${eventConfig.stepMissionPoints || 100}pt)` : '걸음 충전 →'}
-              </span>
+        return (
+          <div className="space-y-1.5">
+            <div className="flex items-baseline justify-between px-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[22px] font-black text-sky-400 tracking-tight leading-none">
+                  STEP 2
+                </span>
+                <span className="text-[14px] font-bold text-slate-200">
+                  {isIndoorOnly
+                    ? '실내 팀 시너지 미션'
+                    : IS_PILOT_MODE
+                    ? '1:30~2:20 트레킹 미션'
+                    : '2:00~4:30 트레킹 미션'}
+                </span>
+              </div>
+              <span className="text-[12.5px] text-slate-400">조별 각 +100pt</span>
             </div>
-          </button>
-        )}
 
-        {/* 모듈형 미션 블록 2: 웹 AR 360° 실내 보물찾기 (ON일 때만 표시) */}
-        {eventConfig.enableArMission && (
-          <button
-            type="button"
-            onClick={onOpenArMissionModal}
-            className="w-full text-left bg-[#1B1734] border border-purple-500/45 hover:border-purple-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[14px] font-bold text-purple-200 whitespace-nowrap truncate">
-                🔮 {eventConfig.arMissionTitle || '웹 AR 360° 실내 보물찾기'}
-              </h3>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
-                arMissionDone
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                  : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-              }`}>
-                {arMissionDone ? `완료 (+${eventConfig.arMissionPoints || 100}pt)` : 'AR 스캔 →'}
-              </span>
-            </div>
-          </button>
-        )}
-      </div>
+            {/* 실외 버전 미션 1: 최고의 스토리 동료 추천 */}
+            {showOutdoorMissions && (
+              <button
+                type="button"
+                onClick={() => navigate('/people-quest')}
+                className="w-full text-left bg-[#171F32] border border-red-500/35 hover:border-red-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[14px] font-bold text-white whitespace-nowrap truncate">
+                    1. 최고의 스토리 동료 추천
+                  </h3>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                    pqSubmitted
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-red-500/20 text-red-300 border-red-500/40'
+                  }`}>
+                    {pqSubmitted ? '완료 (+100pt)' : '작성하기 →'}
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* 실외 버전 미션 2: 조별 단체사진 업로드 */}
+            {showOutdoorMissions && (
+              <button
+                type="button"
+                onClick={onOpenThemeGardenModal}
+                className="w-full text-left bg-[#171F32] border border-pink-500/35 hover:border-pink-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[14px] font-bold text-white whitespace-nowrap truncate">
+                    {IS_PILOT_MODE ? '2. 두산 저수지 단체사진 업로드' : '2. 테마가든 단체사진 업로드'}
+                  </h3>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                    themeGardenDone
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-pink-500/20 text-pink-300 border-pink-500/40'
+                  }`}>
+                    {themeGardenDone ? '완료 (+100pt)' : '사진 등록 →'}
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* 실내 미션 1: 스텝 & 토크 릴레이: 3단계 시너지 게이트 */}
+            {showStepBlock && (
+              <button
+                type="button"
+                onClick={onOpenStepMissionModal}
+                className="w-full text-left bg-[#132235] border border-cyan-500/45 hover:border-cyan-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[14px] font-bold text-cyan-200 whitespace-nowrap truncate">
+                    👟 {isIndoorOnly ? '1. ' : ''}{eventConfig.stepMissionTitle || '스텝 & 토크 릴레이: 3단계 시너지 게이트'}
+                  </h3>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                    stepMissionDone
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                  }`}>
+                    {stepMissionDone ? `완료 (+${eventConfig.stepMissionPoints || 100}pt)` : '게이트 열기 →'}
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* 실내 미션 2: 웹 AR 360° 가치 캡처 & 홀로그램 스냅샷 */}
+            {showArBlock && (
+              <button
+                type="button"
+                onClick={onOpenArMissionModal}
+                className="w-full text-left bg-[#1B1734] border border-purple-500/45 hover:border-purple-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[14px] font-bold text-purple-200 whitespace-nowrap truncate">
+                    🔮 {isIndoorOnly ? '2. ' : ''}{eventConfig.arMissionTitle || '웹 AR 360° 가치 캡처 & 홀로그램 스냅샷'}
+                  </h3>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                    arMissionDone
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                  }`}>
+                    {arMissionDone ? `완료 (+${eventConfig.arMissionPoints || 100}pt)` : 'AR 캡처 →'}
+                  </span>
+                </div>
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ─── STEP 3 ─── */}
       <div className="space-y-1.5">
@@ -768,9 +785,11 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 // ─── 하단 3개 탭 네비게이션 ──────────────────────────────────
 const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   const navigate = useNavigate();
+  const eventConfig = useEventConfig();
+  const showMapTab = eventConfig.step2Mode !== 'indoor';
   const NAV = [
     { key: '/',            icon: '🏠', label: '홈' },
-    { key: '/map',         icon: '🗺️', label: '코스지도' },
+    ...(showMapTab ? [{ key: '/map',         icon: '🗺️', label: '코스지도' }] : []),
     { key: '/leaderboard', icon: '🏆', label: '조별순위' },
   ];
   return (

@@ -227,18 +227,95 @@ export const EventSettingsPanel: React.FC = () => {
           </div>
         )}
 
+        {/* STEP 2 운영 모드 1-Click 전환 프리셋 (실외 표준 vs 실내 전용 vs 하이브리드) */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-slate-300 block">
+            🎯 STEP 2 운영 모드 선택 (실외 버전 ↔ 실내 전용 버전 1-Click 전환)
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {[
+              {
+                key: 'outdoor' as const,
+                title: '🌳 실외 트레킹 표준 모드',
+                desc: '야외 미션 1(동료추천) + 2(단체사진) + 코스지도 표시',
+                apply: () =>
+                  setForm({
+                    ...form,
+                    step2Mode: 'outdoor',
+                    enableStepMission: false,
+                    enableArMission: false,
+                  }),
+              },
+              {
+                key: 'indoor' as const,
+                title: '🏢 실내 액티비티 전용 모드',
+                desc: '야외 미션/지도 숨김 · 실내 미션 1(3단계 스텝&토크) + 2(웹AR 캡처&스냅샷) 전용',
+                apply: () =>
+                  setForm({
+                    ...form,
+                    step2Mode: 'indoor',
+                    enableStepMission: true,
+                    enableArMission: true,
+                  }),
+              },
+              {
+                key: 'hybrid' as const,
+                title: '⚡ 하이브리드 결합 모드',
+                desc: '야외 기본 미션 + 선택한 실내 스페셜 블록 동시 오픈',
+                apply: () =>
+                  setForm({
+                    ...form,
+                    step2Mode: 'hybrid',
+                    enableStepMission: true,
+                    enableArMission: true,
+                  }),
+              },
+            ].map(preset => {
+              const currMode = form.step2Mode || 'outdoor';
+              const isSelected = currMode === preset.key;
+              return (
+                <button
+                  key={preset.key}
+                  type="button"
+                  disabled={!isMasterUnlocked}
+                  onClick={preset.apply}
+                  className={`text-left p-3 rounded-xl border transition-all ${
+                    !isMasterUnlocked
+                      ? 'bg-black/25 border-white/10 opacity-60 cursor-not-allowed'
+                      : isSelected
+                      ? 'bg-gradient-to-br from-cyan-500/25 to-purple-500/20 border-cyan-400 shadow-lg'
+                      : 'bg-black/35 border-white/10 hover:border-white/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white">{preset.title}</span>
+                    {isSelected && (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-cyan-400 text-slate-950">
+                        선택됨
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{preset.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* 블록 1: 실내 만보기 & 에너지 게이지 미션 */}
+          {/* 블록 1: 실내 스텝 & 토크 릴레이: 3단계 시너지 게이트 */}
           <div className={`rounded-2xl p-3.5 border transition-all ${
-            form.enableStepMission
+            form.enableStepMission || form.step2Mode === 'indoor'
               ? 'bg-cyan-950/35 border-cyan-400/60 shadow-lg'
               : 'bg-black/30 border-white/10 opacity-80'
           }`}>
             <div className="flex items-start justify-between gap-2 mb-2.5">
               <div>
-                <span className="text-[11px] font-bold text-cyan-300">BLOCK 1 · 모션 센서 연동</span>
+                <span className="text-[11px] font-bold text-cyan-300">
+                  실내 미션 1 · 3단계 걸음 & 대화 게이트 (PeopleQuest 자동연동)
+                </span>
                 <h5 className="text-sm font-black text-white flex items-center gap-1.5 mt-0.5">
-                  👟 실내 만보기 & 팀 에너지 게이지
+                  👟 스텝 & 토크 릴레이: 3단계 시너지 게이트
                 </h5>
               </div>
               <button
@@ -248,12 +325,12 @@ export const EventSettingsPanel: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
                   !isMasterUnlocked
                     ? 'bg-slate-800 text-slate-500 border-white/10 cursor-not-allowed'
-                    : form.enableStepMission
+                    : form.enableStepMission || form.step2Mode === 'indoor'
                     ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow'
                     : 'bg-white/10 text-slate-300 border-white/15 hover:bg-white/20'
                 }`}
               >
-                {form.enableStepMission ? 'ON (사용 중)' : 'OFF (비활성)'}
+                {form.enableStepMission || form.step2Mode === 'indoor' ? 'ON (사용 중)' : 'OFF (비활성)'}
               </button>
             </div>
 
@@ -270,7 +347,7 @@ export const EventSettingsPanel: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-slate-400 block mb-0.5">조별 목표 합산 걸음수</label>
+                  <label className="text-slate-400 block mb-0.5">3단계 최종 목표 걸음수</label>
                   <input
                     type="number"
                     disabled={!isMasterUnlocked}
@@ -293,17 +370,19 @@ export const EventSettingsPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* 블록 2: 웹 AR 360° 실내 보물찾기 미션 */}
+          {/* 블록 2: 웹 AR 360° 가치 캡처 & 홀로그램 스냅샷 */}
           <div className={`rounded-2xl p-3.5 border transition-all ${
-            form.enableArMission
+            form.enableArMission || form.step2Mode === 'indoor'
               ? 'bg-purple-950/35 border-purple-400/60 shadow-lg'
               : 'bg-black/30 border-white/10 opacity-80'
           }`}>
             <div className="flex items-start justify-between gap-2 mb-2.5">
               <div>
-                <span className="text-[11px] font-bold text-purple-300">BLOCK 2 · 카메라 & 360° 스캔</span>
+                <span className="text-[11px] font-bold text-purple-300">
+                  실내 미션 2 · 360° 가치 봉인해제 & AR 스냅샷 (STEP 4 사진투표 연동)
+                </span>
                 <h5 className="text-sm font-black text-white flex items-center gap-1.5 mt-0.5">
-                  🔮 웹 AR 360° 실내 보물찾기
+                  🔮 웹 AR 360° 가치 캡처 & 홀로그램 스냅샷
                 </h5>
               </div>
               <button
@@ -313,12 +392,12 @@ export const EventSettingsPanel: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
                   !isMasterUnlocked
                     ? 'bg-slate-800 text-slate-500 border-white/10 cursor-not-allowed'
-                    : form.enableArMission
+                    : form.enableArMission || form.step2Mode === 'indoor'
                     ? 'bg-purple-400 text-slate-950 border-purple-300 shadow'
                     : 'bg-white/10 text-slate-300 border-white/15 hover:bg-white/20'
                 }`}
               >
-                {form.enableArMission ? 'ON (사용 중)' : 'OFF (비활성)'}
+                {form.enableArMission || form.step2Mode === 'indoor' ? 'ON (사용 중)' : 'OFF (비활성)'}
               </button>
             </div>
 
@@ -334,7 +413,7 @@ export const EventSettingsPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-0.5">보물 3종 캡처 시 보상 점수(pt)</label>
+                <label className="text-slate-400 block mb-0.5">3단계 봉인 해제 완료 시 보상 점수(pt)</label>
                 <input
                   type="number"
                   disabled={!isMasterUnlocked}

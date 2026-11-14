@@ -122,7 +122,7 @@ export function isThemeGardenDoneForTeam(
 }
 
 /**
- * 블록 1: 특정 조의 실내 만보기 에너지 게이지 미션 완료 여부 판별
+ * 블록 1: 특정 조의 실내 스텝 & 토크 릴레이(3단계 시너지 게이트) 미션 완료 여부 판별
  */
 export function isStepMissionDoneForTeam(
   teamId: string | undefined | null,
@@ -130,24 +130,23 @@ export function isStepMissionDoneForTeam(
 ): boolean {
   if (!teamId || !stepMissionsData || typeof stepMissionsData !== 'object') return false;
   const targetNorm = normalizeTeamId(teamId);
-  const targetSteps = Math.max(10, Number(LIVE_EVENT_CONFIG.stepMissionTarget) || 300);
 
   const rec = stepMissionsData[targetNorm] || stepMissionsData[teamId];
-  if (rec && (rec.completed === true || (Number(rec.totalSteps) || 0) >= targetSteps)) {
+  if (rec && rec.completed === true) {
     return true;
   }
 
   for (const [key, val] of Object.entries(stepMissionsData)) {
     if (!val || typeof val !== 'object') continue;
     if (normalizeTeamId(key) === targetNorm || (val.teamId && normalizeTeamId(val.teamId) === targetNorm)) {
-      if (val.completed === true || (Number(val.totalSteps) || 0) >= targetSteps) return true;
+      if (val.completed === true) return true;
     }
   }
   return false;
 }
 
 /**
- * 블록 2: 특정 조의 웹 AR 360° 실내 보물찾기 미션 완료 여부 판별
+ * 블록 2: 특정 조의 웹 AR 360° 가치 캡처 & 홀로그램 스냅샷 미션 완료 여부 판별
  */
 export function isArMissionDoneForTeam(
   teamId: string | undefined | null,
@@ -157,14 +156,14 @@ export function isArMissionDoneForTeam(
   const targetNorm = normalizeTeamId(teamId);
 
   const rec = arMissionsData[targetNorm] || arMissionsData[teamId];
-  if (rec && (rec.completed === true || (Array.isArray(rec.capturedIds) && rec.capturedIds.length >= 3))) {
+  if (rec && rec.completed === true) {
     return true;
   }
 
   for (const [key, val] of Object.entries(arMissionsData)) {
     if (!val || typeof val !== 'object') continue;
     if (normalizeTeamId(key) === targetNorm || (val.teamId && normalizeTeamId(val.teamId) === targetNorm)) {
-      if (val.completed === true || (Array.isArray(val.capturedIds) && val.capturedIds.length >= 3)) return true;
+      if (val.completed === true) return true;
     }
   }
   return false;
@@ -421,37 +420,44 @@ export function calculateLeaderboardData(
         ? PRACTICE_QUIZ_POINTS
         : 0;
 
+    const isIndoorMode = LIVE_EVENT_CONFIG.step2Mode === 'indoor';
+
     const isStepDone =
-      LIVE_EVENT_CONFIG.enableStepMission &&
+      (isIndoorMode || LIVE_EVENT_CONFIG.enableStepMission) &&
       isStepMissionDoneForTeam(teamConfig.id, stepMissionsData);
     const stepPoints = isStepDone
       ? Number(LIVE_EVENT_CONFIG.stepMissionPoints) || 100
       : 0;
 
     const isArDone =
-      LIVE_EVENT_CONFIG.enableArMission &&
+      (isIndoorMode || LIVE_EVENT_CONFIG.enableArMission) &&
       isArMissionDoneForTeam(teamConfig.id, arMissionsData);
     const arPoints = isArDone
       ? Number(LIVE_EVENT_CONFIG.arMissionPoints) || 100
       : 0;
 
+    // 실내 전용 모드에서는 Gate 3와 AR 스냅샷이 peopleQuest/themeGardenPhotos에도 자동 저장되므로 중복 가산 방지
+    const outdoorPqDone = !isIndoorMode && isPqDone;
+    const outdoorThemeDone = !isIndoorMode && isThemeDone;
+
     const teamScore =
-      (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
-      (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
+      (outdoorPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
+      (outdoorThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
       stepPoints +
       arPoints +
       voteBonusPoints +
       wrapupQuizInfo.points +
       practiceQuizPoints;
     const completedCount =
-      (isPqDone ? 1 : 0) +
-      (isThemeDone ? 1 : 0) +
+      (outdoorPqDone ? 1 : 0) +
+      (outdoorThemeDone ? 1 : 0) +
       (isStepDone ? 1 : 0) +
       (isArDone ? 1 : 0);
-    const totalActiveMissions =
-      2 +
-      (LIVE_EVENT_CONFIG.enableStepMission ? 1 : 0) +
-      (LIVE_EVENT_CONFIG.enableArMission ? 1 : 0);
+    const totalActiveMissions = isIndoorMode
+      ? 2
+      : 2 +
+        (LIVE_EVENT_CONFIG.enableStepMission ? 1 : 0) +
+        (LIVE_EVENT_CONFIG.enableArMission ? 1 : 0);
 
     return {
       id: teamConfig.id,

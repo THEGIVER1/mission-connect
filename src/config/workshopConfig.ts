@@ -434,6 +434,7 @@ export interface RemoteEventConfig {
   wrapupWrongPenalty: number;
   wrapupQuizItems: WrapupQuizItem[];
   // ─── 모듈형 실내/하이브리드 미션 블록 설정 (마스터 잠금 보호) ───
+  step2Mode?: 'outdoor' | 'indoor' | 'hybrid';
   enableStepMission: boolean;
   stepMissionTitle: string;
   stepMissionTarget: number;
@@ -468,12 +469,13 @@ export const DEFAULT_EVENT_CONFIG: RemoteEventConfig = {
   wrapupQuizTitle: WRAPUP_QUIZ_TITLE,
   wrapupWrongPenalty: WRAPUP_QUIZ_WRONG_PENALTY,
   wrapupQuizItems: WRAPUP_QUIZ_ITEMS.map(i => ({ ...i })),
+  step2Mode: 'outdoor',
   enableStepMission: false,
-  stepMissionTitle: '실내 만보기 에너지 게이지',
+  stepMissionTitle: '스텝 & 토크 릴레이: 3단계 시너지 게이트',
   stepMissionTarget: 300,
   stepMissionPoints: 100,
   enableArMission: false,
-  arMissionTitle: '웹 AR 360° 실내 보물찾기',
+  arMissionTitle: '웹 AR 360° 가치 캡처 & 홀로그램 스냅샷',
   arMissionPoints: 100,
 };
 
