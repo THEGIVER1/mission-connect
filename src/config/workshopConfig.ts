@@ -289,11 +289,11 @@ export const WRAPUP_QUIZ_ITEMS: WrapupQuizItem[] = IS_PILOT_MODE
       { text: '현재 과천 현대미술관에 모네의 작품이 전시되어 있다', correct: true },
     ];
 
-export const YEONKANG_WRAPUP_QUIZ_OPTIONS: readonly string[] = WRAPUP_QUIZ_ITEMS.map(i => i.text);
+export const YEONKANG_WRAPUP_QUIZ_OPTIONS: string[] = WRAPUP_QUIZ_ITEMS.map(i => i.text);
 
-export const WRAPUP_QUIZ_WRONG_PENALTY = IS_PILOT_MODE ? 0 : 50;
+export let WRAPUP_QUIZ_WRONG_PENALTY = IS_PILOT_MODE ? 0 : 50;
 
-export const WRAPUP_QUIZ_TITLE = IS_PILOT_MODE
+export let WRAPUP_QUIZ_TITLE = IS_PILOT_MODE
   ? 'Q2. 연강원에 있는 것을 모두 선택하세요'
   : 'Q2. 다음 중 맞는 것을 모두 골라주세요 (오답 시 감점)';
 
@@ -314,8 +314,8 @@ export function getCourseTotalMaxPoints(_courseKey: CourseKey = 'lake'): number 
 /** 최종 집결 시각 (연강원 14:20 / 대공원 16:30) 및 STEP 4 오픈 시각 (연강원 14:20 / 대공원 17:00) */
 export const FINAL_GATHERING_HM: [number, number] = IS_PILOT_MODE ? [14, 20] : [16, 30];
 export const STEP4_OPEN_HM: [number, number] = IS_PILOT_MODE ? [14, 20] : [17, 0];
-export const FINAL_GATHERING_LABEL = IS_PILOT_MODE ? '2:20' : '4:30';
-export const STEP4_OPEN_LABEL = IS_PILOT_MODE ? '2:20' : '5:00';
+export let FINAL_GATHERING_LABEL = IS_PILOT_MODE ? '2:20' : '4:30';
+export let STEP4_OPEN_LABEL = IS_PILOT_MODE ? '2:20' : '5:00';
 
 /**
  * 최종 집결 목표 시각 반환
@@ -409,4 +409,149 @@ export const ACTIVE_VENUE = IS_PILOT_MODE
     };
 
 export const DEFAULT_COURSE: CourseKey = IS_PILOT_MODE ? 'forest' : 'lake';
+
+// ─────────────────────────────────────────────────────────────────
+// 11. 관리자(/admin) 실시간 행사 커스터마이징 & 모듈형 미션 블록 설정
+// ─────────────────────────────────────────────────────────────────
+export interface RemoteEventConfig {
+  brandTitle: string;
+  eventSubtitle: string;
+  venueName: string;
+  courseName: string;
+  gatheringBadge: string;
+  scheduleBadge: string;
+  finalGatheringTime: string;
+  step4OpenTime: string;
+  photoMissionTitle: string;
+  photoLocationName: string;
+  photoTimeRange: string;
+  photoHintDescription: string;
+  tutorialQuestion: string;
+  tutorialOptions: string[];
+  tutorialCorrectIndex: number;
+  tutorialExplanation: string;
+  wrapupQuizTitle: string;
+  wrapupWrongPenalty: number;
+  wrapupQuizItems: WrapupQuizItem[];
+  // ─── 모듈형 실내/하이브리드 미션 블록 설정 (마스터 잠금 보호) ───
+  enableStepMission: boolean;
+  stepMissionTitle: string;
+  stepMissionTarget: number;
+  stepMissionPoints: number;
+  enableArMission: boolean;
+  arMissionTitle: string;
+  arMissionPoints: number;
+  updatedAt?: string;
+}
+
+/** 마스터 전용 미션 블록 잠금 해제 코드 */
+export const MASTER_PASSCODE =
+  ((import.meta as any).env?.VITE_MASTER_PASSCODE as string) || 'giver2026';
+
+export const DEFAULT_EVENT_CONFIG: RemoteEventConfig = {
+  brandTitle: IS_PILOT_MODE ? 'DOOSAN' : '2026 CHRO',
+  eventSubtitle: IS_PILOT_MODE ? 'TEAM ACTIVITY' : 'TREKKING',
+  venueName: ACTIVE_VENUE.venueName,
+  courseName: IS_PILOT_MODE ? '연강원 트레킹 코스' : '서울대공원 트레킹 코스',
+  gatheringBadge: IS_PILOT_MODE ? '13시 집결' : '빵명장 집결',
+  scheduleBadge: IS_PILOT_MODE ? '🕐 오후 1:00 ~ 3:00' : '🕐 오후 1:30 ~ 5:00',
+  finalGatheringTime: IS_PILOT_MODE ? '14:20' : '16:30',
+  step4OpenTime: IS_PILOT_MODE ? '14:20' : '17:00',
+  photoMissionTitle: THEME_GARDEN_MISSION.title,
+  photoLocationName: THEME_GARDEN_MISSION.locationName,
+  photoTimeRange: THEME_GARDEN_MISSION.timeRange,
+  photoHintDescription: THEME_GARDEN_MISSION.hintDescription,
+  tutorialQuestion: TUTORIAL_QUIZ.questionText,
+  tutorialOptions: [...TUTORIAL_QUIZ.options],
+  tutorialCorrectIndex: TUTORIAL_QUIZ.correctIndex,
+  tutorialExplanation: TUTORIAL_QUIZ.explanation,
+  wrapupQuizTitle: WRAPUP_QUIZ_TITLE,
+  wrapupWrongPenalty: WRAPUP_QUIZ_WRONG_PENALTY,
+  wrapupQuizItems: WRAPUP_QUIZ_ITEMS.map(i => ({ ...i })),
+  enableStepMission: false,
+  stepMissionTitle: '실내 만보기 에너지 게이지',
+  stepMissionTarget: 300,
+  stepMissionPoints: 100,
+  enableArMission: false,
+  arMissionTitle: '웹 AR 360° 실내 보물찾기',
+  arMissionPoints: 100,
+};
+
+export const LIVE_EVENT_CONFIG: RemoteEventConfig = {
+  ...DEFAULT_EVENT_CONFIG,
+  tutorialOptions: [...DEFAULT_EVENT_CONFIG.tutorialOptions],
+  wrapupQuizItems: DEFAULT_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+};
+
+function parseHm(timeStr: string | undefined, fallback: [number, number]): [number, number] {
+  if (!timeStr || typeof timeStr !== 'string') return fallback;
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return fallback;
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (Number.isNaN(h) || Number.isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return fallback;
+  return [h, m];
+}
+
+function formatHmDisplay(hm: [number, number]): string {
+  const h12 = hm[0] > 12 ? hm[0] - 12 : hm[0];
+  return `${h12}:${String(hm[1]).padStart(2, '0')}`;
+}
+
+export function applyRemoteEventConfig(raw?: Partial<RemoteEventConfig> | null): RemoteEventConfig {
+  const merged: RemoteEventConfig = {
+    ...DEFAULT_EVENT_CONFIG,
+    ...(raw || {}),
+    tutorialOptions:
+      Array.isArray(raw?.tutorialOptions) && raw!.tutorialOptions.length > 0
+        ? raw!.tutorialOptions.map(s => String(s ?? ''))
+        : [...DEFAULT_EVENT_CONFIG.tutorialOptions],
+    wrapupQuizItems:
+      Array.isArray(raw?.wrapupQuizItems) && raw!.wrapupQuizItems.length > 0
+        ? raw!.wrapupQuizItems
+            .filter(i => i && String(i.text ?? '').trim() !== '')
+            .map(i => ({ text: String(i.text).trim(), correct: Boolean(i.correct) }))
+        : DEFAULT_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+  };
+
+  Object.assign(LIVE_EVENT_CONFIG, merged);
+
+  ACTIVE_VENUE.venueName = merged.venueName;
+  ACTIVE_VENUE.eventName = `${merged.brandTitle} ${merged.eventSubtitle}`.trim();
+  ACTIVE_VENUE.mapLabel = merged.courseName;
+
+  const finalHm = parseHm(merged.finalGatheringTime, IS_PILOT_MODE ? [14, 20] : [16, 30]);
+  const step4Hm = parseHm(merged.step4OpenTime, IS_PILOT_MODE ? [14, 20] : [17, 0]);
+  FINAL_GATHERING_HM[0] = finalHm[0];
+  FINAL_GATHERING_HM[1] = finalHm[1];
+  STEP4_OPEN_HM[0] = step4Hm[0];
+  STEP4_OPEN_HM[1] = step4Hm[1];
+  FINAL_GATHERING_LABEL = formatHmDisplay(finalHm);
+  STEP4_OPEN_LABEL = formatHmDisplay(step4Hm);
+
+  THEME_GARDEN_MISSION.title = merged.photoMissionTitle;
+  THEME_GARDEN_MISSION.locationName = merged.photoLocationName;
+  THEME_GARDEN_MISSION.timeRange = merged.photoTimeRange;
+  THEME_GARDEN_MISSION.hintDescription = merged.photoHintDescription;
+
+  TUTORIAL_QUIZ.questionText = merged.tutorialQuestion;
+  TUTORIAL_QUIZ.options = [...merged.tutorialOptions];
+  TUTORIAL_QUIZ.correctIndex = Number(merged.tutorialCorrectIndex) || 0;
+  TUTORIAL_QUIZ.explanation = merged.tutorialExplanation;
+
+  WRAPUP_QUIZ_TITLE = merged.wrapupQuizTitle;
+  WRAPUP_QUIZ_WRONG_PENALTY = Number(merged.wrapupWrongPenalty) || 0;
+  WRAPUP_QUIZ_ITEMS.splice(0, WRAPUP_QUIZ_ITEMS.length, ...merged.wrapupQuizItems);
+  YEONKANG_WRAPUP_QUIZ_OPTIONS.splice(
+    0,
+    YEONKANG_WRAPUP_QUIZ_OPTIONS.length,
+    ...merged.wrapupQuizItems.map(i => i.text)
+  );
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('mmazing-config-updated'));
+  }
+
+  return LIVE_EVENT_CONFIG;
+}
 

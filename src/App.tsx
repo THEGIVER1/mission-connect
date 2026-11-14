@@ -12,6 +12,7 @@ const PeopleQuestScreen = lazy(() => import('./components/peopleQuest/PeopleQues
 const DiscoveryQuizScreen = lazy(() => import('./components/discoveryQuiz/DiscoveryQuizScreen'));
 
 import GlobalNoticeBanner from './components/common/GlobalNoticeBanner';
+import { useEventConfig } from './hooks/useEventConfig';
 
 const LoadingSpinner: React.FC = () => (
   <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen flex items-center justify-center">
@@ -35,31 +36,35 @@ const routerBasename =
     ? '/pilot'
     : '/';
 
-const App: React.FC = () => (
-  <BrowserRouter basename={routerBasename}>
-    {/* 실시간 관리자 긴급 공지 글로벌 팝업 배너 */}
-    <GlobalNoticeBanner />
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        {/* 팀 선택 화면 */}
-        <Route path="/team-select" element={<TeamSelect />} />
+const App: React.FC = () => {
+  useEventConfig();
 
-        {/* 팀 선택 후 접근 가능한 화면들 */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/people-quest" element={<ProtectedRoute><PeopleQuestScreen /></ProtectedRoute>} />
-        <Route path="/discovery-quiz" element={<ProtectedRoute><DiscoveryQuizScreen /></ProtectedRoute>} />
-        <Route path="/map" element={<ProtectedRoute><MapScreen /></ProtectedRoute>} />
-        <Route path="/ar"  element={<ProtectedRoute><ARScreen /></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+  return (
+    <BrowserRouter basename={routerBasename}>
+      {/* 실시간 관리자 긴급 공지 글로벌 팝업 배너 */}
+      <GlobalNoticeBanner />
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {/* 팀 선택 화면 */}
+          <Route path="/team-select" element={<TeamSelect />} />
 
-        {/* 어드민은 팀 선택 불필요 */}
-        <Route path="/admin" element={<AdminScreen />} />
+          {/* 팀 선택 후 접근 가능한 화면들 */}
+          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/people-quest" element={<ProtectedRoute><PeopleQuestScreen /></ProtectedRoute>} />
+          <Route path="/discovery-quiz" element={<ProtectedRoute><DiscoveryQuizScreen /></ProtectedRoute>} />
+          <Route path="/map" element={<ProtectedRoute><MapScreen /></ProtectedRoute>} />
+          <Route path="/ar"  element={<ProtectedRoute><ARScreen /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
 
-        {/* 그 외 → 팀 선택으로 */}
-        <Route path="*" element={<Navigate to="/team-select" replace />} />
-      </Routes>
-    </Suspense>
-  </BrowserRouter>
-);
+          {/* 어드민은 팀 선택 불필요 */}
+          <Route path="/admin" element={<AdminScreen />} />
+
+          {/* 그 외 → 팀 선택으로 */}
+          <Route path="*" element={<Navigate to="/team-select" replace />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  );
+};
 
 export default App;

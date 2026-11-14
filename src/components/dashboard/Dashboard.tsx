@@ -7,6 +7,8 @@ import { TutorialGroundRulesModal } from '../tutorial/TutorialGroundRulesModal';
 import { ThemeGardenMissionModal } from '../themeGarden/ThemeGardenMissionModal';
 import { PhotoVoteModal } from '../photoVote/PhotoVoteModal';
 import { YeonkangWrapupQuizModal } from '../photoVote/YeonkangWrapupQuizModal';
+import { StepEnergyMissionModal } from '../missions/StepEnergyMissionModal';
+import { WebArTreasureModal } from '../missions/WebArTreasureModal';
 import { onValue, ref, update } from 'firebase/database';
 import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
@@ -27,11 +29,14 @@ import {
   normalizeTeamId,
   isPqSubmittedForTeam,
   isThemeGardenDoneForTeam,
+  isStepMissionDoneForTeam,
+  isArMissionDoneForTeam,
   getPqForTeam,
   createParticipantId,
   getVotedTeamIdsFromVoteRecord,
   getWrapupQuizScoreForTeam,
 } from '../../utils/scoreCalculator';
+import { useEventConfig } from '../../hooks/useEventConfig';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
 const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> = ({ onOpenProfile, forceOpenStep4 }) => {
@@ -188,6 +193,8 @@ const ActivitySection: React.FC<{
   hasGroundRulesDone: boolean;
   themeGardenDone: boolean;
   pqSubmitted: boolean;
+  stepMissionDone: boolean;
+  arMissionDone: boolean;
   isAllCompleted: boolean;
   uploadedPhotosCount: number;
   myTeamVotesUsed: number;
@@ -198,6 +205,8 @@ const ActivitySection: React.FC<{
   remainingTimeLeft: string;
   onOpenTutorialModal: () => void;
   onOpenThemeGardenModal: () => void;
+  onOpenStepMissionModal: () => void;
+  onOpenArMissionModal: () => void;
   onOpenPhotoVoteModal: () => void;
   onOpenWrapupQuizModal: () => void;
   onOpenCertificate: () => void;
@@ -206,6 +215,8 @@ const ActivitySection: React.FC<{
   hasGroundRulesDone,
   themeGardenDone,
   pqSubmitted,
+  stepMissionDone,
+  arMissionDone,
   isAllCompleted,
   uploadedPhotosCount,
   myTeamVotesUsed,
@@ -216,11 +227,14 @@ const ActivitySection: React.FC<{
   remainingTimeLeft,
   onOpenTutorialModal,
   onOpenThemeGardenModal,
+  onOpenStepMissionModal,
+  onOpenArMissionModal,
   onOpenPhotoVoteModal,
   onOpenWrapupQuizModal,
   onOpenCertificate,
 }) => {
   const navigate = useNavigate();
+  const eventConfig = useEventConfig();
 
   return (
     <div className="mx-4 mt-3 space-y-3">
@@ -332,6 +346,50 @@ const ActivitySection: React.FC<{
             </span>
           </div>
         </button>
+
+        {/* 모듈형 미션 블록 1: 실내 만보기 에너지 게이지 (ON일 때만 표시) */}
+        {eventConfig.enableStepMission && (
+          <button
+            type="button"
+            onClick={onOpenStepMissionModal}
+            className="w-full text-left bg-[#132235] border border-cyan-500/45 hover:border-cyan-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-[14px] font-bold text-cyan-200 whitespace-nowrap truncate">
+                👟 {eventConfig.stepMissionTitle || '실내 만보기 에너지 게이지'}
+              </h3>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                stepMissionDone
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+              }`}>
+                {stepMissionDone ? `완료 (+${eventConfig.stepMissionPoints || 100}pt)` : '걸음 충전 →'}
+              </span>
+            </div>
+          </button>
+        )}
+
+        {/* 모듈형 미션 블록 2: 웹 AR 360° 실내 보물찾기 (ON일 때만 표시) */}
+        {eventConfig.enableArMission && (
+          <button
+            type="button"
+            onClick={onOpenArMissionModal}
+            className="w-full text-left bg-[#1B1734] border border-purple-500/45 hover:border-purple-400 rounded-2xl px-3.5 py-2.5 shadow-md active:scale-98 transition-all"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-[14px] font-bold text-purple-200 whitespace-nowrap truncate">
+                🔮 {eventConfig.arMissionTitle || '웹 AR 360° 실내 보물찾기'}
+              </h3>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                arMissionDone
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+              }`}>
+                {arMissionDone ? `완료 (+${eventConfig.arMissionPoints || 100}pt)` : 'AR 스캔 →'}
+              </span>
+            </div>
+          </button>
+        )}
       </div>
 
       {/* ─── STEP 3 ─── */}
@@ -756,6 +814,8 @@ const Dashboard: React.FC = () => {
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isThemeGardenModalOpen, setIsThemeGardenModalOpen] = useState(false);
+  const [isStepMissionModalOpen, setIsStepMissionModalOpen] = useState(false);
+  const [isArMissionModalOpen, setIsArMissionModalOpen] = useState(false);
   const [isPhotoVoteModalOpen, setIsPhotoVoteModalOpen] = useState(false);
   const [isWrapupQuizModalOpen, setIsWrapupQuizModalOpen] = useState(false);
 
@@ -788,6 +848,12 @@ const Dashboard: React.FC = () => {
     const wrapupQuizzes = (rawSessionData?.wrapupQuizzes && typeof rawSessionData.wrapupQuizzes === 'object')
       ? rawSessionData.wrapupQuizzes
       : {};
+    const stepMissions = (rawSessionData?.stepMissions && typeof rawSessionData.stepMissions === 'object')
+      ? rawSessionData.stepMissions
+      : {};
+    const arMissions = (rawSessionData?.arMissions && typeof rawSessionData.arMissions === 'object')
+      ? rawSessionData.arMissions
+      : {};
 
     return calculateLeaderboardData(
       participants,
@@ -803,7 +869,9 @@ const Dashboard: React.FC = () => {
       themePhotos,
       photoVotes,
       wrapupQuizzes,
-      rawSessionData?.tutorials || {}
+      rawSessionData?.tutorials || {},
+      stepMissions,
+      arMissions
     );
   }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 
@@ -827,6 +895,20 @@ const Dashboard: React.FC = () => {
       ? rawSessionData.themeGardenPhotos
       : {};
     return isThemeGardenDoneForTeam(teamId, themePhotos);
+  }, [rawSessionData, teamId]);
+
+  const stepMissionDone = useMemo(() => {
+    const stepMissions = (rawSessionData?.stepMissions && typeof rawSessionData.stepMissions === 'object')
+      ? rawSessionData.stepMissions
+      : {};
+    return isStepMissionDoneForTeam(teamId, stepMissions);
+  }, [rawSessionData, teamId]);
+
+  const arMissionDone = useMemo(() => {
+    const arMissions = (rawSessionData?.arMissions && typeof rawSessionData.arMissions === 'object')
+      ? rawSessionData.arMissions
+      : {};
+    return isArMissionDoneForTeam(teamId, arMissions);
   }, [rawSessionData, teamId]);
 
   const hasGroundRulesDone = useMemo(() => {
@@ -996,6 +1078,8 @@ const Dashboard: React.FC = () => {
         hasGroundRulesDone={hasGroundRulesDone}
         themeGardenDone={themeGardenDone}
         pqSubmitted={pqSubmitted}
+        stepMissionDone={stepMissionDone}
+        arMissionDone={arMissionDone}
         isAllCompleted={isAllCompleted}
         uploadedPhotosCount={uploadedPhotosCount}
         myTeamVotesUsed={myTeamVotesUsed}
@@ -1006,6 +1090,8 @@ const Dashboard: React.FC = () => {
         remainingTimeLeft={formattedTimeLeft}
         onOpenTutorialModal={() => setIsTutorialModalOpen(true)}
         onOpenThemeGardenModal={() => setIsThemeGardenModalOpen(true)}
+        onOpenStepMissionModal={() => setIsStepMissionModalOpen(true)}
+        onOpenArMissionModal={() => setIsArMissionModalOpen(true)}
         onOpenPhotoVoteModal={() => setIsPhotoVoteModalOpen(true)}
         onOpenWrapupQuizModal={() => setIsWrapupQuizModalOpen(true)}
         onOpenCertificate={() => setIsCertModalOpen(true)}
@@ -1030,6 +1116,34 @@ const Dashboard: React.FC = () => {
         participantCompany={participantCompany}
         onPhotoUploaded={() => {
           fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`)
+            .then(res => res.json())
+            .then(processSessionData)
+            .catch(() => {});
+        }}
+      />
+
+      {/* STEP 2 모듈형 블록 1: 실내 만보기 에너지 게이지 모달 */}
+      <StepEnergyMissionModal
+        isOpen={isStepMissionModalOpen}
+        onClose={() => setIsStepMissionModalOpen(false)}
+        teamId={teamId}
+        participantName={participantName}
+        onMissionUpdated={() => {
+          fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' })
+            .then(res => res.json())
+            .then(processSessionData)
+            .catch(() => {});
+        }}
+      />
+
+      {/* STEP 2 모듈형 블록 2: 웹 AR 360° 실내 보물찾기 모달 */}
+      <WebArTreasureModal
+        isOpen={isArMissionModalOpen}
+        onClose={() => setIsArMissionModalOpen(false)}
+        teamId={teamId}
+        participantName={participantName}
+        onMissionUpdated={() => {
+          fetch(`${dbUrl}/sessions/trekking2026.json?t=${Date.now()}`, { cache: 'no-store' })
             .then(res => res.json())
             .then(processSessionData)
             .catch(() => {});

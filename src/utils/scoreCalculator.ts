@@ -9,10 +9,11 @@ import {
   WRAPUP_QUIZ_ITEMS,
   WRAPUP_QUIZ_WRONG_PENALTY,
   YEONKANG_WRAPUP_QUIZ_POINTS_PER_ITEM,
+  LIVE_EVENT_CONFIG,
 } from '../config/workshopConfig';
 import type { Team } from '../types';
 
-/** (연강원) STEP 1 연습 Quiz 정답 시 조별 점수 */
+/** (LG인화원) STEP 1 연습 Quiz 정답 시 조별 점수 */
 export const PRACTICE_QUIZ_POINTS = 50;
 
 export interface IndividualItem {
@@ -121,6 +122,55 @@ export function isThemeGardenDoneForTeam(
 }
 
 /**
+ * 블록 1: 특정 조의 실내 만보기 에너지 게이지 미션 완료 여부 판별
+ */
+export function isStepMissionDoneForTeam(
+  teamId: string | undefined | null,
+  stepMissionsData: Record<string, any> = {}
+): boolean {
+  if (!teamId || !stepMissionsData || typeof stepMissionsData !== 'object') return false;
+  const targetNorm = normalizeTeamId(teamId);
+  const targetSteps = Math.max(10, Number(LIVE_EVENT_CONFIG.stepMissionTarget) || 300);
+
+  const rec = stepMissionsData[targetNorm] || stepMissionsData[teamId];
+  if (rec && (rec.completed === true || (Number(rec.totalSteps) || 0) >= targetSteps)) {
+    return true;
+  }
+
+  for (const [key, val] of Object.entries(stepMissionsData)) {
+    if (!val || typeof val !== 'object') continue;
+    if (normalizeTeamId(key) === targetNorm || (val.teamId && normalizeTeamId(val.teamId) === targetNorm)) {
+      if (val.completed === true || (Number(val.totalSteps) || 0) >= targetSteps) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * 블록 2: 특정 조의 웹 AR 360° 실내 보물찾기 미션 완료 여부 판별
+ */
+export function isArMissionDoneForTeam(
+  teamId: string | undefined | null,
+  arMissionsData: Record<string, any> = {}
+): boolean {
+  if (!teamId || !arMissionsData || typeof arMissionsData !== 'object') return false;
+  const targetNorm = normalizeTeamId(teamId);
+
+  const rec = arMissionsData[targetNorm] || arMissionsData[teamId];
+  if (rec && (rec.completed === true || (Array.isArray(rec.capturedIds) && rec.capturedIds.length >= 3))) {
+    return true;
+  }
+
+  for (const [key, val] of Object.entries(arMissionsData)) {
+    if (!val || typeof val !== 'object') continue;
+    if (normalizeTeamId(key) === targetNorm || (val.teamId && normalizeTeamId(val.teamId) === targetNorm)) {
+      if (val.completed === true || (Array.isArray(val.capturedIds) && val.capturedIds.length >= 3)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * 특정 조의 People Quest 데이터를 안전하게 획득
  */
 export function getPqForTeam(
@@ -190,7 +240,7 @@ export function calculatePhotoVoteCounts(photoVotesData: Record<string, any> = {
 }
 
 /**
- * 연강원 파일럿 STEP 4 Q2 퀴즈 점수 계산 (개당 50pt, 모두 정답, 최대 7개 = 350pt)
+ * LG인화원 파일럿 STEP 4 Q2 퀴즈 점수 계산 (개당 50pt, 모두 정답, 최대 7개 = 350pt)
  */
 export function getWrapupQuizScoreForTeam(
   teamId: string | undefined | null,
@@ -234,7 +284,7 @@ export function calcWrapupQuizPoints(selected: string[]): number {
  * 1. 최고의 스토리 동료 추천 완료 시: +100pt
  * 2. 조별 단체사진 업로드 완료 시: +100pt
  * 3. STEP 4 단체사진 투표 득표 시: 1표당 +200pt (조당 최대 2표 행사 가능)
- * 4. (연강원 파일럿 전용) STEP 4 Q2 퀴즈: 선택 개당 +50pt (7개 모두 정답, 최대 +350pt)
+ * 4. (LG인화원 파일럿 전용) STEP 4 Q2 퀴즈: 선택 개당 +50pt (7개 모두 정답, 최대 +350pt)
  */
 export function calculateLeaderboardData(
   participantsData: Record<string, any> = {},
@@ -243,7 +293,9 @@ export function calculateLeaderboardData(
   themeGardenPhotosData: Record<string, any> = {},
   photoVotesData: Record<string, any> = {},
   wrapupQuizData: Record<string, any> = {},
-  tutorialsData: Record<string, any> = {}
+  tutorialsData: Record<string, any> = {},
+  stepMissionsData: Record<string, any> = {},
+  arMissionsData: Record<string, any> = {}
 ): {
   individuals: IndividualItem[];
   teams: Team[];
@@ -369,13 +421,37 @@ export function calculateLeaderboardData(
         ? PRACTICE_QUIZ_POINTS
         : 0;
 
+    const isStepDone =
+      LIVE_EVENT_CONFIG.enableStepMission &&
+      isStepMissionDoneForTeam(teamConfig.id, stepMissionsData);
+    const stepPoints = isStepDone
+      ? Number(LIVE_EVENT_CONFIG.stepMissionPoints) || 100
+      : 0;
+
+    const isArDone =
+      LIVE_EVENT_CONFIG.enableArMission &&
+      isArMissionDoneForTeam(teamConfig.id, arMissionsData);
+    const arPoints = isArDone
+      ? Number(LIVE_EVENT_CONFIG.arMissionPoints) || 100
+      : 0;
+
     const teamScore =
       (isPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
       (isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
+      stepPoints +
+      arPoints +
       voteBonusPoints +
       wrapupQuizInfo.points +
       practiceQuizPoints;
-    const completedCount = (isPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
+    const completedCount =
+      (isPqDone ? 1 : 0) +
+      (isThemeDone ? 1 : 0) +
+      (isStepDone ? 1 : 0) +
+      (isArDone ? 1 : 0);
+    const totalActiveMissions =
+      2 +
+      (LIVE_EVENT_CONFIG.enableStepMission ? 1 : 0) +
+      (LIVE_EVENT_CONFIG.enableArMission ? 1 : 0);
 
     return {
       id: teamConfig.id,
@@ -385,7 +461,7 @@ export function calculateLeaderboardData(
       score: teamScore,
       missionsCompleted: completedCount,
       memberCount: teamMembers.length,
-      totalMissions: 2, // 1 단체사진, 1 최고의 스토리 동료 추천
+      totalMissions: totalActiveMissions,
       lastActivity: new Date(),
       status: 'active' as const,
       rank: 1,

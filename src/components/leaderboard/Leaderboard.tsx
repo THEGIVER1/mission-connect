@@ -215,7 +215,7 @@ const TeamTab: React.FC<{ teams: Team[]; myTeamId: string; photoVotes: Record<st
                     <span className="text-red-500 text-sm ml-0.5">pt</span>
                   </div>
                   <span className="text-[12px] text-slate-400 block">
-                    미션 {team.missionsCompleted}/2 완료
+                    미션 {team.missionsCompleted}/{team.totalMissions || 2} 완료
                   </span>
                 </div>
               </div>
@@ -250,6 +250,8 @@ const Leaderboard: React.FC = () => {
   const [photoVotesData, setPhotoVotesData] = useState<Record<string, any>>({});
   const [wrapupQuizzesData, setWrapupQuizzesData] = useState<Record<string, any>>({});
   const [tutorialsData, setTutorialsData] = useState<Record<string, any>>({});
+  const [stepMissionsData, setStepMissionsData] = useState<Record<string, any>>({});
+  const [arMissionsData, setArMissionsData] = useState<Record<string, any>>({});
   const dbUrl = FIREBASE_DB_URL;
 
   const isMyTeamPqSubmitted = useMemo(() => {
@@ -270,7 +272,9 @@ const Leaderboard: React.FC = () => {
       themeGardenPhotosData,
       photoVotesData,
       wrapupQuizzesData,
-      tutorialsData
+      tutorialsData,
+      stepMissionsData,
+      arMissionsData
     );
   }, [
     participantsData,
@@ -279,6 +283,8 @@ const Leaderboard: React.FC = () => {
     photoVotesData,
     wrapupQuizzesData,
     tutorialsData,
+    stepMissionsData,
+    arMissionsData,
     participantName,
     participantCompany,
     myTeamId,
@@ -306,6 +312,8 @@ const Leaderboard: React.FC = () => {
             setPhotoVotesData(data.photoVotes || {});
             setWrapupQuizzesData(data.wrapupQuizzes || {});
             setTutorialsData(data.tutorials || {});
+            setStepMissionsData(data.stepMissions || {});
+            setArMissionsData(data.arMissions || {});
           }
         }
       } catch (err) {
@@ -334,6 +342,8 @@ const Leaderboard: React.FC = () => {
             setPhotoVotesData(data.photoVotes || {});
             setWrapupQuizzesData(data.wrapupQuizzes || {});
             setTutorialsData(data.tutorials || {});
+            setStepMissionsData(data.stepMissions || {});
+            setArMissionsData(data.arMissions || {});
           }
         }
       );

@@ -10,7 +10,11 @@ import {
   PHOTO_VOTE_POINTS_PER_VOTE,
   IS_PILOT_MODE,
   getFinalGatheringInfo,
+  LIVE_EVENT_CONFIG,
+  applyRemoteEventConfig,
 } from '../../config/workshopConfig';
+import { EventSettingsPanel } from './EventSettingsPanel';
+import { useEventConfig } from '../../hooks/useEventConfig';
 import {
   calculateLeaderboardData,
   normalizeTeamId,
@@ -95,10 +99,11 @@ interface ThemeGardenPhotoRecord {
   caption?: string;
 }
 
-type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'broadcast' | 'quizMaster';
+type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'broadcast' | 'quizMaster' | 'settings';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
+  const eventConfig = useEventConfig();
   const [activeTab, setActiveTab] = useState<AdminTab>('teams');
   const [rawParticipantsMap, setRawParticipantsMap] = useState<Record<string, any>>({});
   const [peopleQuests, setPeopleQuests] = useState<Record<string, PeopleQuestRecord>>({});
@@ -107,6 +112,8 @@ const AdminScreen: React.FC = () => {
   const [photoVotes, setPhotoVotes] = useState<Record<string, any>>({});
   const [wrapupQuizzes, setWrapupQuizzes] = useState<Record<string, any>>({});
   const [adminTutorials, setAdminTutorials] = useState<Record<string, any>>({});
+  const [adminStepMissions, setAdminStepMissions] = useState<Record<string, any>>({});
+  const [adminArMissions, setAdminArMissions] = useState<Record<string, any>>({});
   const [step4ForceOpen, setStep4ForceOpen] = useState<boolean>(false);
   const [nowMs, setNowMs] = useState<number>(Date.now());
   const [adminZoomPhotoUrl, setAdminZoomPhotoUrl] = useState<string | null>(null);
@@ -179,7 +186,12 @@ const AdminScreen: React.FC = () => {
       setWrapupQuizzes({});
     }
     setAdminTutorials(data.tutorials && typeof data.tutorials === 'object' ? data.tutorials : {});
+    setAdminStepMissions(data.stepMissions && typeof data.stepMissions === 'object' ? data.stepMissions : {});
+    setAdminArMissions(data.arMissions && typeof data.arMissions === 'object' ? data.arMissions : {});
     setStep4ForceOpen(!!data.step4ForceOpen);
+    if (data.eventConfig && typeof data.eventConfig === 'object') {
+      applyRemoteEventConfig(data.eventConfig);
+    }
     if (data.broadcastNotice && data.broadcastNotice.active) {
       setCurrentBroadcast(data.broadcastNotice);
     } else {
@@ -260,8 +272,18 @@ const AdminScreen: React.FC = () => {
 
   // 1. 실시간 랭킹 및 통합 점수 계산 (대시보드·리더보드와 100% 동일한 점수 계산기 연동)
   const { individuals, teams: calculatedTeams } = useMemo(() => {
-    return calculateLeaderboardData(rawParticipantsMap, peopleQuests, undefined, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials);
-  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials]);
+    return calculateLeaderboardData(
+      rawParticipantsMap,
+      peopleQuests,
+      undefined,
+      themeGardenPhotos,
+      photoVotes,
+      wrapupQuizzes,
+      adminTutorials,
+      adminStepMissions,
+      adminArMissions
+    );
+  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials, adminStepMissions, adminArMissions, eventConfig]);
 
   // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
   const participants: ParticipantRecord[] = useMemo(() => {
@@ -872,6 +894,7 @@ const AdminScreen: React.FC = () => {
         body: JSON.stringify({
           lastResetAt: resetTimestamp,
           resetVersion: resetTimestamp,
+          eventConfig: LIVE_EVENT_CONFIG,
           broadcastNotice: { active: false, message: '', timestamp: new Date().toISOString() },
         }),
       });
@@ -882,6 +905,8 @@ const AdminScreen: React.FC = () => {
       setPhotoVotes({});
       setWrapupQuizzes({});
       setAdminTutorials({});
+      setAdminStepMissions({});
+      setAdminArMissions({});
       setStep4ForceOpen(false);
       setCurrentBroadcast(null);
       alert('✅ 파일럿 테스트 데이터가 성공적으로 초기화되었습니다.');
@@ -1594,8 +1619,8 @@ const AdminScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 7개 관리자 탭 네비게이션 */}
-      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs font-bold">
+      {/* 8개 관리자 탭 네비게이션 */}
+      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs font-bold">
         <button
           onClick={() => setActiveTab('teams')}
           className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
@@ -1659,10 +1684,20 @@ const AdminScreen: React.FC = () => {
           <span>🎯</span>
           <span>퀴즈쇼</span>
         </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+          }`}
+        >
+          <span>⚙️</span>
+          <span>행사설정</span>
+        </button>
       </div>
 
       {/* 탭 컨텐츠 */}
       <div className="p-4 md:p-6 space-y-4 flex-1 overflow-y-auto">
+        {activeTab === 'settings' && <EventSettingsPanel />}
 
         {/* TAB 1: 저녁 퀴즈 마스터 모드 */}
         {activeTab === 'quizMaster' && (
