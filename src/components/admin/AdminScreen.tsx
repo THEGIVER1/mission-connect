@@ -120,7 +120,7 @@ const AdminScreen: React.FC = () => {
   const [currentBroadcast, setCurrentBroadcast] = useState<BroadcastNoticeData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCompany, setSelectedCompany] = useState<'all' | '㈜두산' | '두산경영연구원'>('all');
+  const [selectedCompany, setSelectedCompany] = useState<'all' | '㈜두산' | '기타'>('all');
 
   // 저녁 퀴즈 마스터 모드 상태
   const [blindMode, setBlindMode] = useState<boolean>(false);
@@ -435,27 +435,175 @@ const AdminScreen: React.FC = () => {
     return stats;
   }, [participants]);
 
-  // People Quest 추천 받은 횟수 집계
+  // 현재 선택된 STEP 2 운영 모드 메타 정보 (실외 / 실내 / 하이브리드)
+  const currentMode = eventConfig.step2Mode || 'outdoor';
+  const currentModeMeta = useMemo(() => {
+    if (currentMode === 'indoor') {
+      return {
+        mode: 'indoor' as const,
+        badge: '🏢 실내 액티비티 전용 모드',
+        shortLabel: '실내 액티비티',
+        colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/50',
+        missionTabIcon: '🧩',
+        missionTabLabel: '실내미션·스토리',
+        missionHeaderTitle: `🏢 ${WORKSHOP_TEAMS.length}개 조 실내 액티비티 미션 · 동료 추천 통합 현황`,
+        missionHeaderDesc: '실내 미션 1(3단계 스텝&토크: 공통점·강점·동료추천·슬로건)과 실내 미션 2(웹 AR: 칭찬릴레이·시너지밸런스) 입력 정보입니다.',
+        photoTabIcon: '🔮',
+        photoTabLabel: 'AR스냅샷·투표',
+        photoHeaderTitle: '🔮 실내 웹 AR 홀로그램 단체 스냅샷 & 실시간 투표 현황',
+        photoHeaderDesc: '각 조가 실내 웹 AR 3단계 봉인 해제 후 촬영한 홀로그램 단체 스냅샷 및 STEP 4 실시간 득표 현황입니다.',
+      };
+    }
+    if (currentMode === 'hybrid') {
+      return {
+        mode: 'hybrid' as const,
+        badge: '⚡ 하이브리드(실외+실내) 모드',
+        shortLabel: '하이브리드 결합',
+        colorClass: 'bg-purple-500/20 text-purple-300 border-purple-400/50',
+        missionTabIcon: '⚡',
+        missionTabLabel: '통합미션·스토리',
+        missionHeaderTitle: `⚡ ${WORKSHOP_TEAMS.length}개 조 하이브리드(실외+실내) 미션 · 스토리 통합 현황`,
+        missionHeaderDesc: '야외 최고의 스토리 동료 추천과 실내 스페셜 블록(스텝&토크 3단계 · 웹 AR 가치 캡처) 입력 정보를 한눈에 확인합니다.',
+        photoTabIcon: '📸',
+        photoTabLabel: '사진·AR·투표',
+        photoHeaderTitle: '📸 조별 단체사진 · AR 홀로그램 스냅샷 & 실시간 투표 현황',
+        photoHeaderDesc: '야외 포토스팟 단체사진 또는 실내 웹 AR 홀로그램 스냅샷 업로드 및 STEP 4 실시간 득표 현황입니다.',
+      };
+    }
+    return {
+      mode: 'outdoor' as const,
+      badge: '🌳 실외 트레킹 표준 모드',
+      shortLabel: '실외 트레킹',
+      colorClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50',
+      missionTabIcon: '💬',
+      missionTabLabel: '동료추천·스토리',
+      missionHeaderTitle: `🌳 ${WORKSHOP_TEAMS.length}개 조 최고의 스토리 동료 추천 현황`,
+      missionHeaderDesc: `각 조가 야외 트레킹 중 대화를 통해 발견하고 추천한 최고의 스토리 동료와 추천 사유입니다. (조당 +${PEOPLE_QUEST_POINTS_PER_MEMBER}pt)`,
+      photoTabIcon: IS_PILOT_MODE ? '📸' : '🌹',
+      photoTabLabel: IS_PILOT_MODE ? '단체사진·투표' : '테마가든·투표',
+      photoHeaderTitle: IS_PILOT_MODE
+        ? '📸 포토스팟 조별 단체사진 & 실시간 투표 현황'
+        : '🌹 테마가든 조별 단체사진 & 실시간 투표 현황',
+      photoHeaderDesc: IS_PILOT_MODE
+        ? '각 조가 포토스팟에서 촬영하여 업로드한 단체사진 및 STEP 4 실시간 득표 현황입니다.'
+        : '각 조가 테마가든 스팟에서 촬영하여 업로드한 단체사진 및 STEP 4 실시간 득표 현황입니다.',
+    };
+  }, [currentMode]);
+
+  // 추천 사유 내 중복 슬로건/강점 꼬리표 제거 클리너
+  const cleanPqReason = useCallback((raw?: string) => {
+    if (!raw) return '';
+    return String(raw)
+      .replace(/\s*\(🔥\s*우리\s*조\s*슬로건:.*\)\s*$/, '')
+      .trim();
+  }, []);
+
+  // 조별 실외 / 실내 / 하이브리드 모든 미션 데이터를 중복 없이 하나로 통합 조회하는 헬퍼
+  const getTeamUnifiedSummary = useCallback(
+    (teamId: string) => {
+      const normId = normalizeTeamId(teamId);
+      const pq = getPqForTeam(normId, peopleQuests);
+      const stepRec = adminStepMissions[normId] || adminStepMissions[teamId] || {};
+      const arRec = adminArMissions[normId] || adminArMissions[teamId] || {};
+      const photoRec = themeGardenPhotos[normId] || themeGardenPhotos[teamId] || {};
+
+      const isPqDone = isPqSubmittedForTeam(normId, peopleQuests) || !!stepRec?.gate3Done;
+      const recPersonName = String(
+        pq?.recommendation?.recommendedPersonName || stepRec?.gate3PersonName || ''
+      ).trim();
+      const recPersonCompany = String(
+        pq?.recommendation?.recommendedPersonCompany || (recPersonName ? eventConfig.venueName : '') || ''
+      ).trim();
+      const recTopic = String(
+        pq?.recommendation?.selectedTopic || stepRec?.gate3Topic || ''
+      ).trim();
+      const recReason = cleanPqReason(
+        pq?.recommendation?.reason || stepRec?.gate3Reason || ''
+      );
+
+      const totalSteps = Number(stepRec?.totalSteps || 0);
+      const stepTarget = Number(eventConfig.stepMissionTarget || 300);
+      const gate1Answer = String(stepRec?.gate1Answer || '').trim();
+      const gate2Keyword = String(stepRec?.gate2Keyword || '').trim();
+      const gate2Reason = String(stepRec?.gate2Reason || '').trim();
+      const gate3Slogan = String(stepRec?.gate3Slogan || '').trim();
+      const stepCompleted = !!stepRec?.completed;
+      const hasAnyStepData = Boolean(
+        totalSteps > 0 || gate1Answer || gate2Reason || gate3Slogan || stepCompleted
+      );
+
+      const arCapturedIds: string[] = Array.isArray(arRec?.capturedIds) ? arRec.capturedIds : [];
+      const arPraiseNote = String(arRec?.praiseNote || '').trim();
+      const arSynergyChoice = String(arRec?.synergyChoice || '').trim();
+      const arCompleted = !!arRec?.completed;
+      const hasAnyArData = Boolean(
+        arCapturedIds.length > 0 || arPraiseNote || arSynergyChoice || arCompleted
+      );
+
+      const photoUrl = String(photoRec?.photoUrl || arRec?.arPhotoUrl || '').trim();
+      const photoCaption = String(photoRec?.caption || arRec?.arCaption || '').trim();
+      const isArPhoto = Boolean(
+        arRec?.arPhotoUrl || (photoCaption && photoCaption.includes('AR'))
+      );
+
+      const submittedBy = String(
+        pq?.submittedBy || pq?.updatedBy || stepRec?.updatedBy || arRec?.updatedBy || photoRec?.uploadedBy || ''
+      ).trim();
+      const submittedAt = String(
+        pq?.submittedAt || pq?.updatedAt || stepRec?.completedAt || stepRec?.updatedAt || arRec?.completedAt || photoRec?.uploadedAt || ''
+      ).trim();
+
+      return {
+        normId,
+        pqStatus: isPqDone ? 'submitted' : pq?.status === 'draft' || hasAnyStepData ? 'draft' : 'none',
+        isPqDone,
+        recPersonName,
+        recPersonCompany,
+        recTopic,
+        recReason,
+        totalSteps,
+        stepTarget,
+        gate1Answer,
+        gate2Keyword,
+        gate2Reason,
+        gate3Slogan,
+        stepCompleted,
+        hasAnyStepData,
+        arCapturedCount: arCapturedIds.length,
+        arPraiseNote,
+        arSynergyChoice,
+        arCompleted,
+        hasAnyArData,
+        photoUrl,
+        photoCaption,
+        isArPhoto,
+        submittedBy,
+        submittedAt,
+      };
+    },
+    [peopleQuests, adminStepMissions, adminArMissions, themeGardenPhotos, eventConfig.venueName, eventConfig.stepMissionTarget, cleanPqReason]
+  );
+
+  // People Quest 추천 받은 횟수 집계 (실외 PeopleQuest + 실내 Gate3 통합 · 조별 중복 제거)
   const nominationStats = useMemo(() => {
     const map: Record<string, { count: number; byTeams: string[]; reasons: string[]; topics: string[] }> = {};
-    Object.values(peopleQuests).forEach(pq => {
-      if (pq && pq.status === 'submitted' && pq.recommendation?.recommendedPersonName) {
-        const name = String(pq.recommendation.recommendedPersonName).trim();
-        if (!name) return;
+    WORKSHOP_TEAMS.forEach(team => {
+      const summary = getTeamUnifiedSummary(team.id);
+      if (summary.isPqDone && summary.recPersonName) {
+        const name = summary.recPersonName;
         if (!map[name]) map[name] = { count: 0, byTeams: [], reasons: [], topics: [] };
         map[name].count += 1;
-        const teamName = pq.teamName || WORKSHOP_TEAMS.find(t => t.id === normalizeTeamId(pq.teamId))?.name || pq.teamId || '미정 조';
-        map[name].byTeams.push(teamName);
-        if (pq.recommendation.reason) {
-          map[name].reasons.push(`[${teamName}] ${pq.recommendation.reason}`);
+        map[name].byTeams.push(team.name);
+        if (summary.recReason) {
+          map[name].reasons.push(`[${team.name}] ${summary.recReason}`);
         }
-        if (pq.recommendation.selectedTopic) {
-          map[name].topics.push(`[${teamName}] ${pq.recommendation.selectedTopic}`);
+        if (summary.recTopic) {
+          map[name].topics.push(`[${team.name}] ${summary.recTopic}`);
         }
       }
     });
     return map;
-  }, [peopleQuests]);
+  }, [getTeamUnifiedSummary]);
 
   // 4개 문항 답변을 작성한 참가자 수
   const answeredParticipants = useMemo(() => {
@@ -625,26 +773,31 @@ const AdminScreen: React.FC = () => {
       ];
     });
 
-    downloadCSV(`CHRO_트레킹_나의정보_4문항_원문_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    downloadCSV(`mmazing_나의정보_4문항_원문_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
-  // 2. 통합 저녁 행사용 결합 CSV (참가자 4문항 + 조별 People Quest 추천 결합 마스터)
+  // 2. 통합 저녁 행사용 결합 CSV (참가자 4문항 + 실외/실내/하이브리드 조별 모든 미션 결합 마스터)
   const handleExportMasterMergedCSV = () => {
     const headers = [
       '구분',
       '이름',
       '소속 회사',
       '소속 조',
-      '배정 코스',
-      '트레킹 총점(pt)',
+      '운영 모드',
+      '총점(pt)',
       '완주 미션수',
-      'PQ 추천받은 횟수',
+      '동료추천 받은 횟수',
       '나를 추천한 조',
-      'PQ 추천 사유 및 스토리',
+      '추천 사유 및 스토리',
       'Q1_최근 가장 푹 빠진 취미/관심사',
       'Q2_3년 내 꼭 이루고 싶은 버킷리스트',
       'Q3_해보고 싶은 다른 직업',
       'Q4_동료들이 의외라고 생각할 나만의 사실',
+      '소속조_Gate1_공통점',
+      '소속조_Gate2_강점키워드',
+      '소속조_Gate3_원팀슬로건',
+      '소속조_AR1_칭찬릴레이',
+      '소속조_AR2_시너지밸런스',
       '가입/제출 일시',
     ];
 
@@ -655,13 +808,14 @@ const AdminScreen: React.FC = () => {
       const info = p.myInfo || {};
       const trimmedName = (p.name || '').trim();
       const stat = nominationStats[trimmedName] || { count: 0, byTeams: [], reasons: [], topics: [] };
+      const teamSummary = getTeamUnifiedSummary(p.teamId);
 
       rows.push([
         '참가자 등록',
         trimmedName,
         p.company || '',
         p.teamName || p.teamId || '',
-        p.course || '',
+        currentModeMeta.shortLabel,
         p.score ?? 0,
         p.missionsCompleted ?? 0,
         stat.count,
@@ -671,125 +825,209 @@ const AdminScreen: React.FC = () => {
         info['q3_bucketList'] || '',
         info['q4_dreamJob'] || p.lie || '',
         info['q5_unexpectedFact'] || p.truth2 || '',
+        teamSummary.gate1Answer || '-',
+        teamSummary.gate2Keyword ? `[${teamSummary.gate2Keyword}] ${teamSummary.gate2Reason}` : '-',
+        teamSummary.gate3Slogan || '-',
+        teamSummary.arPraiseNote || '-',
+        teamSummary.arSynergyChoice || '-',
         p.joinedAt || '',
       ]);
     });
 
-    // 2) 피플퀘스트에서 추천되었으나 아직 참가자 명단에 없는 인물도 누락 없이 추가
-    Object.values(peopleQuests).forEach(pq => {
-      if (pq && pq.status === 'submitted' && pq.recommendation?.recommendedPersonName) {
-        const recName = String(pq.recommendation.recommendedPersonName).trim();
-        const recCompany = pq.recommendation.recommendedPersonCompany || '';
-        const exists = participants.some(p => (p.name || '').trim().toLowerCase() === recName.toLowerCase());
-
-        if (!exists && recName) {
-          const recommendingTeam = pq.teamName || WORKSHOP_TEAMS.find(t => t.id === normalizeTeamId(pq.teamId))?.name || pq.teamId || '미정 조';
+    // 2) 실외/실내 동료추천에서 추천되었으나 아직 참가자 명단에 없는 인물도 누락 없이 추가
+    const addedUnregistered = new Set<string>();
+    WORKSHOP_TEAMS.forEach(team => {
+      const summary = getTeamUnifiedSummary(team.id);
+      if (summary.isPqDone && summary.recPersonName) {
+        const recName = summary.recPersonName;
+        const lowerName = recName.toLowerCase();
+        const exists = participants.some(p => (p.name || '').trim().toLowerCase() === lowerName);
+        if (!exists && !addedUnregistered.has(lowerName)) {
+          addedUnregistered.add(lowerName);
+          const stat = nominationStats[recName] || {
+            count: 1,
+            byTeams: [team.name],
+            reasons: [summary.recReason],
+            topics: [summary.recTopic],
+          };
           rows.push([
             '조별 추천 인물 (미등록)',
             recName,
-            recCompany,
+            summary.recPersonCompany || '',
             '미배정',
+            currentModeMeta.shortLabel,
+            0,
+            0,
+            stat.count,
+            stat.byTeams.join(' / '),
+            stat.reasons.join(' | '),
+            '',
+            '',
+            '',
+            '',
             '-',
-            0,
-            0,
-            1,
-            recommendingTeam,
-            `[${recommendingTeam}] (주제: ${pq.recommendation.selectedTopic || ''}) ${pq.recommendation.reason || ''}`,
-            '',
-            '',
-            '',
-            '',
-            pq.submittedAt || '',
+            '-',
+            '-',
+            '-',
+            '-',
+            summary.submittedAt || '',
           ]);
         }
       }
     });
 
-    // 3) 조별 최고의 스토리 동료 추천 6개 조 추천 최종 현황 블록 추가
+    // 3) 조별 미션 · 스토리 · 실내/실외/하이브리드 통합 최종 현황 블록 추가
     rows.push([]);
-    rows.push(['=== [2026 CHRO Trekking 조별 최고의 스토리 동료 추천 6개 조 최종 현황] ===']);
+    rows.push([
+      `=== [${eventConfig.brandTitle} 조별 미션·스토리 통합 현황 (${currentModeMeta.shortLabel} 모드)] ===`,
+    ]);
     rows.push([
       '조 명칭',
-      '제출 상태',
-      '추천 대상자 이름',
-      '추천 대상자 소속',
+      '운영 모드',
+      '조별 총점(pt)',
+      '동료추천 상태',
+      '추천 동료 이름',
+      '추천 동료 소속',
       '선택 주제',
-      '추천 사유 및 상세 스토리',
+      '추천 스토리(사유)',
+      '실내미션1_걸음수',
+      'Gate1_조원공통점',
+      'Gate2_우리조강점',
+      'Gate2_강점이유',
+      'Gate3_원팀슬로건',
+      '실내미션2_AR진행',
+      'AR_1단계_칭찬릴레이',
+      'AR_2단계_시너지밸런스',
+      '사진/AR스냅샷_캡션',
+      'STEP4_득표수',
       '제출자',
-      '제출 일시',
+      '최근 제출일시',
     ]);
 
     WORKSHOP_TEAMS.forEach(team => {
-      const pq = getPqForTeam(team.id, peopleQuests);
-      const isSub = isPqSubmittedForTeam(team.id, peopleQuests);
-      const rec = pq?.recommendation;
+      const s = getTeamUnifiedSummary(team.id);
+      const ranked = rankedTeams.find(rt => rt.id === team.id);
+      const votes = photoVoteCounts[team.id] || 0;
 
       rows.push([
         team.name,
-        isSub ? '제출 완료' : pq?.status === 'draft' ? '임시저장' : '미제출',
-        rec?.recommendedPersonName || '-',
-        rec?.recommendedPersonCompany || '-',
-        rec?.selectedTopic || '-',
-        rec?.reason || '-',
-        pq?.submittedBy || pq?.updatedBy || '-',
-        pq?.submittedAt || pq?.updatedAt || '-',
+        currentModeMeta.shortLabel,
+        ranked?.totalScore ?? 0,
+        s.pqStatus === 'submitted' ? '제출 완료' : s.pqStatus === 'draft' ? '진행 중' : '미제출',
+        s.recPersonName || '-',
+        s.recPersonCompany || '-',
+        s.recTopic || '-',
+        s.recReason || '-',
+        s.hasAnyStepData ? `${s.totalSteps} / ${s.stepTarget}보 (${s.stepCompleted ? '완료' : '진행중'})` : '-',
+        s.gate1Answer || '-',
+        s.gate2Keyword || '-',
+        s.gate2Reason || '-',
+        s.gate3Slogan || '-',
+        s.hasAnyArData ? `${s.arCapturedCount}/3 캡처 (${s.arCompleted ? '완료' : '진행중'})` : '-',
+        s.arPraiseNote || '-',
+        s.arSynergyChoice || '-',
+        s.photoCaption || '-',
+        `${votes}표 (+${votes * PHOTO_VOTE_POINTS_PER_VOTE}pt)`,
+        s.submittedBy || '-',
+        s.submittedAt || '-',
       ]);
     });
 
-    downloadCSV(`CHRO_트레킹_저녁퀴즈_통합마스터_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    downloadCSV(
+      `${eventConfig.brandTitle}_통합마스터_${currentModeMeta.shortLabel}_${new Date().toISOString().slice(0, 10)}.csv`,
+      headers,
+      rows
+    );
   };
 
-  // 3. 조별 최고의 스토리 동료 추천 현황 전용 CSV 다운로드
+  // 3. 조별 미션 · 스토리 통합 현황 전용 CSV 다운로드 (실외 / 실내 / 하이브리드 완벽 지원)
   const handleExportPeopleQuestCSV = () => {
     const headers = [
-      '추천 조',
-      '제출 상태',
-      '추천 대상자 이름',
-      '추천 대상자 소속',
+      '조 명칭',
+      '운영 모드',
+      '조별 총점(pt)',
+      '동료추천 상태',
+      '추천 동료 이름',
+      '추천 동료 소속',
       '선택 주제',
-      '추천 사유 및 상세 스토리',
+      '추천 스토리(사유)',
+      '실내미션1_걸음수',
+      'Gate1_조원공통점',
+      'Gate2_우리조강점',
+      'Gate2_강점이유',
+      'Gate3_원팀슬로건',
+      '실내미션2_AR진행',
+      'AR_1단계_칭찬릴레이',
+      'AR_2단계_시너지밸런스',
+      '사진/AR스냅샷_캡션',
+      'STEP4_득표수',
       '제출자',
-      '제출 일시',
+      '최근 제출일시',
     ];
 
     const rows = WORKSHOP_TEAMS.map(team => {
-      const pq = getPqForTeam(team.id, peopleQuests);
-      const isSub = isPqSubmittedForTeam(team.id, peopleQuests);
-      const rec = pq?.recommendation;
+      const s = getTeamUnifiedSummary(team.id);
+      const ranked = rankedTeams.find(rt => rt.id === team.id);
+      const votes = photoVoteCounts[team.id] || 0;
 
       return [
         team.name,
-        isSub ? '제출 완료' : pq?.status === 'draft' ? '임시저장' : '미제출',
-        rec?.recommendedPersonName || '-',
-        rec?.recommendedPersonCompany || '-',
-        rec?.selectedTopic || '-',
-        rec?.reason || '-',
-        pq?.submittedBy || pq?.updatedBy || '-',
-        pq?.submittedAt || pq?.updatedAt || '-',
+        currentModeMeta.shortLabel,
+        ranked?.totalScore ?? 0,
+        s.pqStatus === 'submitted' ? '제출 완료' : s.pqStatus === 'draft' ? '진행 중' : '미제출',
+        s.recPersonName || '-',
+        s.recPersonCompany || '-',
+        s.recTopic || '-',
+        s.recReason || '-',
+        s.hasAnyStepData ? `${s.totalSteps} / ${s.stepTarget}보 (${s.stepCompleted ? '완료' : '진행중'})` : '-',
+        s.gate1Answer || '-',
+        s.gate2Keyword || '-',
+        s.gate2Reason || '-',
+        s.gate3Slogan || '-',
+        s.hasAnyArData ? `${s.arCapturedCount}/3 캡처 (${s.arCompleted ? '완료' : '진행중'})` : '-',
+        s.arPraiseNote || '-',
+        s.arSynergyChoice || '-',
+        s.photoCaption || '-',
+        `${votes}표 (+${votes * PHOTO_VOTE_POINTS_PER_VOTE}pt)`,
+        s.submittedBy || '-',
+        s.submittedAt || '-',
       ];
     });
 
-    downloadCSV(`CHRO_트레킹_조별_최고의스토리동료추천_현황_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    downloadCSV(
+      `${eventConfig.brandTitle}_조별미션_스토리_통합현황_${currentModeMeta.shortLabel}_${new Date().toISOString().slice(0, 10)}.csv`,
+      headers,
+      rows
+    );
   };
 
-  // 3. 조별 최고의 스토리 동료 추천 제출 해제
+  // 3. 조별 최고의 스토리 동료 추천 제출 해제 (실외 PeopleQuest + 실내 Gate3 동시 해제)
   const handleResetPeopleQuest = async (teamId: string) => {
     const normTeamId = normalizeTeamId(teamId);
-    if (!window.confirm(`[${teamId}]의 최고의 스토리 동료 추천 제출을 취소하고 임시저장(draft) 상태로 되돌리시겠습니까?`)) {
+    if (!window.confirm(`[${teamId}]의 동료 추천 제출을 취소하고 다시 수정할 수 있도록 임시저장 상태로 되돌리시겠습니까?`)) {
       return;
     }
     try {
-      // 1) REST
-      await fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${normTeamId}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'draft' }),
-      });
+      // 1) REST (peopleQuest + stepMissions.gate3Done 동시 해제)
+      await Promise.all([
+        fetch(`${dbUrl}/sessions/trekking2026/peopleQuest/${normTeamId}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'draft' }),
+        }),
+        fetch(`${dbUrl}/sessions/trekking2026/stepMissions/${normTeamId}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gate3Done: false, completed: false }),
+        }),
+      ]);
 
       // 2) SDK
       try {
         const pqRef = ref(rtdb, `sessions/trekking2026/peopleQuest/${normTeamId}`);
         await update(pqRef, { status: 'draft' });
+        const stepRef = ref(rtdb, `sessions/trekking2026/stepMissions/${normTeamId}`);
+        await update(stepRef, { gate3Done: false, completed: false });
       } catch (sdkErr) {}
 
       // 3) 해당 조 참가자들의 peopleQuestCompleted 플래그도 false로 해제
@@ -933,12 +1171,12 @@ const AdminScreen: React.FC = () => {
         {/* 상단 시상식 헤더 바 */}
         <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
           <div className="flex items-center gap-3">
-            <span style={{ color: '#005EB8', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
-              DOOSAN
+            <span style={{ color: '#EF4444', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
+              {eventConfig.brandTitle}
             </span>
             <div className="h-6 w-0.5 bg-amber-500/30" />
             <span className="text-xl font-extrabold text-amber-400 tracking-widest uppercase flex items-center gap-2">
-              🏆 2026 CHRO TREKKING · 영예의 최종 시상식
+              🏆 {eventConfig.eventSubtitle} · 영예의 최종 시상식
             </span>
           </div>
 
@@ -978,7 +1216,7 @@ const AdminScreen: React.FC = () => {
             <div className="my-auto text-center space-y-6 bg-gradient-to-br from-[#141C30] to-[#0B1020] border-2 border-amber-500/30 rounded-3xl p-12 shadow-2xl">
               <div className="text-7xl animate-bounce">🏆</div>
               <h1 className="text-4xl md:text-5xl font-black text-white leading-tight">
-                2026 CHRO 한마음 트레킹<br />
+                {eventConfig.brandTitle} {eventConfig.eventSubtitle}<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500">
                   영예의 최종 순위 발표
                 </span>
@@ -1083,7 +1321,7 @@ const AdminScreen: React.FC = () => {
             <div className="my-auto space-y-4 bg-[#111728] border-2 border-white/15 rounded-3xl p-6 md:p-8 shadow-2xl">
               <div className="text-center pb-2">
                 <h2 className="text-3xl font-black text-white">
-                  👑 2026 CHRO TREKKING · 종합 최종 순위표
+                  👑 {eventConfig.brandTitle} {eventConfig.eventSubtitle} · 종합 최종 순위표
                 </h2>
                 <p className="text-slate-400 text-sm mt-1">모든 조원들의 열정과 화합에 감사드립니다!</p>
               </div>
@@ -1209,12 +1447,12 @@ const AdminScreen: React.FC = () => {
           {/* 상단 무대 헤더 바 */}
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div className="flex items-center gap-3">
-              <span style={{ color: '#005EB8', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
-                DOOSAN
+              <span style={{ color: '#EF4444', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
+                {eventConfig.brandTitle}
               </span>
               <div className="h-6 w-0.5 bg-white/20" />
               <span className="text-lg font-bold text-white tracking-widest uppercase">
-                2026 CHRO TREKKING · 저녁 퀴즈쇼
+                {eventConfig.eventSubtitle} · 퀴즈쇼
               </span>
             </div>
             <button
@@ -1260,12 +1498,12 @@ const AdminScreen: React.FC = () => {
         {/* 상단 무대 헤더 바 */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <span style={{ color: '#005EB8', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
-              DOOSAN
+            <span style={{ color: '#EF4444', fontSize: '28px', fontWeight: '900', letterSpacing: '2px', fontStyle: 'italic' }}>
+              {eventConfig.brandTitle}
             </span>
             <div className="h-6 w-0.5 bg-white/20" />
             <span className="text-lg font-bold text-white tracking-widest uppercase">
-              2026 CHRO TREKKING · 저녁 퀴즈쇼
+              {eventConfig.eventSubtitle} · 퀴즈쇼
             </span>
           </div>
 
@@ -1540,7 +1778,7 @@ const AdminScreen: React.FC = () => {
             <span className="font-bebas text-xl md:text-2xl tracking-widest text-white">
               ADMIN · <span className="text-red-500">CONTROL CENTER</span>
             </span>
-            <p className="text-[13.5px] text-slate-400">2026 CHRO Trekking 운영본부 통합 관리자 콘솔</p>
+            <p className="text-[13.5px] text-slate-400">{eventConfig.brandTitle} ({eventConfig.venueName}) 운영본부 통합 관리자 콘솔</p>
           </div>
           <button
             onClick={fetchData}
@@ -1552,16 +1790,28 @@ const AdminScreen: React.FC = () => {
         </div>
       </header>
 
-      {/* 종합 현황 인포 바 */}
-      <div className="bg-[#101626] border-b border-white/8 px-4 md:px-6 py-2.5 flex items-center justify-between text-xs text-slate-300">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="실시간 동기화 작동 중" />
-          <span>👥 등록 참가자: </span>
-          <strong className="text-amber-400 font-bold">{participants.length}명</strong>
-        </div>
-        <div>
-          <span>💡 4문항 입력 완료: </span>
-          <strong className="text-green-400 font-bold">{answeredParticipants.length}명</strong>
+      {/* 종합 현황 인포 바 (현재 운영 모드 실시간 배지 포함) */}
+      <div className="bg-[#101626] border-b border-white/8 px-4 md:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="실시간 동기화 작동 중" />
+            <span>👥 등록 참가자:</span>
+            <strong className="text-amber-400 font-bold">{participants.length}명</strong>
+          </div>
+          <div className="text-slate-600">|</div>
+          <div>
+            <span>💡 4문항 완료:</span>
+            <strong className="text-green-400 font-bold ml-1">{answeredParticipants.length}명</strong>
+          </div>
+          <div className="text-slate-600 hidden sm:block">|</div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`px-2.5 py-0.5 rounded-full border font-black text-[11.5px] transition-all hover:brightness-110 ${currentModeMeta.colorClass}`}
+            title="클릭하여 행사설정에서 운영 모드 변경"
+          >
+            {currentModeMeta.badge}  ⚙️
+          </button>
         </div>
         <button
           onClick={handleResetSessionData}
@@ -1572,18 +1822,20 @@ const AdminScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* 📥 운영본부 엑셀(CSV) 즉시 다운로드 센터 (상단 고정 배치) */}
+      {/* 📥 운영본부 엑셀(CSV) 즉시 다운로드 센터 (상단 고정 배치 · 실외/실내/하이브리드 자동 통합) */}
       <div className="m-4 md:m-6 bg-gradient-to-r from-[#172033] via-[#1A253C] to-[#172033] border-2 border-red-500/40 rounded-2xl p-4 md:p-5 shadow-2xl space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="text-2xl">📊</span>
             <div>
-              <h3 className="text-sm md:text-base font-black text-white flex items-center gap-2">
-                운영본부 엑셀(CSV) 다운로드 센터
-                <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">1-Click 즉시 다운</span>
+              <h3 className="text-sm md:text-base font-black text-white flex flex-wrap items-center gap-2">
+                <span>운영본부 통합 엑셀(CSV) 다운로드 센터</span>
+                <span className={`text-[11.5px] px-2.5 py-0.5 rounded-full border font-extrabold ${currentModeMeta.colorClass}`}>
+                  {currentModeMeta.badge}
+                </span>
               </h3>
-              <p className="text-[13.5px] text-slate-400">
-                참가자 등록 현황 및 4문항 답변 원문, 조별 최고의 스토리 동료 추천 마스터 데이터를 실시간 엑셀로 추출합니다.
+              <p className="text-[13px] text-slate-300 mt-0.5">
+                실외(동료추천·단체사진) / 실내(3단계 스텝&토크·웹AR 가치캡처) / 하이브리드 중 어떤 모드를 선택하든 모든 입력 데이터가 누락·중복 없이 한 파일로 추출됩니다.
               </p>
             </div>
           </div>
@@ -1595,15 +1847,15 @@ const AdminScreen: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
           <button
             onClick={handleExportMasterMergedCSV}
-            className="px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-black text-xs md:text-[15px] rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-all"
+            className="px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-black text-xs md:text-[14.5px] rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
             <span>📥</span>
-            <span>저녁 퀴즈 마스터 결합 엑셀</span>
+            <span>통합 마스터 결합 엑셀 (4문항+조별미션 전체)</span>
           </button>
 
           <button
             onClick={handleExportMyInfoCSV}
-            className="px-4 py-3 bg-[#1F2C47] hover:bg-[#2A3B5F] text-sky-300 border border-sky-500/40 font-bold text-xs md:text-[15px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+            className="px-4 py-3 bg-[#1F2C47] hover:bg-[#2A3B5F] text-sky-300 border border-sky-500/40 font-bold text-xs md:text-[14.5px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
             <span>📋</span>
             <span>참가자 4문항 원문 엑셀</span>
@@ -1611,15 +1863,15 @@ const AdminScreen: React.FC = () => {
 
           <button
             onClick={handleExportPeopleQuestCSV}
-            className="px-4 py-3 bg-[#26283D] hover:bg-[#343753] text-amber-300 border border-amber-500/40 font-bold text-xs md:text-[15px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+            className="px-4 py-3 bg-[#26283D] hover:bg-[#343753] text-amber-300 border border-amber-500/40 font-bold text-xs md:text-[14.5px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
           >
-            <span>💬</span>
-            <span>조별 최고의 스토리 동료 추천 엑셀</span>
+            <span>{currentModeMeta.missionTabIcon}</span>
+            <span>조별 {currentModeMeta.missionTabLabel} 통합 엑셀</span>
           </button>
         </div>
       </div>
 
-      {/* 8개 관리자 탭 네비게이션 */}
+      {/* 8개 관리자 탭 네비게이션 (선택된 운영 모드에 맞춰 타이틀 자동 최적화) */}
       <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs font-bold">
         <button
           onClick={() => setActiveTab('teams')}
@@ -1645,8 +1897,8 @@ const AdminScreen: React.FC = () => {
             activeTab === 'themeGardenGallery' ? 'bg-pink-600 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          <span>{IS_PILOT_MODE ? '📸' : '🌹'}</span>
-          <span>{IS_PILOT_MODE ? '단체사진·투표' : '테마가든·투표'}</span>
+          <span>{currentModeMeta.photoTabIcon}</span>
+          <span>{currentModeMeta.photoTabLabel}</span>
         </button>
         <button
           onClick={() => setActiveTab('peopleQuest')}
@@ -1654,8 +1906,8 @@ const AdminScreen: React.FC = () => {
             activeTab === 'peopleQuest' ? 'bg-red-500 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
           }`}
         >
-          <span>💬</span>
-          <span>최고의 스토리 동료 추천</span>
+          <span>{currentModeMeta.missionTabIcon}</span>
+          <span>{currentModeMeta.missionTabLabel}</span>
         </button>
         <button
           onClick={() => setActiveTab('myInfoList')}
@@ -1687,7 +1939,7 @@ const AdminScreen: React.FC = () => {
         <button
           onClick={() => setActiveTab('settings')}
           className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
-            activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-[#161F33] text-slate-400 hover:text-white'
+            activeTab === 'settings' ? 'bg-indigo-600 text-white font-black shadow-lg ring-1 ring-indigo-400' : 'bg-[#161F33] text-indigo-300 hover:text-white border border-indigo-500/30'
           }`}
         >
           <span>⚙️</span>
@@ -1908,15 +2160,23 @@ const AdminScreen: React.FC = () => {
 
             {/* 현재 조별 실시간 순위표 */}
             <div className="space-y-2.5">
-              <span className="text-[14px] font-bold text-slate-300 block">
-                📊 실시간 조별 종합 순위표 (조별 미션·투표·퀴즈 통합)
-              </span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[14px] font-bold text-slate-300">
+                  📊 실시간 조별 종합 순위표 (조별 미션·투표·퀴즈 통합)
+                </span>
+                <span className={`text-[12px] px-2.5 py-0.5 rounded-full border font-bold ${currentModeMeta.colorClass}`}>
+                  현재 반영 모드: {currentModeMeta.badge}
+                </span>
+              </div>
               {rankedTeams.map((team, idx) => {
                 const isPqDone = isPqSubmittedForTeam(team.id, peopleQuests);
                 const isPhotoDone = isThemeGardenDoneForTeam(team.id, themeGardenPhotos);
                 const votesReceived = photoVoteCounts[team.id] || 0;
                 const votePts = votesReceived * PHOTO_VOTE_POINTS_PER_VOTE;
                 const wrapupInfo = getWrapupQuizScoreForTeam(team.id, wrapupQuizzes);
+                const summary = getTeamUnifiedSummary(team.id);
+                const stepPts = Number(eventConfig.stepMissionPoints) || 100;
+                const arPts = Number(eventConfig.arMissionPoints) || 100;
 
                 return (
                   <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
@@ -1941,28 +2201,57 @@ const AdminScreen: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* 조별 점수 상세 내역 배지 */}
+                    {/* 조별 점수 상세 내역 배지 (선택된 모드에 맞춰 중복 없이 표시) */}
                     <div className="flex flex-wrap gap-1.5 pt-0.5 text-[12px]">
-                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
-                        isPqDone
-                          ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
-                          : 'bg-black/30 text-slate-500 border-white/5'
-                      }`}>
-                        동료추천 {isPqDone ? `+${PEOPLE_QUEST_POINTS_PER_MEMBER}pt` : '대기'}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-md border font-bold ${
-                        isPhotoDone
-                          ? 'bg-pink-500/15 text-pink-300 border-pink-500/30'
-                          : 'bg-black/30 text-slate-500 border-white/5'
-                      }`}>
-                        단체사진 {isPhotoDone ? `+${THEME_GARDEN_MISSION.pointsPerMember}pt` : '대기'}
-                      </span>
+                      {currentMode !== 'indoor' && (
+                        <>
+                          <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                            isPqDone
+                              ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                              : 'bg-black/30 text-slate-500 border-white/5'
+                          }`}>
+                            👑 동료추천 {isPqDone ? `+${PEOPLE_QUEST_POINTS_PER_MEMBER}pt` : '대기'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                            isPhotoDone
+                              ? 'bg-pink-500/15 text-pink-300 border-pink-500/30'
+                              : 'bg-black/30 text-slate-500 border-white/5'
+                          }`}>
+                            📸 단체사진 {isPhotoDone ? `+${THEME_GARDEN_MISSION.pointsPerMember}pt` : '대기'}
+                          </span>
+                        </>
+                      )}
+
+                      {(currentMode === 'indoor' || eventConfig.enableStepMission) && (
+                        <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                          summary.stepCompleted
+                            ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                            : summary.hasAnyStepData
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            : 'bg-black/30 text-slate-500 border-white/5'
+                        }`}>
+                          👟 스텝&토크 {summary.stepCompleted ? `+${stepPts}pt` : summary.hasAnyStepData ? `진행중(${summary.totalSteps}보)` : '대기'}
+                        </span>
+                      )}
+
+                      {(currentMode === 'indoor' || eventConfig.enableArMission) && (
+                        <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                          summary.arCompleted
+                            ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                            : summary.hasAnyArData
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            : 'bg-black/30 text-slate-500 border-white/5'
+                        }`}>
+                          🔮 웹AR캡처 {summary.arCompleted ? `+${arPts}pt` : summary.hasAnyArData ? `진행중(${summary.arCapturedCount}/3)` : '대기'}
+                        </span>
+                      )}
+
                       <span className={`px-2 py-0.5 rounded-md border font-bold ${
                         votesReceived > 0
-                          ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
                           : 'bg-black/30 text-slate-500 border-white/5'
                       }`}>
-                        사진득표 {votesReceived}표 (+{votePts}pt)
+                        🗳️ 사진득표 {votesReceived}표 (+{votePts}pt)
                       </span>
                       {IS_PILOT_MODE && (
                         <span className={`px-2 py-0.5 rounded-md border font-bold ${
@@ -1970,7 +2259,7 @@ const AdminScreen: React.FC = () => {
                             ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                             : 'bg-black/30 text-slate-500 border-white/5'
                         }`}>
-                          Q2퀴즈 {wrapupInfo.completed ? `+${wrapupInfo.points}pt (${wrapupInfo.selectedItems.length}개)` : '대기'}
+                          📝 Q2퀴즈 {wrapupInfo.completed ? `+${wrapupInfo.points}pt (${wrapupInfo.selectedItems.length}개)` : '대기'}
                         </span>
                       )}
                     </div>
@@ -2105,31 +2394,32 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB: 단체사진 갤러리 및 투표 현황 */}
+        {/* TAB: 단체사진 / AR 스냅샷 갤러리 및 투표 현황 */}
         {activeTab === 'themeGardenGallery' && (
           <div className="space-y-4">
             <div className="bg-[#1A2235] border border-pink-500/30 rounded-2xl p-4 space-y-2 shadow-xl">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[15px] font-bold text-pink-400 flex items-center gap-1.5">
-                  {IS_PILOT_MODE
-                    ? '📸 두산 저수지 조별 단체사진 & 실시간 투표 현황'
-                    : '🌹 테마가든 조별 단체사진 & 실시간 투표 현황'}
+                  {currentModeMeta.photoHeaderTitle}
                 </span>
-                <span className="text-[13.5px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
-                  {THEME_GARDEN_MISSION.timeRange} 메인 미션
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[12px] px-2.5 py-0.5 rounded-full border font-bold ${currentModeMeta.colorClass}`}>
+                    {currentModeMeta.badge}
+                  </span>
+                  <span className="text-[13px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
+                    {eventConfig.step2TimeRange || THEME_GARDEN_MISSION.timeRange}
+                  </span>
+                </div>
               </div>
               <p className="text-[14px] text-slate-300 leading-relaxed">
-                {IS_PILOT_MODE
-                  ? '각 조가 두산 저수지 스팟에서 촬영하여 업로드한 단체사진 및 STEP 4 실시간 득표 현황입니다.'
-                  : '각 조가 테마가든 스팟에서 촬영하여 업로드한 단체사진 및 STEP 4 실시간 득표 현황입니다.'}
+                {currentModeMeta.photoHeaderDesc}
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {WORKSHOP_TEAMS.map(team => {
-                const photo = themeGardenPhotos[team.id];
-                const isUploaded = photo && photo.photoUrl;
+                const s = getTeamUnifiedSummary(team.id);
+                const isUploaded = Boolean(s.photoUrl);
                 const votes = photoVoteCounts[team.id] || 0;
                 const myVotedTeams: string[] = Array.isArray(photoVotes[team.id]?.votedTeamIds)
                   ? photoVotes[team.id].votedTeamIds
@@ -2166,14 +2456,21 @@ const AdminScreen: React.FC = () => {
                     {isUploaded ? (
                       <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
                         <div
-                          onClick={() => setAdminZoomPhotoUrl(photo.photoUrl)}
+                          onClick={() => setAdminZoomPhotoUrl(s.photoUrl)}
                           className="relative rounded-xl overflow-hidden border border-white/10 cursor-pointer group bg-black/50"
                         >
                           <img
-                            src={photo.photoUrl}
-                            alt={`${team.name} 단체사진`}
+                            src={s.photoUrl}
+                            alt={`${team.name} 인증사진`}
                             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                           />
+                          <span className={`absolute top-2 left-2 text-[11px] font-black px-2 py-0.5 rounded-full border backdrop-blur-md ${
+                            s.isArPhoto
+                              ? 'bg-purple-950/85 text-purple-200 border-purple-400/50'
+                              : 'bg-emerald-950/85 text-emerald-200 border-emerald-400/50'
+                          }`}>
+                            {s.isArPhoto ? '🔮 AR 홀로그램 스냅샷' : '📸 포토스팟 단체사진'}
+                          </span>
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span className="text-white text-xs font-bold bg-black/60 px-3 py-1 rounded-full border border-white/20">
                               🔍 크게 보기
@@ -2181,24 +2478,38 @@ const AdminScreen: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <p className="text-[14px] font-bold text-white truncate">
-                            "{photo.caption || '우리 조 단체사진'}"
+                            "{s.photoCaption || '우리 조 인증사진'}"
                           </p>
+                          {(s.arPraiseNote || s.arSynergyChoice) && (
+                            <div className="bg-purple-950/30 border border-purple-500/25 rounded-lg p-2 text-[12px] text-purple-200 space-y-0.5">
+                              {s.arPraiseNote && (
+                                <p className="truncate">💬 <strong>칭찬:</strong> {s.arPraiseNote}</p>
+                              )}
+                              {s.arSynergyChoice && (
+                                <p className="truncate">⚖️ <strong>밸런스:</strong> {s.arSynergyChoice}</p>
+                              )}
+                            </div>
+                          )}
                           <div className="flex justify-between items-center text-[12.5px] text-slate-400">
                             <span>투표 행사: <strong className="text-purple-300">{myVotedTeams.length}/2표</strong></span>
-                            <span>{new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{s.submittedAt ? new Date(s.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div className="p-10 text-center space-y-2 bg-black/20 flex-1 flex flex-col items-center justify-center">
                         <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl text-slate-500">
-                          📷
+                          {currentMode === 'indoor' ? '🔮' : '📷'}
                         </div>
-                        <p className="text-[14px] text-slate-400 font-medium">사진 촬영 및 업로드 대기 중</p>
+                        <p className="text-[14px] text-slate-400 font-medium">
+                          {currentMode === 'indoor' ? 'AR 홀로그램 스냅샷 대기 중' : '사진 촬영 및 업로드 대기 중'}
+                        </p>
                         <p className="text-[12.5px] text-slate-500">
-                          {IS_PILOT_MODE ? '두산 저수지 스팟에서 업로드 시 즉시 반영됩니다.' : '테마가든 스팟에서 업로드 시 즉시 반영됩니다.'}
+                          {currentMode === 'indoor'
+                            ? '실내 미션 2 (웹 AR 3단계) 스냅샷 저장 시 즉시 반영됩니다.'
+                            : '단체사진 또는 웹 AR 스냅샷 업로드 시 즉시 반영됩니다.'}
                         </p>
                       </div>
                     )}
@@ -2262,17 +2573,17 @@ const AdminScreen: React.FC = () => {
                   type="button"
                   onClick={() => handleSendBroadcast({
                     title: IS_PILOT_MODE
-                      ? '📸 14:20 연강원 강의장 최종 집결 안내'
+                      ? '📸 14:20 LG인화원 강의장 최종 집결 안내'
                       : '📸 16:30 세븐일레븐 앞 공터 최종 집결 안내',
                     message: IS_PILOT_MODE
-                      ? '트레킹 종료 후 14시 20분까지 연강원 강의장으로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 단체사진 투표 및 Q2 퀴즈가 진행됩니다!'
+                      ? '트레킹 종료 후 14시 20분까지 LG인화원 강의장으로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 단체사진 투표 및 Q2 퀴즈가 진행됩니다!'
                       : '트레킹 종료 후 16시 30분까지 세븐일레븐 앞 공터로 최종 집결해 주시기 바랍니다. 집결 완료 후 STEP 4 실시간 단체사진 투표가 진행됩니다!',
                     type: 'photo',
                   })}
                   className="w-full p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>
-                    📸 <strong>[최종집결]</strong> {IS_PILOT_MODE ? '14:20' : '16:30'} {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 최종 집결
+                    📸 <strong>[최종집결]</strong> {IS_PILOT_MODE ? '14:20' : '16:30'} {IS_PILOT_MODE ? 'LG인화원 강의장' : '세븐일레븐 앞 공터'} 최종 집결
                   </span>
                   <span className="text-[12.5px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
@@ -2282,14 +2593,14 @@ const AdminScreen: React.FC = () => {
                   onClick={() => handleSendBroadcast({
                     title: '⏰ 트레킹 마감 15분 전 안내',
                     message: IS_PILOT_MODE
-                      ? '트레킹 미션 종료 15분 전입니다. 14시 20분까지 최종 집결지인 연강원 강의장으로 안전하게 복귀해 주시기 바랍니다.'
+                      ? '트레킹 미션 종료 15분 전입니다. 14시 20분까지 최종 집결지인 LG인화원 강의장으로 안전하게 복귀해 주시기 바랍니다.'
                       : '트레킹 미션 종료 15분 전입니다. 16시 30분까지 최종 집결지인 세븐일레븐 앞 공터로 안전하게 복귀해 주시기 바랍니다.',
                     type: 'urgent',
                   })}
                   className="w-full p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 rounded-xl text-left flex items-center justify-between text-slate-200 text-[14px] transition-all"
                 >
                   <span>
-                    ⏰ <strong>[마감 15분 전]</strong> {IS_PILOT_MODE ? '14:20' : '16:30'} {IS_PILOT_MODE ? '연강원 강의장' : '세븐일레븐 앞 공터'} 복귀
+                    ⏰ <strong>[마감 15분 전]</strong> {IS_PILOT_MODE ? '14:20' : '16:30'} {IS_PILOT_MODE ? 'LG인화원 강의장' : '세븐일레븐 앞 공터'} 복귀
                   </span>
                   <span className="text-[12.5px] bg-red-500 text-white px-2 py-0.5 rounded font-bold">즉시 발송</span>
                 </button>
@@ -2299,7 +2610,7 @@ const AdminScreen: React.FC = () => {
                   onClick={() => handleSendBroadcast({
                     title: '🗳️ STEP 4 단체사진 투표 오픈 안내',
                     message: IS_PILOT_MODE
-                      ? 'STEP 4 단체사진 투표(조당 2표)와 Q2 연강원 퀴즈가 오픈되었습니다! 지금 앱에서 참여해 조별 점수를 획득하세요.'
+                      ? 'STEP 4 단체사진 투표(조당 2표)와 Q2 LG인화원 퀴즈가 오픈되었습니다! 지금 앱에서 참여해 조별 점수를 획득하세요.'
                       : 'STEP 4 실시간 단체사진 투표(조당 2표)가 오픈되었습니다! 지금 앱에서 최고의 단체사진에 투표해 주세요.',
                     type: 'dinner',
                   })}
@@ -2413,74 +2724,234 @@ const AdminScreen: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 6: 조별 최고의 스토리 동료 추천 현황 */}
+        {/* TAB 6: 조별 미션 · 스토리 통합 현황 (실외 / 실내 / 하이브리드 완벽 대응 & 중복 제로) */}
         {activeTab === 'peopleQuest' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between bg-[#1A2235] border border-white/10 rounded-2xl p-3.5 gap-2">
-              <div>
-                <span className="text-[14px] font-bold text-white block">
-                  💬 6개 조 최고의 스토리 동료 추천 제출 상태
-                </span>
-                <p className="text-[13.5px] text-slate-400">
-                  각 조가 트레킹 중 발견하여 추천한 인물과 스토리입니다. (조당 +{PEOPLE_QUEST_POINTS_PER_MEMBER}pt)
+          <div className="space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between bg-[#1A2235] border border-white/10 rounded-2xl p-4 gap-3 shadow-xl">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[15.5px] font-black text-white">
+                    {currentModeMeta.missionHeaderTitle}
+                  </span>
+                  <span className={`text-[11.5px] px-2.5 py-0.5 rounded-full border font-bold ${currentModeMeta.colorClass}`}>
+                    {currentModeMeta.badge}
+                  </span>
+                </div>
+                <p className="text-[13.5px] text-slate-300">
+                  {currentModeMeta.missionHeaderDesc}
                 </p>
               </div>
               <button
                 onClick={handleExportPeopleQuestCSV}
-                className="px-3 py-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white text-[14px] font-bold rounded-xl whitespace-nowrap shadow flex-shrink-0"
+                className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white text-[13.5px] font-black rounded-xl whitespace-nowrap shadow-lg flex-shrink-0 flex items-center gap-1.5"
               >
-                📥 추천 CSV 받기
+                <span>📥</span>
+                <span>조별 {currentModeMeta.missionTabLabel} 통합 CSV 받기</span>
               </button>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {WORKSHOP_TEAMS.map(team => {
-                const pq = getPqForTeam(team.id, peopleQuests);
-                const isSubmitted = isPqSubmittedForTeam(team.id, peopleQuests);
-                const rec = pq?.recommendation;
+                const s = getTeamUnifiedSummary(team.id);
+                const showIndoorStepBlock =
+                  currentMode === 'indoor' ||
+                  currentMode === 'hybrid' ||
+                  eventConfig.enableStepMission ||
+                  s.hasAnyStepData;
+                const showIndoorArBlock =
+                  currentMode === 'indoor' ||
+                  currentMode === 'hybrid' ||
+                  eventConfig.enableArMission ||
+                  s.hasAnyArData;
 
                 return (
-                  <div key={team.id} className="bg-[#1A2235] border border-white/8 rounded-2xl p-3.5 space-y-2">
-                    <div className="flex justify-between items-center">
+                  <div key={team.id} className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg">
+                    {/* 카드 상단: 조 이름 & 모드별 진행 상태 배지 */}
+                    <div className="flex flex-wrap justify-between items-center gap-2 border-b border-white/10 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-base">{team.emoji}</span>
-                        <strong className="text-[16px] text-white">{team.name}</strong>
+                        <span
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white shadow"
+                          style={{ background: team.color }}
+                        >
+                          {team.shortCode}
+                        </span>
+                        <strong className="text-[16px] text-white">{team.emoji} {team.name}</strong>
                       </div>
-                      <span className={`text-[13.5px] font-bold px-2 py-0.5 rounded-full border ${
-                        isSubmitted
-                          ? 'bg-green-500/15 text-green-400 border-green-500/30'
-                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                      }`}>
-                        {isSubmitted ? '✓ 최종 제출됨' : '진행 중'}
-                      </span>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full border ${
+                          s.isPqDone
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : s.pqStatus === 'draft'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-white/5 text-slate-400 border-white/10'
+                        }`}>
+                          👑 동료추천: {s.isPqDone ? '✓ 제출완료' : s.pqStatus === 'draft' ? '작성중' : '대기'}
+                        </span>
+
+                        {showIndoorStepBlock && (
+                          <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full border ${
+                            s.stepCompleted
+                              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                              : s.hasAnyStepData
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : 'bg-white/5 text-slate-400 border-white/10'
+                          }`}>
+                            👟 스텝&토크: {s.stepCompleted ? '✓ 3단계 완주' : `${s.totalSteps}/${s.stepTarget}보`}
+                          </span>
+                        )}
+
+                        {showIndoorArBlock && (
+                          <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full border ${
+                            s.arCompleted
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : s.hasAnyArData
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : 'bg-white/5 text-slate-400 border-white/10'
+                          }`}>
+                            🔮 웹AR: {s.arCompleted ? '✓ 3/3 완료' : `${s.arCapturedCount}/3 캡처`}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {rec?.recommendedPersonName ? (
-                      <div className="bg-black/30 p-2.5 rounded-xl space-y-1 text-[14px]">
-                        <p className="text-white font-bold">
-                          👑 추천: <span className="text-amber-400">{rec.recommendedPersonName} 님</span> ({rec.recommendedPersonCompany})
-                        </p>
-                        <p className="text-slate-300 text-[13.5px]">
-                          주제: {rec.selectedTopic}
-                        </p>
-                        <p className="text-slate-400 text-[13.5px] italic bg-white/5 p-2 rounded-lg mt-1">
-                          "{rec.reason}"
-                        </p>
+                    {/* 섹션 1: 최고의 스토리 동료 추천 (실외 미션 1 / 실내 Gate 3 공통 통합, 중복 없음) */}
+                    <div className="bg-black/35 border border-amber-500/25 rounded-xl p-3 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12.5px] font-black text-amber-400">
+                          👑 최고의 스토리 동료 추천 {currentMode === 'indoor' ? '(실내 Gate 3 연동)' : ''}
+                        </span>
+                        {s.recTopic && (
+                          <span className="text-[11.5px] bg-amber-500/15 text-amber-200 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold">
+                            주제: {s.recTopic}
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <p className="text-[13.5px] text-slate-500">아직 추천 대상자가 등록되지 않았습니다.</p>
+
+                      {s.recPersonName ? (
+                        <div className="space-y-1 text-[14px]">
+                          <p className="text-white font-bold">
+                            추천 대상자: <span className="text-amber-300">{s.recPersonName} 님</span>
+                            {s.recPersonCompany ? <span className="text-slate-400 text-[13px] font-normal"> ({s.recPersonCompany})</span> : null}
+                          </p>
+                          <p className="text-slate-200 text-[13.5px] bg-white/5 p-2.5 rounded-lg border border-white/5 leading-relaxed">
+                            "{s.recReason || '추천 사유 없음'}"
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-[13px] text-slate-500 italic">
+                          아직 추천 동료 및 스토리가 제출되지 않았습니다.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 섹션 2: 실내 미션 1 (3단계 스텝 & 토크 게이트 상세: 공통점 · 강점 · 슬로건) */}
+                    {showIndoorStepBlock && (
+                      <div className="bg-cyan-950/25 border border-cyan-500/30 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[12.5px] font-black text-cyan-300">
+                            👟 실내 미션 1 · 스텝 & 토크 3단계 시너지 게이트
+                          </span>
+                          <span className="text-[12px] font-bold text-cyan-200">
+                            누적 걸음: {s.totalSteps.toLocaleString()} / {s.stepTarget.toLocaleString()}보
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[13px]">
+                          <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
+                            <span className="text-[11.5px] text-cyan-400 font-bold block mb-0.5">
+                              Gate 1 · 우리 조원 공통점
+                            </span>
+                            <p className="text-white font-medium">
+                              {s.gate1Answer || <span className="text-slate-500 italic">(미입력)</span>}
+                            </p>
+                          </div>
+                          <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
+                            <span className="text-[11.5px] text-cyan-400 font-bold block mb-0.5">
+                              Gate 2 · 우리 조 강점 키워드 & 이유
+                            </span>
+                            <p className="text-white font-medium">
+                              {s.gate2Keyword || s.gate2Reason ? (
+                                <>
+                                  {s.gate2Keyword && (
+                                    <span className="inline-block bg-cyan-500/20 text-cyan-200 text-[11px] font-black px-1.5 py-0.5 rounded mr-1">
+                                      {s.gate2Keyword}
+                                    </span>
+                                  )}
+                                  <span>{s.gate2Reason}</span>
+                                </>
+                              ) : (
+                                <span className="text-slate-500 italic">(미입력)</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
+                            <span className="text-[11.5px] text-cyan-400 font-bold block mb-0.5">
+                              Gate 3 · 원팀 한 줄 슬로건
+                            </span>
+                            <p className="text-white font-medium">
+                              {s.gate3Slogan ? `"${s.gate3Slogan}"` : <span className="text-slate-500 italic">(미입력)</span>}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     )}
 
-                    {isSubmitted && (
-                      <div className="pt-1 flex justify-end">
-                        <button
-                          onClick={() => handleResetPeopleQuest(team.id)}
-                          className="text-[13.5px] text-slate-400 hover:text-red-400 underline"
-                        >
-                          제출 취소 및 수정 허용
-                        </button>
+                    {/* 섹션 3: 실내 미션 2 (웹 AR 360° 가치 캡처 상세: 칭찬 릴레이 · 시너지 밸런스) */}
+                    {showIndoorArBlock && (
+                      <div className="bg-purple-950/25 border border-purple-500/30 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[12.5px] font-black text-purple-300">
+                            🔮 실내 미션 2 · 웹 AR 360° 가치 캡처 & 홀로그램 스냅샷
+                          </span>
+                          <span className="text-[12px] font-bold text-purple-200">
+                            봉인 해제: {s.arCapturedCount} / 3단계
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[13px]">
+                          <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
+                            <span className="text-[11.5px] text-purple-400 font-bold block mb-0.5">
+                              1단계(60°) · 조원 칭찬 릴레이
+                            </span>
+                            <p className="text-white font-medium">
+                              {s.arPraiseNote || <span className="text-slate-500 italic">(미입력)</span>}
+                            </p>
+                          </div>
+                          <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
+                            <span className="text-[11.5px] text-purple-400 font-bold block mb-0.5">
+                              2단계(180°) · 팀 시너지 밸런스 선택
+                            </span>
+                            <p className="text-white font-medium">
+                              {s.arSynergyChoice || <span className="text-slate-500 italic">(미선택)</span>}
+                            </p>
+                          </div>
+                          <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
+                            <span className="text-[11.5px] text-purple-400 font-bold block mb-0.5">
+                              3단계(300°) · 홀로그램 스냅샷 캡션
+                            </span>
+                            <p className="text-white font-medium">
+                              {s.photoCaption ? `"${s.photoCaption}"` : <span className="text-slate-500 italic">(미촬영)</span>}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
+
+                    {/* 하단 메타 정보 & 제출 해제 버튼 */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[12px] text-slate-400">
+                      <span>
+                        {s.submittedBy
+                          ? `최근 작성자: ${s.submittedBy}${s.submittedAt ? ` (${new Date(s.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : ''}`
+                          : '아직 제출 기록이 없습니다.'}
+                      </span>
+                      {s.isPqDone && (
+                        <button
+                          onClick={() => handleResetPeopleQuest(team.id)}
+                          className="text-[12.5px] text-slate-400 hover:text-red-400 underline"
+                        >
+                          동료 추천 제출 취소 및 수정 허용
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

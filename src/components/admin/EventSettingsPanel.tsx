@@ -4,7 +4,6 @@ import { rtdb, FIREBASE_DB_URL } from '../../lib/firebase';
 import {
   DEFAULT_EVENT_CONFIG,
   LIVE_EVENT_CONFIG,
-  MASTER_PASSCODE,
   RemoteEventConfig,
   WrapupQuizItem,
   applyRemoteEventConfig,
@@ -18,28 +17,6 @@ export const EventSettingsPanel: React.FC = () => {
   }));
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [isMasterUnlocked, setIsMasterUnlocked] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem('master_blocks_unlocked') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [masterInput, setMasterInput] = useState<string>('');
-  const [showMasterPrompt, setShowMasterPrompt] = useState<boolean>(false);
-
-  const handleUnlockMaster = () => {
-    if (masterInput.trim() === MASTER_PASSCODE) {
-      setIsMasterUnlocked(true);
-      setShowMasterPrompt(false);
-      setMasterInput('');
-      try {
-        sessionStorage.setItem('master_blocks_unlocked', 'true');
-      } catch {}
-    } else {
-      alert('마스터 보안코드가 일치하지 않습니다.');
-    }
-  };
 
   useEffect(() => {
     const syncFromLive = () => {
@@ -157,7 +134,7 @@ export const EventSettingsPanel: React.FC = () => {
         </div>
       )}
 
-      {/* 0. 🧩 모듈형 실내/하이브리드 미션 블록 설정 (마스터 스위치 잠금 보호) */}
+      {/* 0. 🧩 모듈형 실외 / 실내 / 하이브리드 운영 모드 & 미션 블록 설정 */}
       <div className="bg-gradient-to-br from-[#191E34] via-[#141A2C] to-[#101625] border border-cyan-500/40 rounded-2xl p-4 space-y-3.5 shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
           <div>
@@ -165,72 +142,27 @@ export const EventSettingsPanel: React.FC = () => {
               <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
                 MODULAR MISSION BLOCKS
               </span>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                isMasterUnlocked
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-400/40'
-              }`}>
-                {isMasterUnlocked ? '🔓 마스터 스위치 해제됨' : '🔒 마스터 전용 잠금'}
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                {form.step2Mode === 'indoor'
+                  ? '🏢 현재 선택: 실내 액티비티 전용'
+                  : form.step2Mode === 'hybrid'
+                  ? '⚡ 현재 선택: 하이브리드 결합'
+                  : '🌳 현재 선택: 실외 트레킹 표준'}
               </span>
             </div>
             <h4 className="text-[15.5px] font-black text-white mt-1">
-              🧩 실내 & 하이브리드 스페셜 미션 블록 조립 (ON / OFF)
+              🧩 STEP 2 운영 모드 (실외 / 실내 / 하이브리드) & 미션 블록 설정
             </h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              우천 시 실내 전환이나 프리미엄 결합 교육 시, 원하는 미션 블록만 스위치로 켜서 STEP 2에 즉시 추가합니다.
+              잠금 없이 원하는 운영 모드와 미션 블록을 자유롭게 선택한 뒤 하단 <strong>[행사 설정 저장]</strong>을 누르면 전 참가자 화면에 즉시 반영됩니다.
             </p>
           </div>
-
-          {!isMasterUnlocked ? (
-            <button
-              type="button"
-              onClick={() => setShowMasterPrompt(v => !v)}
-              className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-extrabold transition-all"
-            >
-              🔑 마스터 스위치 잠금 해제
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setIsMasterUnlocked(false);
-                try {
-                  sessionStorage.removeItem('master_blocks_unlocked');
-                } catch {}
-              }}
-              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold"
-            >
-              🔒 다시 잠그기
-            </button>
-          )}
         </div>
-
-        {/* 마스터 비밀번호 입력창 */}
-        {!isMasterUnlocked && showMasterPrompt && (
-          <div className="bg-black/50 border border-amber-400/40 rounded-xl p-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-amber-300">마스터 보안코드 입력:</span>
-            <input
-              type="password"
-              value={masterInput}
-              onChange={e => setMasterInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleUnlockMaster()}
-              placeholder="마스터 코드를 입력하세요"
-              className="flex-1 min-w-[160px] bg-slate-900 border border-white/15 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
-            />
-            <button
-              type="button"
-              onClick={handleUnlockMaster}
-              className="px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs"
-            >
-              잠금 해제
-            </button>
-          </div>
-        )}
 
         {/* STEP 2 운영 모드 1-Click 전환 프리셋 (실외 표준 vs 실내 전용 vs 하이브리드) */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-slate-300 block">
-            🎯 STEP 2 운영 모드 선택 (실외 버전 ↔ 실내 전용 버전 1-Click 전환)
+            🎯 STEP 2 운영 모드 선택 (실외 표준 ↔ 실내 전용 ↔ 하이브리드 1-Click 전환)
           </label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {[
@@ -277,12 +209,9 @@ export const EventSettingsPanel: React.FC = () => {
                 <button
                   key={preset.key}
                   type="button"
-                  disabled={!isMasterUnlocked}
                   onClick={preset.apply}
                   className={`text-left p-3 rounded-xl border transition-all ${
-                    !isMasterUnlocked
-                      ? 'bg-black/25 border-white/10 opacity-60 cursor-not-allowed'
-                      : isSelected
+                    isSelected
                       ? 'bg-gradient-to-br from-cyan-500/25 to-purple-500/20 border-cyan-400 shadow-lg'
                       : 'bg-black/35 border-white/10 hover:border-white/30'
                   }`}
@@ -320,7 +249,6 @@ export const EventSettingsPanel: React.FC = () => {
               </div>
               <button
                 type="button"
-                disabled={!isMasterUnlocked}
                 onClick={() => {
                   const nextStep = !form.enableStepMission;
                   const nextAr = form.enableArMission;
@@ -337,9 +265,7 @@ export const EventSettingsPanel: React.FC = () => {
                   });
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
-                  !isMasterUnlocked
-                    ? 'bg-slate-800 text-slate-500 border-white/10 cursor-not-allowed'
-                    : form.enableStepMission || form.step2Mode === 'indoor'
+                  form.enableStepMission || form.step2Mode === 'indoor'
                     ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow'
                     : 'bg-white/10 text-slate-300 border-white/15 hover:bg-white/20'
                 }`}
@@ -353,10 +279,9 @@ export const EventSettingsPanel: React.FC = () => {
                 <label className="text-slate-400 block mb-0.5">미션 버튼 표시 제목</label>
                 <input
                   type="text"
-                  disabled={!isMasterUnlocked}
                   value={form.stepMissionTitle}
                   onChange={e => setForm({ ...form, stepMissionTitle: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white disabled:opacity-50"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -364,20 +289,18 @@ export const EventSettingsPanel: React.FC = () => {
                   <label className="text-slate-400 block mb-0.5">3단계 최종 목표 걸음수</label>
                   <input
                     type="number"
-                    disabled={!isMasterUnlocked}
                     value={form.stepMissionTarget}
                     onChange={e => setForm({ ...form, stepMissionTarget: Number(e.target.value) || 300 })}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white disabled:opacity-50"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white"
                   />
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-0.5">달성 시 보상 점수(pt)</label>
                   <input
                     type="number"
-                    disabled={!isMasterUnlocked}
                     value={form.stepMissionPoints}
                     onChange={e => setForm({ ...form, stepMissionPoints: Number(e.target.value) || 100 })}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white disabled:opacity-50"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white"
                   />
                 </div>
               </div>
@@ -401,7 +324,6 @@ export const EventSettingsPanel: React.FC = () => {
               </div>
               <button
                 type="button"
-                disabled={!isMasterUnlocked}
                 onClick={() => {
                   const nextAr = !form.enableArMission;
                   const nextStep = form.enableStepMission;
@@ -418,9 +340,7 @@ export const EventSettingsPanel: React.FC = () => {
                   });
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
-                  !isMasterUnlocked
-                    ? 'bg-slate-800 text-slate-500 border-white/10 cursor-not-allowed'
-                    : form.enableArMission || form.step2Mode === 'indoor'
+                  form.enableArMission || form.step2Mode === 'indoor'
                     ? 'bg-purple-400 text-slate-950 border-purple-300 shadow'
                     : 'bg-white/10 text-slate-300 border-white/15 hover:bg-white/20'
                 }`}
@@ -434,20 +354,18 @@ export const EventSettingsPanel: React.FC = () => {
                 <label className="text-slate-400 block mb-0.5">미션 버튼 표시 제목</label>
                 <input
                   type="text"
-                  disabled={!isMasterUnlocked}
                   value={form.arMissionTitle}
                   onChange={e => setForm({ ...form, arMissionTitle: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white disabled:opacity-50"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white"
                 />
               </div>
               <div>
                 <label className="text-slate-400 block mb-0.5">3단계 봉인 해제 완료 시 보상 점수(pt)</label>
                 <input
                   type="number"
-                  disabled={!isMasterUnlocked}
                   value={form.arMissionPoints}
                   onChange={e => setForm({ ...form, arMissionPoints: Number(e.target.value) || 100 })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white disabled:opacity-50"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white"
                 />
               </div>
             </div>

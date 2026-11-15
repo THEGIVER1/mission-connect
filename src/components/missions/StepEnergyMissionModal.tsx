@@ -331,7 +331,7 @@ export const StepEnergyMissionModal: React.FC<StepEnergyMissionModalProps> = ({
         recommendedPersonName: g3PersonInput.trim(),
         recommendedPersonCompany: LIVE_EVENT_CONFIG.venueName || '',
         selectedTopic: g3TopicInput,
-        reason: `${g3ReasonInput.trim()} (🔥 우리 조 슬로건: "${g3SloganInput.trim()}" / 강점: ${g2KeyInput})`,
+        reason: g3ReasonInput.trim(),
       },
       submittedAt: nowIso,
       submittedBy: participantName || '조 대표',

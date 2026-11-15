@@ -302,15 +302,47 @@ export function calculateLeaderboardData(
   const listMap = new Map<string, IndividualItem>();
   const normalizedMyTeamId = normalizeTeamId(currentUser?.teamId);
 
+  const calcMemberMissionScore = (pTeamId: string, extraPqDone = false) => {
+    const isIndoorMode = LIVE_EVENT_CONFIG.step2Mode === 'indoor';
+    const rawPqDone =
+      isPqSubmittedForTeam(pTeamId, peopleQuestsData) ||
+      extraPqDone ||
+      (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
+    const rawThemeDone =
+      isThemeGardenDoneForTeam(pTeamId, themeGardenPhotosData) ||
+      (pTeamId === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
+
+    const isStepDone =
+      (isIndoorMode || LIVE_EVENT_CONFIG.enableStepMission) &&
+      isStepMissionDoneForTeam(pTeamId, stepMissionsData);
+    const stepPoints = isStepDone ? Number(LIVE_EVENT_CONFIG.stepMissionPoints) || 100 : 0;
+
+    const isArDone =
+      (isIndoorMode || LIVE_EVENT_CONFIG.enableArMission) &&
+      isArMissionDoneForTeam(pTeamId, arMissionsData);
+    const arPoints = isArDone ? Number(LIVE_EVENT_CONFIG.arMissionPoints) || 100 : 0;
+
+    const outdoorPqDone = !isIndoorMode && rawPqDone;
+    const outdoorThemeDone = !isIndoorMode && rawThemeDone;
+
+    const pts =
+      (outdoorPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
+      (outdoorThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
+      stepPoints +
+      arPoints;
+    const missions =
+      (outdoorPqDone ? 1 : 0) +
+      (outdoorThemeDone ? 1 : 0) +
+      (isStepDone ? 1 : 0) +
+      (isArDone ? 1 : 0);
+
+    return { pts, missions };
+  };
+
   // 1. 사전 등록 명단이 있을 경우 초기화
   PRE_REGISTERED_PARTICIPANTS.forEach((p, i) => {
     const pTeamId = normalizeTeamId(p.teamId);
-    const isTeamPqDone = isPqSubmittedForTeam(pTeamId, peopleQuestsData) || (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
-    const isThemeDone = isThemeGardenDoneForTeam(pTeamId, themeGardenPhotosData) || (pTeamId === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
-    
-    const basePqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-    const baseThemePoints = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
-    const baseMissions = (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
+    const { pts, missions } = calcMemberMissionScore(pTeamId);
     const uniqueKey = p.id || `${p.name.trim()}_${p.company || ''}_${pTeamId}`.replace(/\s/g, '_');
 
     listMap.set(uniqueKey, {
@@ -319,8 +351,8 @@ export function calculateLeaderboardData(
       team: WORKSHOP_TEAMS.find(t => t.id === pTeamId)?.name ?? '1조',
       teamId: pTeamId,
       company: p.company,
-      pts: basePqPoints + baseThemePoints,
-      missions: baseMissions,
+      pts,
+      missions,
       emoji: EMOJIS[i % EMOJIS.length],
       rank: 1,
     });
@@ -334,21 +366,10 @@ export function calculateLeaderboardData(
       const pTeamId = normalizeTeamId(p.teamId);
       const teamConfig = WORKSHOP_TEAMS.find(t => t.id === pTeamId);
 
-      // 조별 People Quest 완료 여부 판정
-      const isTeamPqDone =
-        isPqSubmittedForTeam(pTeamId, peopleQuestsData) ||
-        p.peopleQuestCompleted === true ||
-        (pTeamId === normalizedMyTeamId && !!currentUser?.isPeopleQuestSubmitted);
-
-      // 조별 테마가든 미션 완료 여부 판정
-      const isThemeDone =
-        isThemeGardenDoneForTeam(pTeamId, themeGardenPhotosData) ||
-        (pTeamId === normalizedMyTeamId && !!currentUser?.isThemeGardenSubmitted);
-
-      const pqPoints = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const themePoints = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
-      const totalPts = pqPoints + themePoints;
-      const totalMissions = (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
+      const { pts: totalPts, missions: totalMissions } = calcMemberMissionScore(
+        pTeamId,
+        p.peopleQuestCompleted === true
+      );
       const uniqueKey = p.id ? sanitizeFirebaseKey(p.id) : createParticipantId(trimmedName, p.company);
 
       listMap.set(uniqueKey, {
@@ -371,14 +392,9 @@ export function calculateLeaderboardData(
     const myUniqueKey = createParticipantId(myTrimmedName, currentUser.company);
     const existing = listMap.get(myUniqueKey) || Array.from(listMap.values()).find(ind => ind.name === myTrimmedName && ind.company === (currentUser.company || ''));
     const teamConfig = WORKSHOP_TEAMS.find(t => t.id === normalizedMyTeamId);
-    const isTeamPqDone = isPqSubmittedForTeam(normalizedMyTeamId, peopleQuestsData) || !!currentUser.isPeopleQuestSubmitted;
-    const isThemeDone = isThemeGardenDoneForTeam(normalizedMyTeamId, themeGardenPhotosData) || !!currentUser.isThemeGardenSubmitted;
 
     if (!existing) {
-      const localPqPts = isTeamPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0;
-      const localThemePts = isThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0;
-      const totalPts = localPqPts + localThemePts;
-      const totalMissions = (isTeamPqDone ? 1 : 0) + (isThemeDone ? 1 : 0);
+      const { pts: totalPts, missions: totalMissions } = calcMemberMissionScore(normalizedMyTeamId);
 
       listMap.set(myUniqueKey, {
         id: myUniqueKey,
