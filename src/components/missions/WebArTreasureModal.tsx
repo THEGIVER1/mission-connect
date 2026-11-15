@@ -86,6 +86,12 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
   const [cameraFallback, setCameraFallback] = useState<boolean>(false);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [yaw, setYaw] = useState<number>(60);
+  const [gyroActive, setGyroActive] = useState<boolean>(false);
+  const [needsGyroPermission, setNeedsGyroPermission] = useState<boolean>(false);
+  const initialHeadingRef = useRef<number | null>(null);
+  const manualOffsetRef = useRef<number>(0);
+  const lastSensorHeadingRef = useRef<number | null>(null);
+  const lastMotionTimeRef = useRef<number>(0);
 
   const [capturedIds, setCapturedIds] = useState<string[]>([]);
   const [completed, setCompleted] = useState<boolean>(false);
@@ -156,16 +162,89 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
     };
   }, [isOpen, facingMode]);
 
-  // 2. 스마트폰 360도 자이로 방위각 연동
+  // 2. 스마트폰 360도 자이로 방위각 + 모션 회전 속도(rotationRate) 통합 연동 (iOS 권한 및 안드로이드 완벽 대응)
+  const requestGyroPermission = async () => {
+    try {
+      const doe = window.DeviceOrientationEvent as any;
+      if (doe && typeof doe.requestPermission === 'function') {
+        const res = await doe.requestPermission();
+        if (res !== 'granted') {
+          showToast('방향 센서 권한이 거부되었습니다. 화면 터치 드래그를 이용해 주세요.');
+          return;
+        }
+      }
+      const dme = window.DeviceMotionEvent as any;
+      if (dme && typeof dme.requestPermission === 'function') {
+        await dme.requestPermission().catch(() => {});
+      }
+      setNeedsGyroPermission(false);
+      setGyroActive(true);
+      showToast('🧭 360° 공간 회전 센서가 활성화되었습니다!');
+    } catch {
+      setNeedsGyroPermission(false);
+    }
+  };
+
   useEffect(() => {
-    if (!isOpen) return;
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (typeof e.alpha === 'number' && !Number.isNaN(e.alpha)) {
-        setYaw(Math.round((360 - e.alpha) % 360));
+    if (!isOpen) {
+      initialHeadingRef.current = null;
+      lastSensorHeadingRef.current = null;
+      setGyroActive(false);
+      return;
+    }
+
+    const doe = window.DeviceOrientationEvent as any;
+    if (doe && typeof doe.requestPermission === 'function') {
+      setNeedsGyroPermission(true);
+    }
+
+    const handleOrientation = (e: any) => {
+      let heading: number | null = null;
+      if (typeof e.webkitCompassHeading === 'number' && !Number.isNaN(e.webkitCompassHeading)) {
+        heading = e.webkitCompassHeading;
+      } else if (typeof e.alpha === 'number' && !Number.isNaN(e.alpha)) {
+        heading = (360 - e.alpha) % 360;
+      }
+
+      if (heading !== null) {
+        if (initialHeadingRef.current === null) {
+          // 처음 모달을 열었을 때 정면을 60°(1단계 크리스탈 방향) 기준으로 캘리브레이션
+          initialHeadingRef.current = heading;
+        }
+        lastSensorHeadingRef.current = heading;
+        setGyroActive(true);
+        const rel = (heading - initialHeadingRef.current + 60 + manualOffsetRef.current + 3600) % 360;
+        setYaw(Math.round(rel));
       }
     };
-    window.addEventListener('deviceorientation', handleOrientation);
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
+
+    // 자력계가 없거나 alpha가 고정된 기기에서도 휴대폰을 좌우로 돌리는 각속도(rotationRate)로 즉시 회전 반영
+    const handleMotion = (e: DeviceMotionEvent) => {
+      if (lastSensorHeadingRef.current !== null) return; // 방향 센서가 작동 중이면 중복 계산 생략
+      const rot = e.rotationRate;
+      if (!rot) return;
+      const now = Date.now();
+      const dt = lastMotionTimeRef.current ? (now - lastMotionTimeRef.current) / 1000 : 0.05;
+      lastMotionTimeRef.current = now;
+      if (dt <= 0 || dt > 0.5) return;
+
+      // 세로로 든 휴대폰을 좌우로 회전할 때 alpha 또는 gamma 축 각속도 발생
+      const rate = (rot.alpha || 0) + (rot.gamma || 0) * 0.7;
+      if (Math.abs(rate) > 4) {
+        setGyroActive(true);
+        setYaw(prev => Math.round((prev - rate * dt * 1.2 + 3600) % 360));
+      }
+    };
+
+    window.addEventListener('deviceorientationabsolute', handleOrientation as any, true);
+    window.addEventListener('deviceorientation', handleOrientation as any, true);
+    window.addEventListener('devicemotion', handleMotion, true);
+
+    return () => {
+      window.removeEventListener('deviceorientationabsolute', handleOrientation as any, true);
+      window.removeEventListener('deviceorientation', handleOrientation as any, true);
+      window.removeEventListener('devicemotion', handleMotion, true);
+    };
   }, [isOpen]);
 
   // 3. Firebase RTDB 실시간 동기화
@@ -229,7 +308,15 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
     setTimeout(() => setToastMsg(null), 2200);
   };
 
-  // 터치/마우스 드래그로 360도 시야 회전
+  // 터치/마우스 드래그로 360도 시야 회전 (자이로 센서와 함께 써도 튕기지 않도록 오프셋 동기화)
+  const setTargetYawSmooth = (targetAngle: number) => {
+    if (lastSensorHeadingRef.current !== null && initialHeadingRef.current !== null) {
+      const currentSensorRel = (lastSensorHeadingRef.current - initialHeadingRef.current + 60 + 3600) % 360;
+      manualOffsetRef.current = (targetAngle - currentSensorRel + 3600) % 360;
+    }
+    setYaw((targetAngle + 3600) % 360);
+  };
+
   const handlePointerDown = (clientX: number) => {
     dragStartXRef.current = clientX;
     dragStartYawRef.current = yaw;
@@ -237,8 +324,8 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
   const handlePointerMove = (clientX: number) => {
     if (dragStartXRef.current === null) return;
     const deltaX = clientX - dragStartXRef.current;
-    const nextYaw = (dragStartYawRef.current - deltaX * 0.65 + 3600) % 360;
-    setYaw(Math.round(nextYaw));
+    const nextYaw = Math.round((dragStartYawRef.current - deltaX * 0.65 + 3600) % 360);
+    setTargetYawSmooth(nextYaw);
   };
   const handlePointerUp = () => {
     dragStartXRef.current = null;
@@ -500,8 +587,28 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
           )}
 
           {/* 상단 레이더 바 */}
-          <div className="absolute top-2.5 left-2.5 right-2.5 bg-black/70 backdrop-blur-md border border-white/15 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs">
-            <span className="text-purple-300 font-bold">🧭 방위각: {yaw}°</span>
+          <div className="absolute top-2.5 left-2.5 right-2.5 bg-black/70 backdrop-blur-md border border-white/15 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs z-20">
+            <div className="flex items-center gap-1.5">
+              <span className="text-purple-300 font-bold">🧭 {yaw}°</span>
+              {needsGyroPermission ? (
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    requestGyroPermission();
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[10.5px] animate-pulse"
+                >
+                  📱 공간회전 센서 켜기
+                </button>
+              ) : (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                  gyroActive ? 'bg-emerald-500/25 text-emerald-300' : 'bg-white/10 text-slate-400'
+                }`}>
+                  {gyroActive ? '자이로 ON' : '터치/회전'}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-1">
               {AR_TREASURES.map(item => {
                 const isFound = capturedIds.includes(item.id);
@@ -511,7 +618,7 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
                     type="button"
                     onClick={e => {
                       e.stopPropagation();
-                      setYaw(item.targetYaw);
+                      setTargetYawSmooth(item.targetYaw);
                     }}
                     className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
                       isFound
@@ -525,6 +632,30 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
               })}
             </div>
           </div>
+
+          {/* 시야 밖 아티팩트 방향 유도 인디케이터 (좌/우 화살표) */}
+          {(() => {
+            const nextUnfound = AR_TREASURES.find(t => !capturedIds.includes(t.id));
+            if (!nextUnfound) return null;
+            const d = angleDiff(nextUnfound.targetYaw, yaw);
+            if (Math.abs(d) <= 45) return null;
+            const isRight = d > 0;
+            return (
+              <div
+                onClick={e => {
+                  e.stopPropagation();
+                  setTargetYawSmooth(nextUnfound.targetYaw);
+                }}
+                className={`absolute top-1/2 -translate-y-1/2 ${
+                  isRight ? 'right-2.5' : 'left-2.5'
+                } bg-amber-400/90 text-slate-950 font-black text-xs px-2.5 py-2 rounded-2xl shadow-xl cursor-pointer animate-pulse z-20 flex items-center gap-1`}
+              >
+                {!isRight && <span>◀</span>}
+                <span>{nextUnfound.emoji} {nextUnfound.stepNum}단계</span>
+                {isRight && <span>▶</span>}
+              </div>
+            );
+          })()}
 
           {/* 360도 AR 오브젝트 */}
           {AR_TREASURES.map(item => {
@@ -749,7 +880,7 @@ export const WebArTreasureModal: React.FC<WebArTreasureModalProps> = ({
                       key={item.id}
                       type="button"
                       onClick={() => {
-                        setYaw(item.targetYaw);
+                        setTargetYawSmooth(item.targetYaw);
                         setSelectedArtifact(item);
                       }}
                       className={`rounded-xl p-2 text-center border transition-all ${

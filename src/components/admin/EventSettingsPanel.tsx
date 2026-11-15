@@ -321,7 +321,21 @@ export const EventSettingsPanel: React.FC = () => {
               <button
                 type="button"
                 disabled={!isMasterUnlocked}
-                onClick={() => setForm({ ...form, enableStepMission: !form.enableStepMission })}
+                onClick={() => {
+                  const nextStep = !form.enableStepMission;
+                  const nextAr = form.enableArMission;
+                  const nextMode =
+                    !nextStep && !nextAr
+                      ? 'outdoor'
+                      : form.step2Mode === 'outdoor'
+                      ? 'hybrid'
+                      : form.step2Mode;
+                  setForm({
+                    ...form,
+                    enableStepMission: nextStep,
+                    step2Mode: nextMode,
+                  });
+                }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
                   !isMasterUnlocked
                     ? 'bg-slate-800 text-slate-500 border-white/10 cursor-not-allowed'
@@ -388,7 +402,21 @@ export const EventSettingsPanel: React.FC = () => {
               <button
                 type="button"
                 disabled={!isMasterUnlocked}
-                onClick={() => setForm({ ...form, enableArMission: !form.enableArMission })}
+                onClick={() => {
+                  const nextAr = !form.enableArMission;
+                  const nextStep = form.enableStepMission;
+                  const nextMode =
+                    !nextStep && !nextAr
+                      ? 'outdoor'
+                      : form.step2Mode === 'outdoor'
+                      ? 'hybrid'
+                      : form.step2Mode;
+                  setForm({
+                    ...form,
+                    enableArMission: nextAr,
+                    step2Mode: nextMode,
+                  });
+                }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
                   !isMasterUnlocked
                     ? 'bg-slate-800 text-slate-500 border-white/10 cursor-not-allowed'

@@ -516,7 +516,9 @@ export function applyRemoteEventConfig(raw?: Partial<RemoteEventConfig> | null):
         : DEFAULT_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
   };
 
+  const prevSignature = JSON.stringify(LIVE_EVENT_CONFIG);
   Object.assign(LIVE_EVENT_CONFIG, merged);
+  const nextSignature = JSON.stringify(LIVE_EVENT_CONFIG);
 
   ACTIVE_VENUE.venueName = merged.venueName;
   ACTIVE_VENUE.eventName = `${merged.brandTitle} ${merged.eventSubtitle}`.trim();
@@ -550,7 +552,7 @@ export function applyRemoteEventConfig(raw?: Partial<RemoteEventConfig> | null):
     ...merged.wrapupQuizItems.map(i => i.text)
   );
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && prevSignature !== nextSignature) {
     window.dispatchEvent(new CustomEvent('mmazing-config-updated'));
   }
 
