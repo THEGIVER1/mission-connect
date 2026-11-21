@@ -8,12 +8,15 @@ import {
   WrapupQuizItem,
   applyRemoteEventConfig,
 } from '../../config/workshopConfig';
+import { LearningSettingsSection } from './LearningSettingsSection';
+import { createLearningSubject } from '../../config/learningConfig';
 
 export const EventSettingsPanel: React.FC = () => {
   const [form, setForm] = useState<RemoteEventConfig>(() => ({
     ...LIVE_EVENT_CONFIG,
     tutorialOptions: [...LIVE_EVENT_CONFIG.tutorialOptions],
     wrapupQuizItems: LIVE_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+    learningSubjects: LIVE_EVENT_CONFIG.learningSubjects.map(s => createLearningSubject(s)),
   }));
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -24,6 +27,7 @@ export const EventSettingsPanel: React.FC = () => {
         ...LIVE_EVENT_CONFIG,
         tutorialOptions: [...LIVE_EVENT_CONFIG.tutorialOptions],
         wrapupQuizItems: LIVE_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+        learningSubjects: LIVE_EVENT_CONFIG.learningSubjects.map(s => createLearningSubject(s)),
       });
     };
     window.addEventListener('mmazing-config-updated', syncFromLive);
@@ -104,6 +108,12 @@ export const EventSettingsPanel: React.FC = () => {
       ...DEFAULT_EVENT_CONFIG,
       tutorialOptions: [...DEFAULT_EVENT_CONFIG.tutorialOptions],
       wrapupQuizItems: DEFAULT_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+      // 📚 학습 과목 설정은 기본값 되돌리기에서도 유지 (교육 과목 데이터 보호)
+      learningDisplay: form.learningDisplay,
+      learningSubjects: form.learningSubjects.map(s => createLearningSubject(s)),
+      activeLearningSubjectId: form.activeLearningSubjectId,
+      learningCanvasPoints: form.learningCanvasPoints,
+      learningStampPoints: form.learningStampPoints,
     });
   };
 
@@ -372,6 +382,9 @@ export const EventSettingsPanel: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 📚 과목별 학습 토의 모듈 (라이브 포스트잇 월 + 토의 캔버스 & 쇼케이스) */}
+      <LearningSettingsSection form={form} setForm={setForm} />
 
       {/* 1. 기본 행사 브랜딩 및 장소 */}
       <div className="bg-[#1A2235] border border-white/10 rounded-2xl p-4 space-y-3 shadow-xl">

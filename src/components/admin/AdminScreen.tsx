@@ -14,6 +14,8 @@ import {
   applyRemoteEventConfig,
 } from '../../config/workshopConfig';
 import { EventSettingsPanel } from './EventSettingsPanel';
+import { LearningAdminPanel } from './LearningAdminPanel';
+import { exportLearningCsv } from '../learning/learningExport';
 import { useEventConfig } from '../../hooks/useEventConfig';
 import {
   calculateLeaderboardData,
@@ -23,6 +25,7 @@ import {
   getPqForTeam,
   calculatePhotoVoteCounts,
   getWrapupQuizScoreForTeam,
+  getLearningScoreForTeam,
   createParticipantId,
 } from '../../utils/scoreCalculator';
 import { onValue, ref, update } from 'firebase/database';
@@ -99,7 +102,7 @@ interface ThemeGardenPhotoRecord {
   caption?: string;
 }
 
-type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'broadcast' | 'quizMaster' | 'settings';
+type AdminTab = 'teams' | 'groundRules' | 'themeGardenGallery' | 'myInfoList' | 'peopleQuest' | 'broadcast' | 'quizMaster' | 'learning' | 'settings';
 
 const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -114,6 +117,7 @@ const AdminScreen: React.FC = () => {
   const [adminTutorials, setAdminTutorials] = useState<Record<string, any>>({});
   const [adminStepMissions, setAdminStepMissions] = useState<Record<string, any>>({});
   const [adminArMissions, setAdminArMissions] = useState<Record<string, any>>({});
+  const [adminLearning, setAdminLearning] = useState<Record<string, any>>({});
   const [step4ForceOpen, setStep4ForceOpen] = useState<boolean>(false);
   const [nowMs, setNowMs] = useState<number>(Date.now());
   const [adminZoomPhotoUrl, setAdminZoomPhotoUrl] = useState<string | null>(null);
@@ -188,6 +192,7 @@ const AdminScreen: React.FC = () => {
     setAdminTutorials(data.tutorials && typeof data.tutorials === 'object' ? data.tutorials : {});
     setAdminStepMissions(data.stepMissions && typeof data.stepMissions === 'object' ? data.stepMissions : {});
     setAdminArMissions(data.arMissions && typeof data.arMissions === 'object' ? data.arMissions : {});
+    setAdminLearning(data.learning && typeof data.learning === 'object' ? data.learning : {});
     setStep4ForceOpen(!!data.step4ForceOpen);
     if (data.eventConfig && typeof data.eventConfig === 'object') {
       applyRemoteEventConfig(data.eventConfig);
@@ -281,9 +286,10 @@ const AdminScreen: React.FC = () => {
       wrapupQuizzes,
       adminTutorials,
       adminStepMissions,
-      adminArMissions
+      adminArMissions,
+      adminLearning
     );
-  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials, adminStepMissions, adminArMissions, eventConfig]);
+  }, [rawParticipantsMap, peopleQuests, themeGardenPhotos, photoVotes, wrapupQuizzes, adminTutorials, adminStepMissions, adminArMissions, adminLearning, eventConfig]);
 
   // 2. 관리자용 상세 참가자 목록 (myInfo, 퀴즈 상세, 점수 통합)
   const participants: ParticipantRecord[] = useMemo(() => {
@@ -1126,6 +1132,12 @@ const AdminScreen: React.FC = () => {
     try {
       setIsLoading(true);
       const resetTimestamp = Date.now();
+      // 📚 과목별 학습 데이터(포스트잇·토의 캔버스·스탬프·코멘트)는 HRD 자산이므로 리셋 시에도 보존
+      let preservedLearning: any = null;
+      try {
+        const lr = await fetch(`${dbUrl}/sessions/trekking2026/learning.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (lr.ok) preservedLearning = await lr.json();
+      } catch {}
       await fetch(`${dbUrl}/sessions/trekking2026.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1134,6 +1146,7 @@ const AdminScreen: React.FC = () => {
           resetVersion: resetTimestamp,
           eventConfig: LIVE_EVENT_CONFIG,
           broadcastNotice: { active: false, message: '', timestamp: new Date().toISOString() },
+          ...(preservedLearning ? { learning: preservedLearning } : {}),
         }),
       });
       setRawParticipantsMap({});
@@ -1869,10 +1882,17 @@ const AdminScreen: React.FC = () => {
             <span>조별 {currentModeMeta.missionTabLabel} 통합 엑셀</span>
           </button>
         </div>
+        <button
+          onClick={() => exportLearningCsv(adminLearning, eventConfig.learningSubjects, eventConfig.brandTitle)}
+          className="w-full px-4 py-2.5 bg-gradient-to-r from-fuchsia-700/60 to-indigo-700/60 hover:from-fuchsia-600/70 hover:to-indigo-600/70 text-white border border-fuchsia-400/40 font-bold text-xs md:text-[14px] rounded-xl shadow flex items-center justify-center gap-2 active:scale-98 transition-all"
+        >
+          <span>📚</span>
+          <span>과목별 토의·학습데이터 통합 엑셀 (포스트잇 원문 · 조별 3단계 결론 · 공감 스탬프 · 응원 코멘트)</span>
+        </button>
       </div>
 
       {/* 8개 관리자 탭 네비게이션 (선택된 운영 모드에 맞춰 타이틀 자동 최적화) */}
-      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs font-bold">
+      <div className="bg-[#101626] border-b border-white/8 p-2 px-4 md:px-6 grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 text-xs font-bold">
         <button
           onClick={() => setActiveTab('teams')}
           className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
@@ -1937,6 +1957,17 @@ const AdminScreen: React.FC = () => {
           <span>퀴즈쇼</span>
         </button>
         <button
+          onClick={() => setActiveTab('learning')}
+          className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
+            activeTab === 'learning'
+              ? 'bg-gradient-to-r from-fuchsia-600 to-indigo-600 text-white font-black shadow-lg'
+              : 'bg-[#161F33] text-fuchsia-300 hover:text-white border border-fuchsia-500/30'
+          }`}
+        >
+          <span>📚</span>
+          <span>토의·학습데이터</span>
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={`py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 ${
             activeTab === 'settings' ? 'bg-indigo-600 text-white font-black shadow-lg ring-1 ring-indigo-400' : 'bg-[#161F33] text-indigo-300 hover:text-white border border-indigo-500/30'
@@ -1950,6 +1981,7 @@ const AdminScreen: React.FC = () => {
       {/* 탭 컨텐츠 */}
       <div className="p-4 md:p-6 space-y-4 flex-1 overflow-y-auto">
         {activeTab === 'settings' && <EventSettingsPanel />}
+        {activeTab === 'learning' && <LearningAdminPanel onGoSettings={() => setActiveTab('settings')} />}
 
         {/* TAB 1: 저녁 퀴즈 마스터 모드 */}
         {activeTab === 'quizMaster' && (
@@ -2246,6 +2278,19 @@ const AdminScreen: React.FC = () => {
                         </span>
                       )}
 
+                      {eventConfig.learningDisplay !== 'off' && (() => {
+                        const li = getLearningScoreForTeam(team.id, adminLearning);
+                        return (
+                          <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                            li.points > 0
+                              ? 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30'
+                              : 'bg-black/30 text-slate-500 border-white/5'
+                          }`}>
+                            📚 토의 {li.canvasSubmittedCount}건 · 스탬프 {li.stampsReceived}개 (+{li.points}pt)
+                          </span>
+                        );
+                      })()}
+
                       <span className={`px-2 py-0.5 rounded-md border font-bold ${
                         votesReceived > 0
                           ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
@@ -2407,7 +2452,7 @@ const AdminScreen: React.FC = () => {
                     {currentModeMeta.badge}
                   </span>
                   <span className="text-[13px] bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full font-bold">
-                    {eventConfig.step2TimeRange || THEME_GARDEN_MISSION.timeRange}
+                    {THEME_GARDEN_MISSION.timeRange}
                   </span>
                 </div>
               </div>

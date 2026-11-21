@@ -18,6 +18,12 @@ import {
   DiscoveryQuizItem,
   PreRegisteredPerson,
 } from '../types';
+import {
+  DEFAULT_LEARNING_SUBJECTS,
+  createLearningSubject,
+  normalizeLearningSubjects,
+} from './learningConfig';
+import type { LearningDisplayMode, LearningSubject } from './learningConfig';
 
 export type CourseKey = 'forest' | 'lake';
 
@@ -442,6 +448,12 @@ export interface RemoteEventConfig {
   enableArMission: boolean;
   arMissionTitle: string;
   arMissionPoints: number;
+  // ─── 📚 과목별 학습 토의 모듈 (라이브 포스트잇 월 + 토의 캔버스 & 쇼케이스) ───
+  learningDisplay: LearningDisplayMode;
+  learningSubjects: LearningSubject[];
+  activeLearningSubjectId: string;
+  learningCanvasPoints: number;
+  learningStampPoints: number;
   updatedAt?: string;
 }
 
@@ -477,12 +489,18 @@ export const DEFAULT_EVENT_CONFIG: RemoteEventConfig = {
   enableArMission: false,
   arMissionTitle: '웹 AR 360° 가치 캡처 & 홀로그램 스냅샷',
   arMissionPoints: 100,
+  learningDisplay: 'off',
+  learningSubjects: DEFAULT_LEARNING_SUBJECTS.map(s => createLearningSubject(s)),
+  activeLearningSubjectId: DEFAULT_LEARNING_SUBJECTS[0].id,
+  learningCanvasPoints: 100,
+  learningStampPoints: 50,
 };
 
 export const LIVE_EVENT_CONFIG: RemoteEventConfig = {
   ...DEFAULT_EVENT_CONFIG,
   tutorialOptions: [...DEFAULT_EVENT_CONFIG.tutorialOptions],
   wrapupQuizItems: DEFAULT_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+  learningSubjects: DEFAULT_EVENT_CONFIG.learningSubjects.map(s => createLearningSubject(s)),
 };
 
 function parseHm(timeStr: string | undefined, fallback: [number, number]): [number, number] {
@@ -514,7 +532,16 @@ export function applyRemoteEventConfig(raw?: Partial<RemoteEventConfig> | null):
             .filter(i => i && String(i.text ?? '').trim() !== '')
             .map(i => ({ text: String(i.text).trim(), correct: Boolean(i.correct) }))
         : DEFAULT_EVENT_CONFIG.wrapupQuizItems.map(i => ({ ...i })),
+    learningDisplay: (['off', 'with-teambuilding', 'learning-only'].includes(String(raw?.learningDisplay))
+      ? raw!.learningDisplay
+      : DEFAULT_EVENT_CONFIG.learningDisplay) as LearningDisplayMode,
+    learningSubjects: normalizeLearningSubjects(raw?.learningSubjects),
+    learningCanvasPoints: Number(raw?.learningCanvasPoints ?? DEFAULT_EVENT_CONFIG.learningCanvasPoints) || 0,
+    learningStampPoints: Number(raw?.learningStampPoints ?? DEFAULT_EVENT_CONFIG.learningStampPoints) || 0,
   };
+  if (!merged.learningSubjects.some(s => s.id === merged.activeLearningSubjectId)) {
+    merged.activeLearningSubjectId = merged.learningSubjects[0]?.id || '';
+  }
 
   const prevSignature = JSON.stringify(LIVE_EVENT_CONFIG);
   Object.assign(LIVE_EVENT_CONFIG, merged);

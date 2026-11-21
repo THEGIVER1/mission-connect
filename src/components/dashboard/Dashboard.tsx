@@ -37,9 +37,15 @@ import {
   getWrapupQuizScoreForTeam,
 } from '../../utils/scoreCalculator';
 import { useEventConfig } from '../../hooks/useEventConfig';
+import {
+  parseSubjectData,
+  isCanvasSubmitted,
+  canvasProgress,
+  countStampsForTeam,
+} from '../../config/learningConfig';
 
 // ─── 상단 헤더 ────────────────────────────────────────────────
-const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> = ({ onOpenProfile, forceOpenStep4 }) => {
+const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean; hideTimer?: boolean }> = ({ onOpenProfile, forceOpenStep4, hideTimer }) => {
   const { myTeam, participantName } = useAppStore();
   const [now, setNow] = useState(Date.now());
 
@@ -117,10 +123,19 @@ const Header: React.FC<{ onOpenProfile: () => void; forceOpenStep4?: boolean }> 
           </div>
         </div>
         <div className="text-right">
+          {hideTimer ? (
+            <>
+              <p className="text-[12px] text-slate-400">오늘의 학습 모드</p>
+              <p className="text-[17px] font-black text-amber-300 leading-tight mt-0.5">📚 LEARNING LAB</p>
+            </>
+          ) : (
+            <>
           <p className="text-[12px] text-slate-400">최종 집결지까지 남은 시간 ({FINAL_GATHERING_LABEL} 기준)</p>
           <p className="text-[28px] font-bold text-amber-400 font-['Bebas_Neue'] tracking-widest leading-none mt-0.5">
             {isStep3Completed ? '집결 완료 (00:00:00)' : formattedTimeLeft}
           </p>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -782,6 +797,112 @@ const MyProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   );
 };
 
+// ─── 📚 LEARNING LAB: 과목별 학습 토의 진입 섹션 ───────────────────
+const LearningLabSection: React.FC<{ learningRaw: any; teamId: string; participantPid: string }> = ({
+  learningRaw,
+  teamId,
+  participantPid,
+}) => {
+  const navigate = useNavigate();
+  const eventConfig = useEventConfig();
+  const subject =
+    eventConfig.learningSubjects.find(s => s.id === eventConfig.activeLearningSubjectId) || eventConfig.learningSubjects[0];
+  const data = useMemo(() => parseSubjectData(learningRaw?.[subject?.id || ''] || {}), [learningRaw, subject?.id]);
+  if (!subject) return null;
+
+  const myCanvas = data.canvas[teamId];
+  const submitted = isCanvasSubmitted(myCanvas);
+  const prog = canvasProgress(myCanvas);
+  const myPostCount = data.wall.filter(p => p.authorPid === participantPid).length;
+  const stamps = countStampsForTeam(data.votes, teamId);
+  const submittedCount = WORKSHOP_TEAMS.filter(t => isCanvasSubmitted(data.canvas[t.id])).length;
+  const voted = data.votes[teamId] || {};
+  const votesUsed = (voted.insight ? 1 : 0) + (voted.action ? 1 : 0);
+
+  const rows = [
+    {
+      tab: 'wall',
+      num: '1',
+      icon: '💬',
+      title: '전체 교육생 라이브 포스트잇 월',
+      desc: `전체 ${data.wall.length}장 · 내 포스트잇 ${myPostCount}장`,
+      badge: myPostCount > 0 ? '참여 완료' : '참여하기 →',
+      done: myPostCount > 0,
+      color: '#F59E0B',
+    },
+    {
+      tab: 'canvas',
+      num: '2-A',
+      icon: '🧩',
+      title: '우리 조 3단계 토의 캔버스',
+      desc: submitted ? '제출 완료 · 쇼케이스 전시 중' : `${prog}/3단계 작성 중 · 조원 누구나 함께 작성`,
+      badge: submitted ? `완료 (+${eventConfig.learningCanvasPoints}pt)` : '작성하기 →',
+      done: submitted,
+      color: '#38BDF8',
+    },
+    {
+      tab: 'showcase',
+      num: '2-B',
+      icon: '🏆',
+      title: '전 조 인사이트 쇼케이스 & 공감 투표',
+      desc: submitted
+        ? `받은 스탬프 💡${stamps.insight} 🚀${stamps.action} · 보낸 스탬프 ${votesUsed}/2`
+        : `제출 ${submittedCount}/${WORKSHOP_TEAMS.length}조 · 캔버스 제출 후 오픈`,
+      badge: !submitted ? '🔒 제출 후' : votesUsed >= 2 ? '투표 완료' : '투표하기 →',
+      done: submitted && votesUsed >= 2,
+      color: '#E879F9',
+    },
+  ];
+
+  return (
+    <div className="mx-4 mt-3 space-y-1.5">
+      <div className="flex items-baseline justify-between px-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-amber-300 via-sky-300 to-fuchsia-400 bg-clip-text text-transparent">
+            LEARNING LAB
+          </span>
+          <span className="text-[13px] font-bold text-slate-200 truncate max-w-[190px]">{subject.title}</span>
+        </div>
+        <span className="text-[12px] text-slate-400">과목별 토의</span>
+      </div>
+      <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#141B2B] divide-y divide-white/5 shadow-lg">
+        {rows.map(r => (
+          <button
+            key={r.tab}
+            type="button"
+            onClick={() => navigate(`/learning?tab=${r.tab}`)}
+            className="w-full text-left px-3.5 py-2.5 flex items-center gap-2.5 hover:bg-white/5 active:scale-[0.99] transition-all"
+          >
+            <span
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[18px] shrink-0"
+              style={{ background: `${r.color}26`, border: `1px solid ${r.color}66` }}
+            >
+              {r.icon}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-bold text-white truncate">
+                <span className="text-[11px] font-black mr-1" style={{ color: r.color }}>
+                  {r.num}
+                </span>
+                {r.title}
+              </p>
+              <p className="text-[11.5px] text-slate-400 truncate">{r.desc}</p>
+            </div>
+            <span
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                r.done ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : ''
+              }`}
+              style={!r.done ? { background: `${r.color}22`, color: r.color, borderColor: `${r.color}66` } : undefined}
+            >
+              {r.badge}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ─── 하단 3개 탭 네비게이션 ──────────────────────────────────
 const BottomNav: React.FC<{ active: string }> = ({ active }) => {
   const navigate = useNavigate();
@@ -837,6 +958,7 @@ const Dashboard: React.FC = () => {
   const [isArMissionModalOpen, setIsArMissionModalOpen] = useState(false);
   const [isPhotoVoteModalOpen, setIsPhotoVoteModalOpen] = useState(false);
   const [isWrapupQuizModalOpen, setIsWrapupQuizModalOpen] = useState(false);
+  const learningDisplay = useEventConfig().learningDisplay || 'off';
 
   useEffect(() => {
     const t = setInterval(() => setNowMs(Date.now()), 1000);
@@ -890,7 +1012,8 @@ const Dashboard: React.FC = () => {
       wrapupQuizzes,
       rawSessionData?.tutorials || {},
       stepMissions,
-      arMissions
+      arMissions,
+      rawSessionData?.learning || {}
     );
   }, [rawSessionData, participantName, participantCompany, teamId, answeredQuizIds, isPeopleQuestSubmitted]);
 
@@ -1086,12 +1209,17 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-[430px] mx-auto bg-[#0D1117] min-h-screen pb-24 font-['Noto_Sans_KR']">
-      <Header onOpenProfile={() => setIsProfileModalOpen(true)} forceOpenStep4={forceOpenStep4} />
+      <Header onOpenProfile={() => setIsProfileModalOpen(true)} forceOpenStep4={forceOpenStep4} hideTimer={learningDisplay === 'learning-only'} />
       <ScoreCard
         teamScore={teamScore}
         teamRank={teamRank}
         maxScore={maxScore}
       />
+      {/* 📚 학습 전용 모드: 과목별 토의 모듈 최상단 노출 */}
+      {learningDisplay === 'learning-only' && (
+        <LearningLabSection learningRaw={rawSessionData?.learning} teamId={teamId} participantPid={participantId} />
+      )}
+      {learningDisplay !== 'learning-only' && (
       <ActivitySection
         hasTutorialDone={hasTutorialDone}
         hasGroundRulesDone={hasGroundRulesDone}
@@ -1115,6 +1243,11 @@ const Dashboard: React.FC = () => {
         onOpenWrapupQuizModal={() => setIsWrapupQuizModalOpen(true)}
         onOpenCertificate={() => setIsCertModalOpen(true)}
       />
+      )}
+      {/* 📚 팀빌딩 + 학습 병행 모드: STEP 4 아래 LEARNING LAB 노출 */}
+      {learningDisplay === 'with-teambuilding' && (
+        <LearningLabSection learningRaw={rawSessionData?.learning} teamId={teamId} participantPid={participantId} />
+      )}
       <BottomNav active="/" />
 
       {/* STEP 1: 조별 그라운드룰 & 연습 퀴즈 모달 */}

@@ -277,6 +277,42 @@ export function calcWrapupQuizPoints(selected: string[]): number {
 }
 
 /**
+ * 📚 과목별 학습 토의 점수 (모든 과목 누적)
+ * - 조별 토의 캔버스 최종 제출: +learningCanvasPoints (과목당)
+ * - 타 조로부터 받은 공감 스탬프 1개당: +learningStampPoints
+ * - learningDisplay === 'off' 이면 0점
+ */
+export function getLearningScoreForTeam(
+  teamId: string | undefined | null,
+  learningData: Record<string, any> = {}
+): { points: number; canvasSubmittedCount: number; stampsReceived: number } {
+  const empty = { points: 0, canvasSubmittedCount: 0, stampsReceived: 0 };
+  if (!teamId || !learningData || typeof learningData !== 'object') return empty;
+  if (!LIVE_EVENT_CONFIG.learningDisplay || LIVE_EVENT_CONFIG.learningDisplay === 'off') return empty;
+  const target = normalizeTeamId(teamId);
+  const canvasPts = Number(LIVE_EVENT_CONFIG.learningCanvasPoints) || 0;
+  const stampPts = Number(LIVE_EVENT_CONFIG.learningStampPoints) || 0;
+
+  let canvasSubmittedCount = 0;
+  let stampsReceived = 0;
+  Object.values(learningData).forEach((subj: any) => {
+    if (!subj || typeof subj !== 'object') return;
+    if (subj.canvas?.[target]?.status === 'submitted') canvasSubmittedCount += 1;
+    Object.entries(subj.votes || {}).forEach(([voter, v]: [string, any]) => {
+      if (!v || normalizeTeamId(voter) === target) return;
+      if (v.insight && normalizeTeamId(v.insight) === target) stampsReceived += 1;
+      if (v.action && normalizeTeamId(v.action) === target) stampsReceived += 1;
+    });
+  });
+
+  return {
+    points: canvasSubmittedCount * canvasPts + stampsReceived * stampPts,
+    canvasSubmittedCount,
+    stampsReceived,
+  };
+}
+
+/**
  * 대시보드, 실시간 순위(리더보드), 관리자 화면 모두에 100% 동일한 점수를 보장하는 통합 계산 엔진
  *
  * [조별 점수 규칙]
@@ -294,7 +330,8 @@ export function calculateLeaderboardData(
   wrapupQuizData: Record<string, any> = {},
   tutorialsData: Record<string, any> = {},
   stepMissionsData: Record<string, any> = {},
-  arMissionsData: Record<string, any> = {}
+  arMissionsData: Record<string, any> = {},
+  learningData: Record<string, any> = {}
 ): {
   individuals: IndividualItem[];
   teams: Team[];
@@ -456,6 +493,8 @@ export function calculateLeaderboardData(
     const outdoorPqDone = !isIndoorMode && isPqDone;
     const outdoorThemeDone = !isIndoorMode && isThemeDone;
 
+    const learningInfo = getLearningScoreForTeam(teamConfig.id, learningData);
+
     const teamScore =
       (outdoorPqDone ? PEOPLE_QUEST_POINTS_PER_MEMBER : 0) +
       (outdoorThemeDone ? THEME_GARDEN_MISSION.pointsPerMember : 0) +
@@ -463,12 +502,14 @@ export function calculateLeaderboardData(
       arPoints +
       voteBonusPoints +
       wrapupQuizInfo.points +
-      practiceQuizPoints;
+      practiceQuizPoints +
+      learningInfo.points;
     const completedCount =
       (outdoorPqDone ? 1 : 0) +
       (outdoorThemeDone ? 1 : 0) +
       (isStepDone ? 1 : 0) +
-      (isArDone ? 1 : 0);
+      (isArDone ? 1 : 0) +
+      learningInfo.canvasSubmittedCount;
     const totalActiveMissions = isIndoorMode
       ? 2
       : 2 +

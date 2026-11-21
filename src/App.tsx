@@ -10,6 +10,7 @@ const Leaderboard = lazy(() => import('./components/leaderboard/Leaderboard'));
 const AdminScreen = lazy(() => import('./components/admin/AdminScreen'));
 const PeopleQuestScreen = lazy(() => import('./components/peopleQuest/PeopleQuestScreen'));
 const DiscoveryQuizScreen = lazy(() => import('./components/discoveryQuiz/DiscoveryQuizScreen'));
+const LearningHubScreen = lazy(() => import('./components/learning/LearningHubScreen'));
 
 import GlobalNoticeBanner from './components/common/GlobalNoticeBanner';
 import { useEventConfig } from './hooks/useEventConfig';
@@ -55,6 +56,7 @@ const App: React.FC = () => {
           <Route path="/map" element={<ProtectedRoute><MapScreen /></ProtectedRoute>} />
           <Route path="/ar"  element={<ProtectedRoute><ARScreen /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/learning" element={<ProtectedRoute><LearningHubScreen /></ProtectedRoute>} />
 
           {/* 어드민은 팀 선택 불필요 */}
           <Route path="/admin" element={<AdminScreen />} />

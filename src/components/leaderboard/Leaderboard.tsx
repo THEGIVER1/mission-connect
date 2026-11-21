@@ -252,6 +252,7 @@ const Leaderboard: React.FC = () => {
   const [tutorialsData, setTutorialsData] = useState<Record<string, any>>({});
   const [stepMissionsData, setStepMissionsData] = useState<Record<string, any>>({});
   const [arMissionsData, setArMissionsData] = useState<Record<string, any>>({});
+  const [learningData, setLearningData] = useState<Record<string, any>>({});
   const dbUrl = FIREBASE_DB_URL;
 
   const isMyTeamPqSubmitted = useMemo(() => {
@@ -274,7 +275,8 @@ const Leaderboard: React.FC = () => {
       wrapupQuizzesData,
       tutorialsData,
       stepMissionsData,
-      arMissionsData
+      arMissionsData,
+      learningData
     );
   }, [
     participantsData,
@@ -285,6 +287,7 @@ const Leaderboard: React.FC = () => {
     tutorialsData,
     stepMissionsData,
     arMissionsData,
+    learningData,
     participantName,
     participantCompany,
     myTeamId,
@@ -314,6 +317,7 @@ const Leaderboard: React.FC = () => {
             setTutorialsData(data.tutorials || {});
             setStepMissionsData(data.stepMissions || {});
             setArMissionsData(data.arMissions || {});
+        setLearningData(data.learning || {});
           }
         }
       } catch (err) {
@@ -344,6 +348,7 @@ const Leaderboard: React.FC = () => {
             setTutorialsData(data.tutorials || {});
             setStepMissionsData(data.stepMissions || {});
             setArMissionsData(data.arMissions || {});
+        setLearningData(data.learning || {});
           }
         }
       );
